@@ -19,11 +19,11 @@ import { StoreView } from './components/StoreView';
 import { LeaderboardView } from './components/LeaderboardView';
 import { MapView } from './components/MapView';
 import { SongHistoryModal } from './components/SongHistoryModal';
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon, UserIcon, MOCK_REVIEWS, ExploreIcon } from './constants';
+import { GenreChatView } from './components/GenreChatView';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon, UserIcon, MOCK_REVIEWS, ExploreIcon, RocketIcon } from './constants';
 import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, StationReview, ActiveView, UserData } from './types';
 import { slugify } from './utils/slugify';
 import { getDominantColor } from './utils/colorExtractor';
-import { getLocationForGenre } from './utils/genreToLocation';
 import { LandingPage } from './components/LandingPage';
 import { getUserData, updateUserData } from './services/apiService';
 
@@ -68,11 +68,14 @@ const App: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isImmersiveMode, setIsImmersiveMode] = useState(false);
 
-  const [stats, setStats] = useState<ListeningStats>({ totalTime: 0, stationPlays: {}, points: 0 });
+  const [stats, setStats] = useState<ListeningStats>({ totalTime: 0, stationPlays: {}, points: 0, songHistory: [] });
   const [alarm, setAlarm] = useState<Alarm | null>(null);
   const [songVotes, setSongVotes] = useState<Record<string, SongVote>>({});
   const [unlockedAchievements, setUnlockedAchievements] = useState<Record<string, UnlockedAchievement>>({});
   const [toasts, setToasts] = useState<ToastData[]>([]);
+  const [raidStatus, setRaidStatus] = useState<'idle' | 'voting'>('idle');
+  const [raidTarget, setRaidTarget] = useState<Station | null>(null);
+
   const statsUpdateInterval = useRef<number | null>(null);
   const alarmTimeout = useRef<number | null>(null);
   const pointsToastTimer = useRef<number>(0);
@@ -191,7 +194,7 @@ const App: React.FC = () => {
     setAllStations(defaultStations);
     setUserStations([]);
     setFavoriteStationUrls(new Set());
-    setStats({ totalTime: 0, stationPlays: {}, points: 0 });
+    setStats({ totalTime: 0, stationPlays: {}, points: 0, songHistory: [] });
     setAlarm(null);
     setSongVotes({});
     setUnlockedAchievements({});
@@ -482,18 +485,29 @@ const App: React.FC = () => {
     }
   }, [currentUser, stats, unlockedThemes]);
 
+  const handleStartRaid = (targetStation: Station) => {
+      if (!currentStation || raidStatus === 'voting') return;
+      
+      setRaidTarget(targetStation);
+      setRaidStatus('voting');
+      
+      setTimeout(() => {
+          handleSelectStation(targetStation);
+          setRaidStatus('idle');
+          setRaidTarget(null);
+          unlockAchievement('raid_leader');
+          setToasts(prev => [...prev, {
+              id: Date.now(),
+              title: "Raid Successful!",
+              message: `Now raiding ${targetStation.name}.`,
+              icon: RocketIcon,
+              type: 'raid'
+          }]);
+      }, 5000); // 5 second simulated vote
+  }
+
   const favoriteStations = useMemo(() => allStations.filter(s => s.isFavorite), [allStations]);
   
-  const mapLocation = useMemo(() => {
-    if (currentStation?.location) {
-      return { ...currentStation.location, zoom: 6 };
-    }
-    if (currentStation) {
-      return getLocationForGenre(currentStation.genre);
-    }
-    return { lat: 5.6, lng: 23.3, zoom: 4 };
-  }, [currentStation]);
-
   const handleOpenStationDetail = (station: Station) => {
     setStationForDetail(station);
     setIsStationDetailModalOpen(true);
@@ -571,8 +585,8 @@ const App: React.FC = () => {
         return <StoreView activeTheme={activeTheme} onSetTheme={handleSetTheme} onUnlockTheme={handleUnlockTheme} unlockedThemes={unlockedThemes} currentPoints={stats.points || 0}/>;
       case 'leaderboard':
         return <LeaderboardView currentUser={currentUser} userPoints={stats.points || 0} />;
-      case 'map':
-        return <MapView location={mapLocation} stations={allStations} currentStation={currentStation} onSelectStation={handleSelectStation} />;
+      case 'genre_chat':
+        return <GenreChatView allStations={allStations} onSelectStation={handleSelectStation} currentStation={currentStation} />;
       case 'explore':
       default:
         return (
@@ -620,7 +634,7 @@ const App: React.FC = () => {
             )}
           </div>
           {currentStation && (
-            <RadioPlayer station={currentStation} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(prev => !prev)} songVotes={songVotes} onVote={handleVote} onRateStation={handleRateStation} userRating={stats.stationRatings?.[currentStation.streamUrl] || 0} onOpenTippingModal={() => setTippingModalStation(currentStation)} allStations={allStations} userSongVotes={stats.songUserVotes} onSelectStation={handleSelectStation} onToggleChat={() => setIsChatOpen(p => !p)} />
+            <RadioPlayer station={currentStation} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(prev => !prev)} songVotes={songVotes} onVote={handleVote} onRateStation={handleRateStation} userRating={stats.stationRatings?.[currentStation.streamUrl] || 0} onOpenTippingModal={() => setTippingModalStation(currentStation)} allStations={allStations} userSongVotes={stats.songUserVotes} onSelectStation={handleSelectStation} onToggleChat={() => setIsChatOpen(p => !p)} onStartRaid={handleStartRaid} raidStatus={raidStatus} raidTarget={raidTarget} />
           )}
         </div>
       </div>
@@ -665,6 +679,8 @@ const App: React.FC = () => {
         .animate-slide-up { animation: slide-up 0.5s ease-out; }
         @keyframes fade-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .animate-fade-in { animation: fade-in 0.5s ease-in-out; }
+        @keyframes fade-in-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in-up { animation: fade-in-up 0.5s ease-out backwards; }
         @keyframes kenburns-a { 0%, 100% { transform: scale(1.1) translate(-2%, 2%); filter: brightness(0.9); } 50% { transform: scale(1.2) translate(2%, -2%); filter: brightness(1.1); } }
         @keyframes kenburns-b { 0%, 100% { transform: scale(1.2) translate(2%, -2%); filter: brightness(1.1); } 50% { transform: scale(1.1) translate(-2%, 2%); filter: brightness(0.9); } }
         @keyframes marquee {

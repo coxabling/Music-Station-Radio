@@ -1,6 +1,5 @@
 import React from 'react';
 import type { Station, EQBand, EQPreset, Theme, Achievement, AchievementID, LeaderboardEntry, TranslationLanguage, ListeningEvent, StationReview, CommunityEvent } from './types';
-import { getLocationForGenre } from './utils/genreToLocation';
 
 // --- Achievement Icons (using React.createElement to avoid JSX in .ts file) ---
 const PlayIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8.006v3.988a1 1 0 001.555.832l3.197-2.005a1 1 0 000-1.664L9.555 7.168z", clipRule: "evenodd" }));
@@ -16,6 +15,7 @@ export const UserIcon: React.FC<{className?: string}> = ({className = ''}) => Re
 export const StarIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {d: "M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"}));
 export const TrophyIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {fillRule:"evenodd", d: "M11.68 1.33a1 1 0 011.64 0l1.35 2.22a1 1 0 00.82.55l2.45.36a1 1 0 01.56 1.7l-1.78 1.73a1 1 0 00-.29.89l.42 2.44a1 1 0 01-1.45 1.05L12 11.45a1 1 0 00-.94 0l-2.19 1.15a1 1 0 01-1.45-1.05l.42-2.44a1 1 0 00-.29-.89L5.78 6.16a1 1 0 01.56-1.7l2.45-.36a1 1 0 00.82-.55L11.68 1.33zM10 14a1 1 0 011 1v2a1 1 0 11-2 0v-2a1 1 0 011-1zM6 16a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM14 16a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1z", clipRule: "evenodd"}));
 export const LockIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {fillRule:"evenodd", d: "M10 2a3 3 0 00-3 3v1H6a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002 2V8a2 2 0 00-2-2h-1V5a3 3 0 00-3-3zm-1 5v1h2V7a1 1 0 00-2 0z", clipRule: "evenodd"}));
+export const RocketIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M15.59 14.37a6 6 0 01-5.84 7.38v.01l-.001.001l-.001.001a5.98 5.98 0 01-5.03-1.93l-1.5-1.5a5.984 5.984 0 01-1.42-2.37l-.29-1.01a5.982 5.982 0 01-1.04-3.12 5.982 5.982 0 013.12-1.04l1.01-.29a5.984 5.984 0 012.37-1.42l1.5-1.5a5.984 5.984 0 011.93-5.03l.001-.001.001-.001.01 0a6 6 0 017.38 5.84z"}));
 
 // --- Sidebar Icons ---
 export const ExploreIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M4.5 12a7.5 7.5 0 0015 0m-15 0a7.5 7.5 0 1115 0m-15 0H3m18 0h-1.5m-15 0a7.5 7.5 0 1115 0m-15 0H3m18 0h-1.5m-15 0a7.5 7.5 0 1115 0m-15 0H3m18 0h-1.5"}));
@@ -23,7 +23,8 @@ export const HomeIcon: React.FC<{className?: string}> = ({className = ''}) => Re
 export const CommunityIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"}));
 export const StoreIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.25a.75.75 0 01-.75-.75V10.5a.75.75 0 01.75-.75h19.5a.75.75 0 01.75.75v9.75a.75.75 0 01-.75.75h-4.5m-4.5 0H9m-3.75 0H5.625m5.625 0v-7.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21m12.75 0v-7.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21"}));
 export const LeaderboardIconSidebar: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"}));
-export const MapIconSidebar: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.159.69.159 1.006 0z"}));
+export const ChatBubbleIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.76 9.76 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"}));
+export const SendIcon: React.FC<{className?: string}> = ({className}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {d: "M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"}));
 
 
 export const ACHIEVEMENTS: Record<AchievementID, Achievement> = {
@@ -39,12 +40,10 @@ export const ACHIEVEMENTS: Record<AchievementID, Achievement> = {
   'night_owl': { id: 'night_owl', name: 'Night Owl', description: 'Listen between midnight and 4 AM.', icon: MoonIcon },
   'early_bird': { id: 'early_bird', name: 'Early Bird', description: 'Listen between 5 AM and 8 AM.', icon: SunIcon },
   'party_starter': { id: 'party_starter', name: 'Party Starter', description: 'Engage with the Listening Party.', icon: SparklesIcon },
+  'raid_leader': { id: 'raid_leader', name: 'Raid Leader', description: 'Initiate your first station raid.', icon: RocketIcon },
 };
 
-// Helper to add some random jitter to coordinates
-const addJitter = (coord: number, amount: number = 0.5) => coord + (Math.random() - 0.5) * amount;
-
-const initialStations: Omit<Station, 'location'>[] = [
+const initialStations: Station[] = [
   {
     name: "CRW Radio",
     genre: "World music",
@@ -54,6 +53,7 @@ const initialStations: Omit<Station, 'location'>[] = [
     tippingUrl: "https://ko-fi.com/example_crw_radio",
     rating: 4.5,
     ratingsCount: 128,
+    location: { lat: 51.5072, lng: -0.1276 },
   },
   {
     name: "High Grade Radio",
@@ -64,6 +64,7 @@ const initialStations: Omit<Station, 'location'>[] = [
     tippingUrl: "https://ko-fi.com/example_hg_radio",
     rating: 4.8,
     ratingsCount: 256,
+    location: { lat: 18.1096, lng: -77.2975 },
   },
   {
     name: "Nam Radio",
@@ -73,6 +74,7 @@ const initialStations: Omit<Station, 'location'>[] = [
     coverArt: "https://picsum.photos/seed/namradio/200",
     rating: 4.2,
     ratingsCount: 94,
+    location: { lat: -22.9585, lng: 18.4904 },
   },
   {
     name: "Pamtengo Radio",
@@ -82,6 +84,7 @@ const initialStations: Omit<Station, 'location'>[] = [
     coverArt: "https://picsum.photos/seed/pamtengo/200",
     rating: 4.6,
     ratingsCount: 182,
+    location: { lat: 9.0820, lng: 8.6753 },
   },
   {
     name: "Nam Radio Local",
@@ -91,6 +94,7 @@ const initialStations: Omit<Station, 'location'>[] = [
     coverArt: "https://picsum.photos/seed/namradiolocal/200",
     rating: 4.0,
     ratingsCount: 55,
+    location: { lat: -22.5709, lng: 17.0836 },
   },
   {
     name: "Power Ace Radio",
@@ -100,6 +104,7 @@ const initialStations: Omit<Station, 'location'>[] = [
     coverArt: "https://picsum.photos/seed/poweraceradio/200",
     rating: 4.3,
     ratingsCount: 78,
+    location: { lat: 5.6037, lng: -0.1870 },
   },
   {
     name: "Namibian Radio",
@@ -109,6 +114,7 @@ const initialStations: Omit<Station, 'location'>[] = [
     coverArt: "https://picsum.photos/seed/namibianradio/200",
     rating: 3.9,
     ratingsCount: 43,
+    location: { lat: -22.5594, lng: 17.0872 },
   },
   {
     name: "Global Groove Radio",
@@ -118,20 +124,11 @@ const initialStations: Omit<Station, 'location'>[] = [
     coverArt: "https://picsum.photos/seed/globalgroove/200",
     rating: 4.7,
     ratingsCount: 201,
+    location: { lat: 34.0522, lng: -118.2437 },
   }
 ];
 
-// Process stations to add locations
-export const stations: Station[] = initialStations.map(station => {
-    const baseLocation = getLocationForGenre(station.genre);
-    return {
-        ...station,
-        location: {
-            lat: addJitter(baseLocation.lat, 2.5),
-            lng: addJitter(baseLocation.lng, 2.5),
-        }
-    }
-});
+export const stations: Station[] = initialStations;
 
 
 // Constants for the Audio Equalizer

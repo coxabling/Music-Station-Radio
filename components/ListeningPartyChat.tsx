@@ -18,6 +18,16 @@ const botMessages = [
 
 const CloseIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>;
 
+// FIX: Add helper function to generate avatar info for chat messages
+const USER_COLORS = ['#34d399', '#fbbf24', '#f87171', '#60a5fa', '#a78bfa', '#f472b6'];
+const getAvatarInfo = (author: string): {initials: string, color: string} => {
+    if (author === 'You') return { initials: 'You', color: 'var(--accent-color)' };
+    if (author === 'RadioBot') return { initials: 'Bot', color: '#9ca3af' };
+    const initials = author.replace('Guest', 'G');
+    const colorIndex = parseInt(author.replace('Guest', ''), 10) % USER_COLORS.length;
+    return { initials, color: USER_COLORS[colorIndex] };
+}
+
 
 export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station, isOpen, onClose }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -32,20 +42,29 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
 
     // Bot messages and welcome logic
     useEffect(() => {
+        // FIX: Add missing avatarColor and initials properties to the message object.
+        const botInfo = getAvatarInfo('RadioBot');
         setMessages([{
             id: Date.now(),
             author: 'RadioBot',
             text: `Welcome to the Listening Party for ${station.name}!`,
             isBot: true,
+            avatarColor: botInfo.color,
+            initials: botInfo.initials,
         }]);
 
         // Simulate other users chatting
         const interval = setInterval(() => {
+            // FIX: Add missing avatarColor and initials properties to the message object.
+            const guestName = 'Guest' + Math.floor(Math.random() * 100);
+            const guestInfo = getAvatarInfo(guestName);
             setMessages(prev => [...prev, {
                 id: Date.now(),
-                author: 'Guest' + Math.floor(Math.random() * 100),
+                author: guestName,
                 text: botMessages[Math.floor(Math.random() * botMessages.length)],
-                isBot: true
+                isBot: true,
+                avatarColor: guestInfo.color,
+                initials: guestInfo.initials
             }]);
         }, 8000 + Math.random() * 5000); // every 8-13 seconds
 
@@ -55,10 +74,14 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
     const handleSendMessage = (e: React.FormEvent) => {
         e.preventDefault();
         if (input.trim()) {
+            // FIX: Add missing avatarColor and initials properties to the message object.
+            const userInfo = getAvatarInfo('You');
             setMessages(prev => [...prev, {
                 id: Date.now(),
                 author: 'You',
                 text: input.trim(),
+                avatarColor: userInfo.color,
+                initials: userInfo.initials,
             }]);
             setInput('');
         }

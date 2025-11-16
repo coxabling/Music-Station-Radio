@@ -29,6 +29,8 @@ export interface ChatMessage {
   author: string;
   text: string;
   isBot?: boolean;
+  avatarColor: string;
+  initials: string;
 }
 
 // Types for Visualizer Customization
@@ -82,7 +84,7 @@ export interface ListeningStats {
   currentStreak?: number;
   maxStreak?: number;
   genresPlayed?: string[];
-  songHistory?: SongHistoryItem[];
+  songHistory: SongHistoryItem[];
   stationReviews?: Record<string, StationReview[]>; // { [stationUrl]: reviews[] }
 }
 
@@ -119,7 +121,8 @@ export type AchievementID =
   | 'first_listen' | 'one_hour' | 'ten_hours'
   | 'curator' | 'explorer_3' | 'explorer_5'
   | 'streak_3' | 'streak_7' | 'station_submit'
-  | 'night_owl' | 'early_bird' | 'party_starter';
+  | 'night_owl' | 'early_bird' | 'party_starter'
+  | 'raid_leader';
 
 export interface Achievement {
   id: AchievementID;
@@ -139,7 +142,7 @@ export interface ToastData {
   title: string;
   message?: string;
   icon: React.FC<{className?: string}>;
-  type?: 'achievement' | 'points' | 'milestone' | 'theme_unlocked' | 'login' | 'error';
+  type?: 'achievement' | 'points' | 'milestone' | 'theme_unlocked' | 'login' | 'error' | 'raid';
 }
 
 // Type for Leaderboard
@@ -175,7 +178,7 @@ export interface ListeningEvent {
 }
 
 // For unified sidebar navigation
-export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'map';
+export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat';
 
 // Represents the complete data structure for a single user, to be stored in the database.
 export interface UserData {

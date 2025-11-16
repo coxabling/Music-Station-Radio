@@ -13,36 +13,36 @@ const LogoutIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 
 
 export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, points }) => {
   return (
-    <header className="bg-black/30 backdrop-blur-sm p-4 border-b border-gray-700/50 flex-shrink-0 h-[68px]">
+    <header className="bg-black/40 backdrop-blur-lg p-3 border-b border-gray-700/50 flex-shrink-0 h-[68px] z-20 relative">
       <div className="container mx-auto flex items-center justify-between">
-        <div className="w-1/3 flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-1">
            {currentUser && (
-            <div className="flex items-center gap-4 text-gray-300">
-                <div className="flex items-center gap-2">
-                    <UserIcon className="h-6 w-6" />
-                    <span className="font-semibold text-sm hidden md:inline">{currentUser.username}</span>
+            <div className="flex items-center gap-4 text-gray-300 bg-gray-800/50 border border-gray-700/50 rounded-full pr-4 transition-all hover:border-gray-600">
+                <div className="flex items-center gap-2 bg-gray-700/50 rounded-full p-1.5 pr-3">
+                    <div className="w-8 h-8 rounded-full bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center">
+                        <UserIcon className="h-5 w-5 text-cyan-300" />
+                    </div>
+                    <span className="font-semibold text-sm hidden md:inline text-white">{currentUser.username}</span>
                 </div>
-                <div className="flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 rounded-full px-2.5 py-1 text-xs font-mono">
-                    <StarIcon className="h-3 w-3" />
+                <div className="flex items-center gap-1.5 text-yellow-300 text-sm font-mono">
+                    <StarIcon className="h-4 w-4" />
                     <span>{points.toLocaleString()}</span>
                 </div>
             </div>
           )}
         </div>
-        <div className="w-1/3 flex items-center justify-center">
+        <div className="flex-1 flex items-center justify-center">
           <MusicIcon />
           <h1 className="ml-3 text-xl font-bold font-orbitron tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-color)] to-purple-500">
             MS RADIO
           </h1>
         </div>
-        <div className="w-1/3 flex items-center justify-end gap-2 sm:gap-4 text-gray-400">
+        <div className="flex-1 flex items-center justify-end gap-2 sm:gap-4 text-gray-400">
             {currentUser && (
-                <>
-                    <button onClick={onLogout} className="flex items-center gap-1.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 border border-red-500/50 rounded-full py-1.5 px-3 transition-colors duration-300 text-sm font-semibold" title="Logout">
-                        <LogoutIcon />
-                        <span className="hidden lg:inline">Logout</span>
-                    </button>
-                </>
+                <button onClick={onLogout} className="flex items-center gap-1.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 border border-red-500/50 rounded-full py-1.5 px-3 transition-colors duration-300 text-sm font-semibold" title="Logout">
+                    <LogoutIcon />
+                    <span className="hidden lg:inline">Logout</span>
+                </button>
             )}
         </div>
       </div>

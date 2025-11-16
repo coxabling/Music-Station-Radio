@@ -8,7 +8,8 @@ import { ShareModal } from './ShareModal';
 import { LiveReactions } from './LiveReactions';
 import { SimilarStations } from './SimilarStations';
 import { Marquee } from './Marquee';
-import { EQ_BANDS, EQ_PRESETS } from '../constants';
+import { RaidModal } from './RaidModal';
+import { EQ_BANDS, EQ_PRESETS, RocketIcon } from '../constants';
 import { BuyNowModal } from './BuyNowModal';
 
 // --- Icon Components ---
@@ -46,10 +47,13 @@ interface RadioPlayerProps {
   onSelectStation: (station: Station) => void;
   userSongVotes?: Record<string, 'like' | 'dislike'>;
   onToggleChat: () => void;
+  onStartRaid: (targetStation: Station) => void;
+  raidStatus: 'idle' | 'voting';
+  raidTarget: Station | null;
 }
 
 export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
-  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat } = props;
+  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget } = props;
 
   const [isPlaying, setIsPlaying] = useState(true);
   const [volume, setVolume] = useState(0.75);
@@ -57,6 +61,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isEqModalOpen, setIsEqModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isRaidModalOpen, setIsRaidModalOpen] = useState(false);
   const [isSimilarStationsOpen, setIsSimilarStationsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isBuyNowModalOpen, setIsBuyNowModalOpen] = useState(false);
@@ -152,29 +157,60 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => { e.currentTarget.src = station.coverArt; };
 
-  const ControlButton: React.FC<{icon: React.ReactNode, label: string, onClick?: () => void, hasFeature?: boolean}> = ({icon, label, onClick, hasFeature = true}) => {
-    if(!hasFeature) return null;
+  const ControlButton: React.FC<{icon: React.ReactNode; label: string; onClick?: () => void; hasFeature?: boolean}> = ({icon, label, onClick, hasFeature = true}) => {
+    if(!hasFeature) return <div className="w-16 h-16" />;
     return (
-        <button onClick={onClick} className="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors text-xs w-16">
+        <button 
+            onClick={onClick} 
+            className="flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 transition-all text-xs w-16 h-16 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" 
+            disabled={!hasFeature}
+            title={label}
+        >
             {icon}
-            <span>{label}</span>
         </button>
     )
   }
   
-  const userVote = isSong ? userSongVotes?.[nowPlaying.songId] : undefined;
+  const userVote = isSong && nowPlaying.songId ? userSongVotes?.[nowPlaying.songId] : undefined;
 
   const renderContent = () => (
     <>
-    <div className={`fixed inset-0 bg-gray-900/50 backdrop-blur-2xl z-50 flex flex-col p-4 transition-transform duration-500 ease-in-out ${isExpanded ? 'translate-y-0' : 'translate-y-full'}`}>
-      <div className="flex-shrink-0 text-center relative">
+    <div 
+      className={`fixed inset-0 bg-gray-900 z-50 flex flex-col p-4 transition-transform duration-500 ease-in-out ${isExpanded ? 'translate-y-0' : 'translate-y-full'}`}
+      style={{
+        backgroundImage: 'radial-gradient(ellipse at bottom, var(--accent-color-rgb, 103, 232, 249) 0.1%, transparent 40%)'
+      }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-black/50"></div>
+      <div className="flex-shrink-0 text-center relative z-10">
         <button onClick={() => setIsExpanded(false)} className="absolute top-0 left-0 text-gray-400 hover:text-white"><ChevronDownIcon/></button>
-        <p className="text-sm font-semibold">NOW PLAYING</p>
+        <p className="text-sm font-semibold uppercase tracking-wider">Now Playing</p>
         <p className="text-xs text-gray-400">{station.name}</p>
       </div>
-      <div className="flex-grow flex flex-col items-center justify-center gap-4 text-center px-4">
-        <img src={nowPlaying?.albumArt || station.coverArt} alt={nowPlaying?.title || station.name} className="w-full max-w-xs aspect-square rounded-2xl shadow-2xl shadow-black/50 object-cover animate-fade-in transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-[0_0_25px_var(--accent-color)]" key={nowPlaying?.albumArt || station.name} onError={handleImageError} />
-        <div className="w-full max-w-xs">
+      <div className="relative flex-grow flex flex-col items-center justify-center gap-4 text-center px-4 z-10">
+        {raidStatus === 'voting' && raidTarget && (
+          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10 animate-fade-in">
+            <p className="text-lg font-semibold text-purple-400">RAID IN PROGRESS</p>
+            <p className="mt-2 text-2xl font-bold text-white max-w-xs truncate">Target: {raidTarget.name}</p>
+            <div className="w-64 bg-gray-700 rounded-full h-2.5 mt-4 overflow-hidden">
+              <div className="bg-gradient-to-r from-purple-500 to-cyan-400 h-2.5 rounded-full animate-raid-progress"></div>
+            </div>
+            <p className="text-xs text-gray-400 mt-2 animate-pulse">Gathering raiders...</p>
+          </div>
+        )}
+        <div 
+            className="w-full max-w-xs aspect-square transition-all duration-300 ease-in-out"
+            style={{ filter: `drop-shadow(0 10px 25px rgba(var(--accent-color-rgb), 0.3))`}}
+        >
+            <img 
+                src={nowPlaying?.albumArt || station.coverArt} 
+                alt={nowPlaying?.title || station.name} 
+                className="w-full h-full rounded-2xl shadow-2xl shadow-black/50 object-cover animate-fade-in" 
+                key={nowPlaying?.albumArt || station.name} 
+                onError={handleImageError} 
+            />
+        </div>
+        <div className="w-full max-w-xs mt-4">
           <Marquee text={nowPlaying?.title || station.name} className="text-2xl font-bold text-white" />
           <Marquee text={nowPlaying?.artist || 'Live Stream'} className="text-lg text-gray-300" />
         </div>
@@ -197,20 +233,8 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                 <ThumbDownIcon className="w-7 h-7" />
             </button>
         </div>
-
-        <div className="w-full max-w-xs h-16 flex items-center justify-center">
-            {isSong && (
-                <button 
-                    onClick={() => setIsBuyNowModalOpen(true)} 
-                    className="w-full flex items-center justify-center gap-2 bg-gray-200 hover:bg-white text-gray-800 font-bold py-3 px-4 rounded-md transition-all duration-300 shadow-lg shadow-white/20 hover:shadow-white/40"
-                >
-                    <ShoppingCartIcon className="w-6 h-6"/>
-                    Buy Song
-                </button>
-            )}
-        </div>
       </div>
-      <div className="flex-shrink-0 flex flex-col gap-4">
+      <div className="flex-shrink-0 flex flex-col gap-4 z-10">
         <div className="w-full max-w-sm mx-auto"><LiveReactions/></div>
         <div className="w-full h-16"><Visualizer analyser={analyserRef.current} isPlaying={isPlaying} /></div>
         <div className="flex items-center justify-center gap-8 text-white">
@@ -220,17 +244,13 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
           </button>
           <button onClick={onNextStation} className="text-gray-300 hover:text-white transition-colors"><ForwardIcon /></button>
         </div>
-        <div className="w-full max-w-xs mx-auto">
-            <div className="flex items-center justify-around text-gray-400 relative">
+        <div className="w-full max-w-sm mx-auto">
+            <div className="grid grid-cols-5 text-gray-400 relative gap-2">
                 <ControlButton icon={<InfoIcon/>} label="Info" onClick={() => setIsInfoModalOpen(true)} hasFeature={isSong}/>
                 <ControlButton icon={<EqIcon/>} label="Equalizer" onClick={() => setIsEqModalOpen(true)}/>
                 <ControlButton icon={<ChatIcon/>} label="Chat" onClick={onToggleChat}/>
-                <div className="relative">
-                    <ControlButton icon={<SimilarIcon/>} label="Similar" onClick={() => setIsSimilarStationsOpen(prev => !prev)}/>
-                    {isSimilarStationsOpen && <SimilarStations isOpen={isSimilarStationsOpen} onClose={() => setIsSimilarStationsOpen(false)} station={station} allStations={allStations} onSelectStation={(s) => { setIsExpanded(false); props.onSelectStation(s); }} />}
-                </div>
                 <ControlButton icon={<ShareIcon/>} label="Share" onClick={() => setIsShareModalOpen(true)} hasFeature={isSong}/>
-                <ControlButton icon={<TipIcon/>} label="Tip Jar" onClick={onOpenTippingModal} hasFeature={!!station.tippingUrl}/>
+                <ControlButton icon={<RocketIcon className="h-5 w-5"/>} label="Raid" onClick={() => setIsRaidModalOpen(true)} hasFeature={raidStatus === 'idle'} />
             </div>
         </div>
       </div>
@@ -245,10 +265,10 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                 </div>
             </div>
             <div className="flex items-center gap-2 ml-4">
-                 <button onClick={(e) => { e.stopPropagation(); isSong && onVote(nowPlaying.songId, 'like'); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} ${userVote === 'like' ? 'text-green-400 drop-shadow-[0_0_4px_rgba(74,222,128,0.8)]' : 'text-gray-400 hover:text-white'}`} aria-label="Like song">
+                 <button onClick={(e) => { e.stopPropagation(); if(isSong) onVote(nowPlaying.songId, 'like'); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} ${userVote === 'like' ? 'text-green-400 drop-shadow-[0_0_4px_rgba(74,222,128,0.8)]' : 'text-gray-400 hover:text-white'}`} aria-label="Like song">
                     <ThumbUpIcon className="w-6 h-6"/>
                 </button>
-                 <button onClick={(e) => { e.stopPropagation(); isSong && onVote(nowPlaying.songId, 'dislike'); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} ${userVote === 'dislike' ? 'text-red-400 drop-shadow-[0_0_4px_rgba(248,113,113,0.8)]' : 'text-gray-400 hover:text-white'}`} aria-label="Dislike song">
+                 <button onClick={(e) => { e.stopPropagation(); if(isSong) onVote(nowPlaying.songId, 'dislike'); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} ${userVote === 'dislike' ? 'text-red-400 drop-shadow-[0_0_4px_rgba(248,113,113,0.8)]' : 'text-gray-400 hover:text-white'}`} aria-label="Dislike song">
                     <ThumbDownIcon className="w-6 h-6"/>
                 </button>
                 <button onClick={(e) => { e.stopPropagation(); setIsBuyNowModalOpen(true); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} text-gray-400 hover:text-white`} aria-label="Buy song">
@@ -267,6 +287,15 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
             </div>
         </div>
     </div>
+    <style>{`
+      @keyframes raid-progress {
+        from { transform: translateX(-100%); }
+        to { transform: translateX(0); }
+      }
+      .animate-raid-progress {
+        animation: raid-progress 5s linear forwards;
+      }
+    `}</style>
     </>
   );
 
@@ -278,6 +307,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
       <EqualizerModal isOpen={isEqModalOpen} onClose={() => setIsEqModalOpen(false)} settings={eqSettings} onSettingsChange={setEqSettings} />
       <ShareModal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} nowPlaying={nowPlaying} station={station} />
       <BuyNowModal isOpen={isBuyNowModalOpen} onClose={() => setIsBuyNowModalOpen(false)} nowPlaying={nowPlaying} />
+      <RaidModal isOpen={isRaidModalOpen} onClose={() => setIsRaidModalOpen(false)} allStations={allStations} currentStation={station} onStartRaid={onStartRaid} />
     </>
   );
 };
