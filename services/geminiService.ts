@@ -58,7 +58,7 @@ const getSongInfo = async (artist: string, title: string): Promise<string> => {
     return response.text;
   } catch (error) {
     console.error("Error getting song info from Gemini:", error);
-    return "Could not retrieve information at this time. Please try again later.";
+    throw error;
   }
 };
 
@@ -74,7 +74,7 @@ const fetchLyrics = async (artist: string, title: string): Promise<string> => {
     return response.text;
   } catch (error) {
     console.error("Error getting lyrics from Gemini:", error);
-    return "Could not retrieve lyrics at this time. Please try again later.";
+    throw error;
   }
 };
 
@@ -90,7 +90,7 @@ const getGenreInfo = async (genre: string): Promise<string> => {
     return response.text;
   } catch (error) {
     console.error("Error getting genre info from Gemini:", error);
-    return "Could not retrieve information about this genre at this time. Please try again later.";
+    throw error;
   }
 };
 
@@ -106,7 +106,7 @@ const translateLyrics = async (lyrics: string, language: string): Promise<string
     return response.text;
   } catch (error) {
     console.error(`Error translating lyrics to ${language} from Gemini:`, error);
-    return "Could not translate the lyrics at this time. Please try again later.";
+    throw error;
   }
 };
 
@@ -131,7 +131,7 @@ const getCommunityHitsSummary = async (songs: SongVote[]): Promise<string> => {
     return response.text;
   } catch (error) {
     console.error("Error getting community hits summary from Gemini:", error);
-    return "Having trouble reading the room... Check back in a bit for the community vibe!";
+    throw error;
   }
 };
 

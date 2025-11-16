@@ -48,9 +48,15 @@ export const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose, n
       
       const fetchInitialInfo = async () => {
         setIsInfoLoading(true);
-        const info = await getSongInfo(nowPlaying.artist, nowPlaying.title);
-        setInfoContent(info);
-        setIsInfoLoading(false);
+        try {
+          const info = await getSongInfo(nowPlaying.artist, nowPlaying.title);
+          setInfoContent(info);
+        } catch (error) {
+          console.error("Failed to fetch song info:", error);
+          setInfoContent("Could not retrieve information at this time. Please try again later.");
+        } finally {
+          setIsInfoLoading(false);
+        }
       };
       
       fetchInitialInfo();
@@ -61,18 +67,30 @@ export const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose, n
       if (!nowPlaying || lyricsContent) return;
       
       setIsLyricsLoading(true);
-      const lyrics = await fetchLyrics(nowPlaying.artist, nowPlaying.title);
-      setLyricsContent(lyrics.trim());
-      setIsLyricsLoading(false);
+      try {
+        const lyrics = await fetchLyrics(nowPlaying.artist, nowPlaying.title);
+        setLyricsContent(lyrics.trim());
+      } catch (error) {
+        console.error("Failed to fetch lyrics:", error);
+        setLyricsContent("Could not retrieve lyrics at this time. Please try again later.");
+      } finally {
+        setIsLyricsLoading(false);
+      }
   }
   
   const handleFetchTranslation = async () => {
     if (!lyricsContent || lyricsContent === 'LYRICS_NOT_FOUND') return;
     setIsTranslating(true);
     setTranslatedLyrics('');
-    const translation = await translateLyrics(lyricsContent, targetLanguage);
-    setTranslatedLyrics(translation.trim());
-    setIsTranslating(false);
+    try {
+      const translation = await translateLyrics(lyricsContent, targetLanguage);
+      setTranslatedLyrics(translation.trim());
+    } catch (error) {
+      console.error("Failed to fetch translation:", error);
+      setTranslatedLyrics("Could not translate the lyrics at this time. Please try again later.");
+    } finally {
+      setIsTranslating(false);
+    }
   };
   
   const handleTabChange = (tab: ActiveTab) => {

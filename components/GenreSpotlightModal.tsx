@@ -24,9 +24,15 @@ export const GenreSpotlightModal: React.FC<GenreSpotlightModalProps> = ({ isOpen
     if (isOpen && genre) {
       const fetchGenreInfo = async () => {
         setIsLoading(true);
-        const info = await getGenreInfo(genre);
-        setContent(info);
-        setIsLoading(false);
+        try {
+          const info = await getGenreInfo(genre);
+          setContent(info);
+        } catch (error) {
+          console.error("Failed to fetch genre info:", error);
+          setContent("Could not retrieve information about this genre at this time. Please try again later.");
+        } finally {
+          setIsLoading(false);
+        }
       };
       
       fetchGenreInfo();
