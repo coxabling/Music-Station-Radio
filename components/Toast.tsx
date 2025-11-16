@@ -29,6 +29,8 @@ const Toast: React.FC<ToastProps> = ({ title, message, icon: Icon, type = 'achie
                 return 'bg-gradient-to-br from-purple-800/80 to-indigo-900/80 border-purple-500/50';
             case 'login':
                 return 'bg-gradient-to-br from-cyan-800/80 to-sky-900/80 border-cyan-500/50';
+            case 'error':
+                return 'bg-gradient-to-br from-red-800/80 to-rose-900/80 border-red-500/50';
             default:
                 return 'bg-gray-800/80 border-gray-600/50';
         }

@@ -13,15 +13,16 @@ interface StationListProps {
   songVotes: Record<string, SongVote>;
   onOpenGenreSpotlight: (genre: string) => void;
   onOpenDetailModal: (station: Station) => void;
+  onPlayFromCommunity: (songId: string) => void;
 }
 
 const PlayIndicator: React.FC = () => ( <div className="absolute top-2 right-2 bg-[var(--accent-color)] rounded-full p-1 shadow-lg animate-pulse"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-black" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.546l-6.38 8.195A2 2 0 005.46 15H14.54a2 2 0 001.84-3.259L10 3.546z" transform="rotate(90 10 10)" /></svg></div>);
 const SearchIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>;
 const AddIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" /></svg>;
-const HeartIcon: React.FC<{isFavorite: boolean}> = ({ isFavorite }) => <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 transition-all duration-200 ${isFavorite ? 'text-pink-500 fill-current' : 'text-white/70'}`} viewBox="0 0 20 20" fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.5}><path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" /></svg>;
+const HeartIcon: React.FC<{isFavorite: boolean; className?: string}> = ({ isFavorite, className = 'h-6 w-6' }) => <svg xmlns="http://www.w3.org/2000/svg" className={`${className} transition-all duration-200 ${isFavorite ? 'text-pink-500 fill-current' : 'text-white/70'}`} viewBox="0 0 20 20" fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.5}><path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" /></svg>;
 const GridIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>;
 const ListIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>;
-const ThumbUpIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333V17a1 1 0 001 1h6.364a1 1 0 00.942-.671l1.757-6.327a1 1 0 00-.942-1.329H13V4.5a1.5 1.5 0 00-3 0v5.833H6z" /></svg>;
+const RadioIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" /></svg>;
 const SortIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9M3 12h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" /></svg>;
 const InfoIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>;
 
@@ -32,7 +33,7 @@ const TabButton: React.FC<{label: string; isActive: boolean; onClick: () => void
 
 type SortMode = 'name' | 'rating';
 
-export const StationList: React.FC<StationListProps> = ({ stations, currentStation, onSelectStation, searchQuery, onSearchChange, onOpenSubmitModal, onToggleFavorite, songVotes, onOpenGenreSpotlight, onOpenDetailModal }) => {
+export const StationList: React.FC<StationListProps> = ({ stations, currentStation, onSelectStation, searchQuery, onSearchChange, onOpenSubmitModal, onToggleFavorite, songVotes, onOpenGenreSpotlight, onOpenDetailModal, onPlayFromCommunity }) => {
   const [viewMode, setViewMode] = useState<LayoutMode>('grid');
   const [activeTab, setActiveTab] = useState<'all' | 'favorites' | 'community'>('all');
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
@@ -90,7 +91,7 @@ export const StationList: React.FC<StationListProps> = ({ stations, currentStati
             <TabButton label="Community Hits" isActive={activeTab === 'community'} onClick={() => setActiveTab('community')} />
         </div>
         <div className="flex items-center gap-2">
-            {activeTab !== 'community' && (
+            {activeTab === 'all' && (
                 <div className="relative">
                     <select value={sortMode} onChange={e => setSortMode(e.target.value as SortMode)} className="bg-gray-800/50 border border-gray-700 rounded-full py-2 pl-8 pr-4 text-sm text-white appearance-none focus:outline-none focus:ring-1 focus:ring-[var(--accent-color)]">
                         <option value="rating">Sort by Rating</option>
@@ -99,11 +100,13 @@ export const StationList: React.FC<StationListProps> = ({ stations, currentStati
                     <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"><SortIcon/></div>
                 </div>
             )}
-            <div className="flex items-center gap-1 p-1 bg-gray-800/50 rounded-full border border-gray-700"><button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-full transition-colors ${viewMode === 'grid' ? 'bg-[var(--accent-color)] text-black' : 'text-gray-400 hover:bg-gray-700'}`}><GridIcon /></button><button onClick={() => setViewMode('list')} className={`p-1.5 rounded-full transition-colors ${viewMode === 'list' ? 'bg-[var(--accent-color)] text-black' : 'text-gray-400 hover:bg-gray-700'}`}><ListIcon /></button></div>
+            {activeTab !== 'favorites' && activeTab !== 'community' && (
+                <div className="flex items-center gap-1 p-1 bg-gray-800/50 rounded-full border border-gray-700"><button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-full transition-colors ${viewMode === 'grid' ? 'bg-[var(--accent-color)] text-black' : 'text-gray-400 hover:bg-gray-700'}`}><GridIcon /></button><button onClick={() => setViewMode('list')} className={`p-1.5 rounded-full transition-colors ${viewMode === 'list' ? 'bg-[var(--accent-color)] text-black' : 'text-gray-400 hover:bg-gray-700'}`}><ListIcon /></button></div>
+            )}
         </div>
       </div>
       
-      {activeTab !== 'community' && (
+      {activeTab === 'all' && (
         <div className="mb-6 flex flex-wrap items-center gap-2">
           {genres.map(genre => {
               const isActive = (!selectedGenre && genre === 'All') || selectedGenre === genre;
@@ -121,22 +124,46 @@ export const StationList: React.FC<StationListProps> = ({ stations, currentStati
           )})}
         </div>
       )}
-
+      
       {activeTab === 'community' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {communityHits.map((song) => (
             <div key={song.id} className="relative group bg-gray-800/50 ring-2 ring-gray-700/50 rounded-lg overflow-hidden shadow-lg" style={{ aspectRatio: '1 / 1' }}>
                 <img src={song.albumArt} alt={song.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-colors duration-300 p-4 flex flex-col justify-end">
+                <div className="absolute inset-0 bg-black/60 p-4 flex flex-col justify-end">
                     <h3 className="font-bold text-lg text-white truncate" title={song.title}>{song.title}</h3>
                     <p className="text-xs text-gray-300 truncate" title={song.artist}>{song.artist}</p>
-                    <div className="flex items-center gap-2 text-xs mt-2 text-green-300 font-mono">
-                        <ThumbUpIcon /> {song.likes}
-                    </div>
+                </div>
+                <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <button onClick={() => onPlayFromCommunity(song.id)} className="flex items-center gap-2 bg-cyan-500/80 hover:bg-cyan-500 text-black font-bold py-2 px-4 rounded-full transition-colors transform hover:scale-105">
+                        <RadioIcon/> Find Station
+                    </button>
                 </div>
             </div>
           ))}
         </div>
+      ) : activeTab === 'favorites' ? (
+         displayedStations.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {displayedStations.map((station, index) => (
+                    <div key={station.streamUrl} className="station-card-animate bg-gray-800/50 rounded-lg p-4 flex flex-col items-center text-center transition-all duration-300 hover:shadow-[var(--accent-color)]/30 hover:ring-[var(--accent-color)]/50 ring-2 ring-gray-700/50" style={{ animationDelay: `${index * 30}ms`}}>
+                        <div className="relative w-32 h-32 mb-4">
+                            <img src={station.coverArt} alt={station.name} className="w-full h-full object-cover rounded-lg shadow-lg" />
+                            <button onClick={() => onToggleFavorite(station)} className="absolute -top-2 -right-2 p-1.5 bg-black/60 rounded-full transition-colors hover:bg-black/80"><HeartIcon isFavorite={!!station.isFavorite} className="w-5 h-5"/></button>
+                        </div>
+                        <h3 className="font-bold text-white w-full truncate">{station.name}</h3>
+                        <p className="text-xs text-gray-400 w-full truncate">{station.genre}</p>
+                        <button onClick={() => onSelectStation(station)} className="mt-4 w-full bg-[var(--accent-color)] text-black font-bold py-2 rounded-md hover:opacity-80 transition-opacity">Tune In</button>
+                    </div>
+                ))}
+            </div>
+         ) : (
+             <div className="text-center text-gray-400 py-16">
+                 <HeartIcon isFavorite={false} className="h-16 w-16 mx-auto text-gray-600"/>
+                 <p className="text-lg font-semibold mt-4">No Favorite Stations Yet</p>
+                 <p className="text-sm mt-1">Click the heart icon on any station to add it here.</p>
+            </div>
+         )
       ) : displayedStations.length > 0 ? (
         viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
@@ -178,8 +205,10 @@ export const StationList: React.FC<StationListProps> = ({ stations, currentStati
         )
       ) : (
         <div className="text-center text-gray-400 py-10">
-          <p className="text-lg font-semibold">{activeTab === 'favorites' ? 'No Favorite Stations Yet' : 'No Stations Found'}</p>
-          <p className="text-sm mt-1">{activeTab === 'favorites' ? 'Click the heart icon on a station to add it.' : `Try adjusting your search for "${searchQuery}"`}</p>
+          {/* Fix: This block is only rendered when activeTab is 'all' and displayedStations is empty. */}
+          {/* The conditional check for 'favorites' was incorrect and redundant. */}
+          <p className="text-lg font-semibold">No Stations Found</p>
+          <p className="text-sm mt-1">{`Try adjusting your search for "${searchQuery}"`}</p>
         </div>
       )}
     </div>

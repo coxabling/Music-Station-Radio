@@ -139,7 +139,7 @@ export interface ToastData {
   title: string;
   message?: string;
   icon: React.FC<{className?: string}>;
-  type?: 'achievement' | 'points' | 'milestone' | 'theme_unlocked' | 'login';
+  type?: 'achievement' | 'points' | 'milestone' | 'theme_unlocked' | 'login' | 'error';
 }
 
 // Type for Leaderboard
@@ -174,6 +174,9 @@ export interface ListeningEvent {
     endTime: string; // ISO date string
 }
 
+// For unified sidebar navigation
+export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'map';
+
 // Represents the complete data structure for a single user, to be stored in the database.
 export interface UserData {
     stats: ListeningStats;
@@ -184,10 +187,8 @@ export interface UserData {
     favoriteStationUrls: string[];
     activeTheme: ThemeName;
     unlockedThemes: ThemeName[];
+    activeView?: ActiveView;
 }
-
-// For unified sidebar navigation
-export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'map';
 
 // For community feed
 export interface CommunityEvent {

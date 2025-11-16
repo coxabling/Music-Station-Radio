@@ -5,11 +5,11 @@ import { Visualizer } from './Visualizer';
 import { SongInfoModal } from './SongInfoModal';
 import { EqualizerModal } from './EqualizerModal';
 import { ShareModal } from './ShareModal';
-import { StarRating } from './StarRating';
 import { LiveReactions } from './LiveReactions';
 import { SimilarStations } from './SimilarStations';
 import { Marquee } from './Marquee';
 import { EQ_BANDS, EQ_PRESETS } from '../constants';
+import { BuyNowModal } from './BuyNowModal';
 
 // --- Icon Components ---
 const PlayIcon = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full"><path d="M8 5v14l11-7z"></path></svg>;
@@ -28,12 +28,7 @@ const ShareIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w
 const VolumeUpIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>;
 const VolumeOffIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clipRule="evenodd" /><path d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" /></svg>;
 const ChatIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>;
-const AmazonIcon: React.FC<{className?: string}> = ({className}) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-        <path d="M20.95 13.62c-1.1-1.3-2.85-2.02-4.88-2.02-2.58 0-4.58 1.58-4.58 3.93 0 1.63.85 2.93 2.15 3.65.58.3 1.25.48 1.95.48 1.98 0 3.73-.9 4.88-2.33l.28-.35c.35-.45.3-.8-.15-.95-.45-.15-.8-.05-.95.15l-.28.33c-.85 1.05-2.18 1.65-3.63 1.65-.53 0-1.03-.13-1.45-.38-.85-.5-1.3-1.35-1.3-2.45 0-1.78 1.43-2.93 3.38-2.93 1.55 0 2.85.65 3.63 1.48l-2.45.83c-.53.15-.8.65-.65 1.1.15.5.65.8 1.1.65l3.8-1.3c.5-.15.8-.65.65-1.1l-.1-.36Zm-3.08-5.75c-.2-.2-.5-.2-.7 0l-1.43 1.4-1.4-1.4c-.2-.2-.5-.2-.7 0-.2.2-.2.5 0 .7l1.4 1.4-1.4 1.4c-.2.2-.2.5 0 .7.1.1.25.15.35.15s.25-.05.35-.15l1.4-1.4 1.43 1.4c.1.1.25.15.35.15s.25-.05.35-.15c.2-.2.2-.5 0-.7l-1.4-1.4 1.4-1.4c.2-.2.2-.5 0-.7Z" />
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm7.23 16.95C17.58 20.3 15.1 21 12.55 21c-2.85 0-5.4-1-7.25-2.73-1.55-1.43-2.6-3.2-3.05-5.18-.1-.4-.2-1.3-.2-1.45l.03-1.35c.1-2 .78-3.9 1.9-5.5.15-.2.35-.35.55-.45 1.5-1.05 3.3-1.6 5.15-1.7.2-.03.4-.03.6-.03.7 0 1.4.05 2.08.15.3.05.5.1.7.15l2.45.5c.2.05.4.1.55.15.6.15 1.15.35 1.7.6.15.1.3.15.45.25.55.3 1.05.7 1.5 1.1.4.35.75.8 1.05 1.25.3.45.55.95.78 1.5.05.1.1.2.15.3.15.35.3.7.4 1.1.15.55.25 1.15.28 1.75.03.2.03.4.03.6.03.8-.08 1.55-.2 2.3-.05.3-.1.55-.18.8-.05.15-.1.3-.15.45Z" />
-    </svg>
-);
+const ShoppingCartIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" /></svg>;
 
 interface RadioPlayerProps {
   station: Station;
@@ -64,6 +59,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isSimilarStationsOpen, setIsSimilarStationsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isBuyNowModalOpen, setIsBuyNowModalOpen] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -155,14 +151,6 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
   }, [eqSettings]);
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => { e.currentTarget.src = station.coverArt; };
-  
-  const handleBuyNow = useCallback(() => {
-    if (!isSong || !nowPlaying) return;
-    const affiliateTag = 'coxabling0e-21';
-    const searchQuery = encodeURIComponent(`${nowPlaying.artist} ${nowPlaying.title}`);
-    const url = `https://www.amazon.com/s?k=${searchQuery}&tag=${affiliateTag}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  }, [isSong, nowPlaying]);
 
   const ControlButton: React.FC<{icon: React.ReactNode, label: string, onClick?: () => void, hasFeature?: boolean}> = ({icon, label, onClick, hasFeature = true}) => {
     if(!hasFeature) return null;
@@ -185,7 +173,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
         <p className="text-xs text-gray-400">{station.name}</p>
       </div>
       <div className="flex-grow flex flex-col items-center justify-center gap-4 text-center px-4">
-        <img src={nowPlaying?.albumArt || station.coverArt} alt={nowPlaying?.title || station.name} className="w-full max-w-xs aspect-square rounded-2xl shadow-2xl shadow-black/50 object-cover animate-fade-in" key={nowPlaying?.albumArt || station.name} onError={handleImageError} />
+        <img src={nowPlaying?.albumArt || station.coverArt} alt={nowPlaying?.title || station.name} className="w-full max-w-xs aspect-square rounded-2xl shadow-2xl shadow-black/50 object-cover animate-fade-in transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-[0_0_25px_var(--accent-color)]" key={nowPlaying?.albumArt || station.name} onError={handleImageError} />
         <div className="w-full max-w-xs">
           <Marquee text={nowPlaying?.title || station.name} className="text-2xl font-bold text-white" />
           <Marquee text={nowPlaying?.artist || 'Live Stream'} className="text-lg text-gray-300" />
@@ -210,9 +198,16 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
             </button>
         </div>
 
-        <div className="w-full max-w-xs">
-            <StarRating rating={userRating} onRate={(r) => onRateStation(station.streamUrl, r)} starClassName="h-8 w-8 text-yellow-400" />
-            <p className="text-xs text-gray-500 mt-1">Rate this station</p>
+        <div className="w-full max-w-xs h-16 flex items-center justify-center">
+            {isSong && (
+                <button 
+                    onClick={() => setIsBuyNowModalOpen(true)} 
+                    className="w-full flex items-center justify-center gap-2 bg-gray-200 hover:bg-white text-gray-800 font-bold py-3 px-4 rounded-md transition-all duration-300 shadow-lg shadow-white/20 hover:shadow-white/40"
+                >
+                    <ShoppingCartIcon className="w-6 h-6"/>
+                    Buy Song
+                </button>
+            )}
         </div>
       </div>
       <div className="flex-shrink-0 flex flex-col gap-4">
@@ -226,15 +221,6 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
           <button onClick={onNextStation} className="text-gray-300 hover:text-white transition-colors"><ForwardIcon /></button>
         </div>
         <div className="w-full max-w-xs mx-auto">
-            {isSong && (
-                <button 
-                    onClick={handleBuyNow} 
-                    className="w-full flex items-center justify-center gap-2 bg-[#FF9900] hover:opacity-90 text-black font-bold py-3 px-4 rounded-md transition-opacity duration-300 mb-4"
-                >
-                    <AmazonIcon className="w-6 h-6"/>
-                    Buy on Amazon
-                </button>
-            )}
             <div className="flex items-center justify-around text-gray-400 relative">
                 <ControlButton icon={<InfoIcon/>} label="Info" onClick={() => setIsInfoModalOpen(true)} hasFeature={isSong}/>
                 <ControlButton icon={<EqIcon/>} label="Equalizer" onClick={() => setIsEqModalOpen(true)}/>
@@ -265,6 +251,9 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                  <button onClick={(e) => { e.stopPropagation(); isSong && onVote(nowPlaying.songId, 'dislike'); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} ${userVote === 'dislike' ? 'text-red-400 drop-shadow-[0_0_4px_rgba(248,113,113,0.8)]' : 'text-gray-400 hover:text-white'}`} aria-label="Dislike song">
                     <ThumbDownIcon className="w-6 h-6"/>
                 </button>
+                <button onClick={(e) => { e.stopPropagation(); setIsBuyNowModalOpen(true); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} text-gray-400 hover:text-white`} aria-label="Buy song">
+                    <ShoppingCartIcon className="w-6 h-6"/>
+                </button>
                  <div className="hidden md:flex items-center gap-2 group">
                     {volume > 0 ? <VolumeUpIcon /> : <VolumeOffIcon />}
                     <input type="range" min="0" max="1" step="0.05" value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))} className="w-24 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-[var(--accent-color)] opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()} />
@@ -288,6 +277,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
       <SongInfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} nowPlaying={nowPlaying} />
       <EqualizerModal isOpen={isEqModalOpen} onClose={() => setIsEqModalOpen(false)} settings={eqSettings} onSettingsChange={setEqSettings} />
       <ShareModal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} nowPlaying={nowPlaying} station={station} />
+      <BuyNowModal isOpen={isBuyNowModalOpen} onClose={() => setIsBuyNowModalOpen(false)} nowPlaying={nowPlaying} />
     </>
   );
 };

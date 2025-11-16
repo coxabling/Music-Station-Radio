@@ -19,8 +19,8 @@ import { StoreView } from './components/StoreView';
 import { LeaderboardView } from './components/LeaderboardView';
 import { MapView } from './components/MapView';
 import { SongHistoryModal } from './components/SongHistoryModal';
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon, UserIcon, MOCK_REVIEWS } from './constants';
-import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, StationReview, ActiveView } from './types';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon, UserIcon, MOCK_REVIEWS, ExploreIcon } from './constants';
+import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, StationReview, ActiveView, UserData } from './types';
 import { slugify } from './utils/slugify';
 import { getDominantColor } from './utils/colorExtractor';
 import { getLocationForGenre } from './utils/genreToLocation';
@@ -104,6 +104,7 @@ const App: React.FC = () => {
     setAlarm(data.alarm);
     setSongVotes(data.songVotes);
     setUnlockedAchievements(data.unlockedAchievements);
+    setActiveView(data.activeView || 'dashboard');
     
     const params = new URLSearchParams(window.location.search);
     const stationSlug = params.get('station');
@@ -319,41 +320,46 @@ const App: React.FC = () => {
   const handleNextStation = () => { if (!currentStation) return; const currentIndex = filteredStations.findIndex(s => s.streamUrl === currentStation.streamUrl); const nextIndex = (currentIndex + 1) % filteredStations.length; handleSelectStation(filteredStations[nextIndex]); };
   const handlePreviousStation = () => { if (!currentStation) return; const currentIndex = filteredStations.findIndex(s => s.streamUrl === currentStation.streamUrl); const prevIndex = (currentIndex - 1 + filteredStations.length) % filteredStations.length; handleSelectStation(filteredStations[prevIndex]); };
   
-  const handleNowPlayingUpdate = useCallback(async (nowPlaying: NowPlaying | null) => {
+  const handleNowPlayingUpdate = useCallback((nowPlaying: NowPlaying | null) => {
     const newArt = nowPlaying?.albumArt || null;
     if (newArt) {
-      try {
-        const color = await getDominantColor(newArt); setAlbumArtColor(color);
-      } catch (error) { console.warn("Could not extract color from album art, using default.", error); setAlbumArtColor('#67e8f9'); }
+      try { getDominantColor(newArt).then(color => setAlbumArtColor(color)).catch(() => setAlbumArtColor('#67e8f9')); } 
+      catch (error) { console.warn("Could not extract color from album art, using default.", error); setAlbumArtColor('#67e8f9'); }
     } else { setAlbumArtColor('#67e8f9'); }
     if (newArt !== backgrounds[activeBgIndex]) { const nextIndex = 1 - activeBgIndex; const newBackgrounds = [...backgrounds] as [string | null, string | null]; newBackgrounds[nextIndex] = newArt; setBackgrounds(newBackgrounds); setActiveBgIndex(nextIndex); }
     
-    if (!currentUser) return;
-    
-    let updatedSongVotes = songVotes;
-    let updatedStats = stats;
+    if (!currentUser || !nowPlaying?.songId) return;
 
-    if (nowPlaying?.songId && !songVotes[nowPlaying.songId]) {
-        const newEntry: SongVote = { id: nowPlaying.songId!, artist: nowPlaying.artist, title: nowPlaying.title, albumArt: nowPlaying.albumArt || currentStation!.coverArt, likes: Math.floor(Math.random() * 15) + 1, dislikes: Math.floor(Math.random() * 5)};
-        updatedSongVotes = { ...songVotes, [nowPlaying.songId!]: newEntry };
-        setSongVotes(updatedSongVotes);
-    }
+    let updatesToSave: Partial<UserData> = {};
 
-    if (nowPlaying?.songId && currentStation && nowPlaying.title !== "Live Stream" && nowPlaying.title !== "Station Data Unavailable") {
-        const history = stats.songHistory || [];
-        if (history[0]?.songId !== nowPlaying.songId) {
-            const newHistoryItem = { songId: nowPlaying.songId, title: nowPlaying.title, artist: nowPlaying.artist, albumArt: nowPlaying.albumArt || currentStation.coverArt, stationName: currentStation.name, playedAt: new Date().toISOString() };
-            const updatedHistory = [newHistoryItem, ...history].slice(0, 50);
-            updatedStats = { ...stats, songHistory: updatedHistory };
-            setStats(updatedStats);
-        }
-    }
-    
-    if (updatedSongVotes !== songVotes || updatedStats !== stats) {
-        await updateUserData(currentUser.username, { songVotes: updatedSongVotes, stats: updatedStats });
-    }
+    setSongVotes(prevVotes => {
+      if (prevVotes[nowPlaying.songId!]) return prevVotes;
+      
+      const newEntry: SongVote = { id: nowPlaying.songId!, artist: nowPlaying.artist, title: nowPlaying.title, albumArt: nowPlaying.albumArt || currentStation!.coverArt, likes: Math.floor(Math.random() * 15) + 1, dislikes: Math.floor(Math.random() * 5)};
+      const newVotes = { ...prevVotes, [nowPlaying.songId!]: newEntry };
+      updatesToSave.songVotes = newVotes;
+      return newVotes;
+    });
 
-  }, [activeBgIndex, backgrounds, songVotes, stats, currentStation, currentUser]);
+    if (currentStation && nowPlaying.title !== "Live Stream" && nowPlaying.title !== "Station Data Unavailable") {
+      setStats(prevStats => {
+        const history = prevStats.songHistory || [];
+        if (history[0]?.songId === nowPlaying.songId) return prevStats;
+        
+        const newHistoryItem = { songId: nowPlaying.songId!, title: nowPlaying.title, artist: nowPlaying.artist, albumArt: nowPlaying.albumArt || currentStation.coverArt, stationName: currentStation.name, playedAt: new Date().toISOString() };
+        const updatedHistory = [newHistoryItem, ...history].slice(0, 50);
+        const newStats = { ...prevStats, songHistory: updatedHistory };
+        updatesToSave.stats = newStats;
+
+        // Since this setState runs after setSongVotes, we can combine updates.
+        updateUserData(currentUser.username, updatesToSave);
+        return newStats;
+      });
+    } else if (Object.keys(updatesToSave).length > 0) {
+      // If only songVotes was updated
+      updateUserData(currentUser.username, updatesToSave);
+    }
+  }, [activeBgIndex, backgrounds, currentStation, currentUser]);
   
   const handleAddStation = async (newStation: Station) => {
     if (!currentUser) return;
@@ -384,6 +390,12 @@ const App: React.FC = () => {
     setActiveTheme(themeName);
     updateUserData(currentUser.username, { activeTheme: themeName });
   };
+  
+  const handleSetActiveView = useCallback((view: ActiveView) => {
+    if (!currentUser) return;
+    setActiveView(view);
+    updateUserData(currentUser.username, { activeView: view });
+  }, [currentUser]);
 
   const handleSetAlarm = (newAlarm: Alarm | null) => {
     if (!currentUser) return;
@@ -391,28 +403,41 @@ const App: React.FC = () => {
     updateUserData(currentUser.username, { alarm: newAlarm });
   }
   
-  const handleVote = useCallback(async (songId: string, voteType: 'like' | 'dislike') => {
+  const handleVote = useCallback((songId: string, voteType: 'like' | 'dislike') => {
     if (!currentUser) return;
 
-    const previousVote = stats.songUserVotes?.[songId];
-    if (previousVote === voteType) return;
+    let finalStats: ListeningStats;
+    let finalVotes: Record<string, SongVote>;
 
-    const newUserVotes = { ...(stats.songUserVotes || {}), [songId]: voteType };
-    const newPoints = previousVote ? (stats.points || 0) : (stats.points || 0) + 1;
-    const newStats = { ...stats, songUserVotes: newUserVotes, points: newPoints };
-    setStats(newStats);
+    setStats(prevStats => {
+        const previousVote = prevStats.songUserVotes?.[songId];
+        if (previousVote === voteType) return prevStats;
 
-    const newVotes = { ...songVotes };
-    const songVote = { ...newVotes[songId] };
-    if (voteType === 'like') songVote.likes += 1;
-    else songVote.dislikes += 1;
-    if (previousVote === 'like') songVote.likes = Math.max(0, songVote.likes - 1);
-    if (previousVote === 'dislike') songVote.dislikes = Math.max(0, songVote.dislikes - 1);
-    newVotes[songId] = songVote;
-    setSongVotes(newVotes);
+        const newUserVotes = { ...(prevStats.songUserVotes || {}), [songId]: voteType };
+        const newPoints = previousVote ? (prevStats.points || 0) : (prevStats.points || 0) + 1;
+        finalStats = { ...prevStats, songUserVotes: newUserVotes, points: newPoints };
+        return finalStats;
+    });
+
+    setSongVotes(prevVotes => {
+        const newVotes = { ...prevVotes };
+        const songVote = { ...newVotes[songId] };
+        if (voteType === 'like') songVote.likes += 1;
+        else songVote.dislikes += 1;
         
-    await updateUserData(currentUser.username, { stats: newStats, songVotes: newVotes });
-}, [currentUser, stats, songVotes]);
+        const previousVote = stats.songUserVotes?.[songId]; // Use non-functional state here for previous vote check
+        if (previousVote === 'like') songVote.likes = Math.max(0, songVote.likes - 1);
+        if (previousVote === 'dislike') songVote.dislikes = Math.max(0, songVote.dislikes - 1);
+        
+        newVotes[songId] = songVote;
+        finalVotes = newVotes;
+
+        // Save both states together after they've been calculated
+        updateUserData(currentUser.username, { stats: finalStats, songVotes: finalVotes });
+
+        return newVotes;
+    });
+}, [currentUser, stats.songUserVotes]);
 
   const handleRateStation = useCallback((stationUrl: string, rating: number) => {
     if (!currentUser) return;
@@ -483,14 +508,14 @@ const App: React.FC = () => {
         createdAt: new Date().toISOString(),
     };
 
-    const userReviews = stats.stationReviews?.[stationUrl] || [];
-    const updatedReviewsForStation = [...userReviews, newReview];
-    
-    const newStationReviews = { ...(stats.stationReviews || {}), [stationUrl]: updatedReviewsForStation };
-    
-    const newStats = { ...stats, stationReviews: newStationReviews };
-    setStats(newStats);
-    await updateUserData(currentUser.username, { stats: newStats });
+    setStats(prevStats => {
+        const userReviews = prevStats.stationReviews?.[stationUrl] || [];
+        const updatedReviewsForStation = [...userReviews, newReview];
+        const newStationReviews = { ...(prevStats.stationReviews || {}), [stationUrl]: updatedReviewsForStation };
+        const newStats = { ...prevStats, stationReviews: newStationReviews };
+        updateUserData(currentUser.username, { stats: newStats });
+        return newStats;
+    });
     
     setToasts(prev => [...prev, {
       id: Date.now(),
@@ -500,6 +525,37 @@ const App: React.FC = () => {
       type: 'points'
     }]);
   };
+  
+  const handlePlayFromCommunity = useCallback((songId: string) => {
+    const history = stats.songHistory || [];
+    const songHistoryEntry = history.find(item => item.songId === songId);
+
+    if (songHistoryEntry) {
+      const stationToPlay = allStations.find(s => s.name === songHistoryEntry.stationName);
+      if (stationToPlay) {
+        handleSelectStation(stationToPlay);
+        if (activeView !== 'explore') {
+          handleSetActiveView('explore');
+        }
+      } else {
+        setToasts(prev => [...prev, {
+          id: Date.now(),
+          title: "Station Not Found",
+          message: `Could not find the station "${songHistoryEntry.stationName}".`,
+          icon: ExploreIcon,
+          type: 'error'
+        }]);
+      }
+    } else {
+      setToasts(prev => [...prev, {
+        id: Date.now(),
+        title: "Station Not Found",
+        message: "Could not find which station played this song recently.",
+        icon: ExploreIcon,
+        type: 'error'
+      }]);
+    }
+  }, [stats.songHistory, allStations, activeView, handleSetActiveView]);
 
   if (!hasEnteredApp) {
     return <LandingPage onEnter={() => setHasEnteredApp(true)} />;
@@ -531,6 +587,7 @@ const App: React.FC = () => {
             songVotes={songVotes} 
             onOpenGenreSpotlight={setGenreForSpotlight}
             onOpenDetailModal={handleOpenStationDetail}
+            onPlayFromCommunity={handlePlayFromCommunity}
           />
         );
     }
@@ -547,7 +604,7 @@ const App: React.FC = () => {
           <Header currentUser={currentUser} onLogout={handleLogout} points={stats.points || 0} />
           
           <div className={`flex flex-grow h-[calc(100vh-68px)] transition-all duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-            {currentUser && <Sidebar activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModalOpen(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} />}
+            {currentUser && <Sidebar activeView={activeView} setActiveView={handleSetActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModalOpen(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} />}
             
             {isDataLoading ? (
               <main className="flex-grow flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--accent-color)]"></div></main>

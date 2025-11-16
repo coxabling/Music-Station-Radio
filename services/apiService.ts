@@ -1,6 +1,6 @@
 import type { UserData, ListeningStats, Alarm, SongVote, UnlockedAchievement, Station, ThemeName } from '../types';
 
-const SIMULATED_LATENCY = 200; // ms
+const SIMULATED_LATENCY = 50; // ms
 
 // Helper to get a user's data from localStorage, which acts as our mock database
 const getDb = (username: string): UserData | null => {
@@ -32,6 +32,7 @@ const createNewUserData = (): UserData => ({
     favoriteStationUrls: [],
     activeTheme: 'dynamic',
     unlockedThemes: ['dynamic'],
+    activeView: 'dashboard',
 });
 
 
@@ -55,24 +56,49 @@ export const getUserData = async (username: string): Promise<UserData> => {
     });
 };
 
+// --- Robust Update Queue to prevent race conditions ---
+let updateQueue: (() => Promise<void>)[] = [];
+let isProcessingQueue = false;
+
+const processUpdateQueue = async () => {
+    if (isProcessingQueue || updateQueue.length === 0) return;
+    isProcessingQueue = true;
+    const task = updateQueue.shift();
+    if (task) {
+        await task();
+    }
+    isProcessingQueue = false;
+    processUpdateQueue();
+};
+
 /**
  * Updates a part of the user's data. It fetches the current data,
  * merges the update, and saves it back to the mock database.
+ * This function is queued to prevent race conditions.
  * @param username The user whose data is to be updated.
  * @param partialData An object containing the fields to update.
  * @returns A promise that resolves when the update is complete.
  */
-export const updateUserData = async (username: string, partialData: Partial<UserData>): Promise<void> => {
-     return new Promise((resolve) => {
-        setTimeout(() => {
-            const currentData = getDb(username);
-            if (currentData) {
-                const newData = { ...currentData, ...partialData };
-                setDb(username, newData);
-            } else {
-                console.error(`Attempted to update data for non-existent user: ${username}`);
-            }
+export const updateUserData = (username: string, partialData: Partial<UserData>): Promise<void> => {
+    return new Promise((resolve) => {
+        const task = () => new Promise<void>((taskResolve) => {
+            setTimeout(() => {
+                const currentData = getDb(username);
+                if (currentData) {
+                    const newData = { ...currentData, ...partialData };
+                    setDb(username, newData);
+                } else {
+                    console.error(`Attempted to update data for non-existent user: ${username}`);
+                }
+                taskResolve();
+            }, SIMULATED_LATENCY);
+        });
+
+        updateQueue.push(async () => {
+            await task();
             resolve();
-        }, SIMULATED_LATENCY);
+        });
+
+        processUpdateQueue();
     });
 }

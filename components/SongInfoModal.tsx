@@ -18,9 +18,8 @@ const LoadingSpinner: React.FC = () => (
 );
 
 const AmazonIcon: React.FC<{className?: string}> = ({className}) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-        <path d="M20.95 13.62c-1.1-1.3-2.85-2.02-4.88-2.02-2.58 0-4.58 1.58-4.58 3.93 0 1.63.85 2.93 2.15 3.65.58.3 1.25.48 1.95.48 1.98 0 3.73-.9 4.88-2.33l.28-.35c.35-.45.3-.8-.15-.95-.45-.15-.8-.05-.95.15l-.28.33c-.85 1.05-2.18 1.65-3.63 1.65-.53 0-1.03-.13-1.45-.38-.85-.5-1.3-1.35-1.3-2.45 0-1.78 1.43-2.93 3.38-2.93 1.55 0 2.85.65 3.63 1.48l-2.45.83c-.53.15-.8.65-.65 1.1.15.5.65.8 1.1.65l3.8-1.3c.5-.15.8-.65.65-1.1l-.1-.36Zm-3.08-5.75c-.2-.2-.5-.2-.7 0l-1.43 1.4-1.4-1.4c-.2-.2-.5-.2-.7 0-.2.2-.2.5 0 .7l1.4 1.4-1.4 1.4c-.2.2-.2.5 0 .7.1.1.25.15.35.15s.25-.05.35-.15l1.4-1.4 1.43 1.4c.1.1.25.15.35.15s.25-.05.35-.15c.2-.2.2-.5 0-.7l-1.4-1.4 1.4-1.4c.2-.2.2-.5 0-.7Z" />
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm7.23 16.95C17.58 20.3 15.1 21 12.55 21c-2.85 0-5.4-1-7.25-2.73-1.55-1.43-2.6-3.2-3.05-5.18-.1-.4-.2-1.3-.2-1.45l.03-1.35c.1-2 .78-3.9 1.9-5.5.15-.2.35-.35.55-.45 1.5-1.05 3.3-1.6 5.15-1.7.2-.03.4-.03.6-.03.7 0 1.4.05 2.08.15.3.05.5.1.7.15l2.45.5c.2.05.4.1.55.15.6.15 1.15.35 1.7.6.15.1.3.15.45.25.55.3 1.05.7 1.5 1.1.4.35.75.8 1.05 1.25.3.45.55.95.78 1.5.05.1.1.2.15.3.15.35.3.7.4 1.1.15.55.25 1.15.28 1.75.03.2.03.4.03.6.03.8-.08 1.55-.2 2.3-.05.3-.1.55-.18.8-.05.15-.1.3-.15.45Z" />
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M16.94,15.72a.49.49,0,0,0-.73,0L14.44,17a1.52,1.52,0,0,1-2.12,0l-1.77-1.28a.49.49,0,0,0-.73,0l-1.31,1a.51.51,0,0,0,0,.73l1.1,1.1a.52.52,0,0,0,.74,0l.47-.36a3.52,3.52,0,0,0,4.88,0l.47.36a.52.52,0,0,0,.74,0l1.1-1.1a.51.51,0,0,0,0-.73ZM12,2A10,10,0,1,0,22,12,10,10,0,0,0,12,2Zm3.48,8.23a1,1,0,0,1-1,1H13.26V15.5a1,1,0,0,1-2,0V11.23H10.15a1,1,0,0,1,0-2h5.33A1,1,0,0,1,15.48,10.23Z"/>
     </svg>
 );
 
@@ -112,9 +111,8 @@ export const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose, n
   
   const handleBuyNow = () => {
     if (!nowPlaying) return;
-    const affiliateTag = 'coxabling0e-21';
     const searchQuery = encodeURIComponent(`${nowPlaying.artist} ${nowPlaying.title}`);
-    const url = `https://www.amazon.com/s?k=${searchQuery}&tag=${affiliateTag}`;
+    const url = `https://music.amazon.com/search/${searchQuery}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
@@ -247,10 +245,10 @@ export const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose, n
             )}
             <button
               onClick={handleBuyNow}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#FF9900] hover:opacity-90 text-black font-bold py-2.5 px-4 rounded-md transition-opacity duration-300"
+              className="flex-1 flex items-center justify-center gap-2 bg-[#00A8E1] hover:opacity-90 text-white font-bold py-2.5 px-4 rounded-md transition-opacity duration-300"
             >
               <AmazonIcon className="w-6 h-6"/>
-              Buy on Amazon
+              Buy on Amazon Music
             </button>
           </footer>
         )}
