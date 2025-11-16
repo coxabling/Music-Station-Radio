@@ -185,3 +185,16 @@ export interface UserData {
     activeTheme: ThemeName;
     unlockedThemes: ThemeName[];
 }
+
+// For unified sidebar navigation
+export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'map';
+
+// For community feed
+export interface CommunityEvent {
+    id: number;
+    username: string;
+    action: string;
+    details?: string;
+    timestamp: string; // ISO Date string
+    icon: React.FC<{className?: string}>;
+}

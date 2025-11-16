@@ -5,17 +5,15 @@ import { StarIcon, UserIcon } from '../constants';
 interface HeaderProps {
     currentUser: User | null;
     onLogout: () => void;
-    onOpenDashboard: () => void;
     points: number;
 }
 
 const MusicIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 accent-color-text" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" /></svg>;
-const DashboardIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>;
 const LogoutIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>;
 
-export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, onOpenDashboard, points }) => {
+export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, points }) => {
   return (
-    <header className="bg-black/30 backdrop-blur-sm p-4 border-b border-gray-700/50">
+    <header className="bg-black/30 backdrop-blur-sm p-4 border-b border-gray-700/50 flex-shrink-0 h-[68px]">
       <div className="container mx-auto flex items-center justify-between">
         <div className="w-1/3 flex items-center gap-4">
            {currentUser && (
@@ -40,7 +38,6 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, onOpenDas
         <div className="w-1/3 flex items-center justify-end gap-2 sm:gap-4 text-gray-400">
             {currentUser && (
                 <>
-                    <button onClick={onOpenDashboard} className="hover:text-white transition-colors" title="Open Dashboard"><DashboardIcon/></button>
                     <button onClick={onLogout} className="flex items-center gap-1.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 border border-red-500/50 rounded-full py-1.5 px-3 transition-colors duration-300 text-sm font-semibold" title="Logout">
                         <LogoutIcon />
                         <span className="hidden lg:inline">Logout</span>

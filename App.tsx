@@ -4,23 +4,22 @@ import { StationList } from './components/StationList';
 import { Header } from './components/Header';
 import { SubmitStationModal } from './components/SubmitStationModal';
 import { ListeningPartyChat } from './components/ListeningPartyChat';
-import { StatsModal } from './components/StatsModal';
 import { AlarmModal } from './components/AlarmModal';
-import { SettingsModal } from './components/SettingsModal';
-import { MapModal } from './components/MapModal';
-import { AchievementsModal } from './components/AchievementsModal';
+import { StoreView } from './components/StoreView';
+import { MapView } from './components/MapView';
 import { ToastContainer } from './components/Toast';
 import { LoginModal } from './components/LoginModal';
-import { DashboardModal } from './components/DashboardModal';
 import { TippingModal } from './components/TippingModal';
-import { LeaderboardModal } from './components/LeaderboardModal';
-import { HistoryModal } from './components/HistoryModal';
+import { LeaderboardView } from './components/LeaderboardView';
 import { GenreSpotlightModal } from './components/GenreSpotlightModal';
 import { SongChartModal } from './components/SongChartModal';
 import { StationDetailModal } from './components/StationDetailModal';
 import { EventsModal } from './components/EventsModal';
+import { Sidebar } from './components/Sidebar';
+import { DashboardView } from './components/DashboardView';
+import { CommunityFeed } from './components/CommunityFeed';
 import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon, UserIcon, MOCK_REVIEWS } from './constants';
-import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, StationReview } from './types';
+import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, StationReview, ActiveView } from './types';
 import { slugify } from './utils/slugify';
 import { getDominantColor } from './utils/colorExtractor';
 import { getLocationForGenre } from './utils/genreToLocation';
@@ -37,6 +36,7 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
+  const [activeView, setActiveView] = useState<ActiveView>('explore');
 
   const [currentStation, setCurrentStation] = useState<Station | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,22 +49,17 @@ const App: React.FC = () => {
 
   const [allStations, setAllStations] = useState<Station[]>(defaultStations);
   const [userStations, setUserStations] = useState<Station[]>([]);
+  
+  // --- Modals that remain modals ---
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
-  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [isAlarmModalOpen, setIsAlarmModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
-  const [isAchievementsModalOpen, setIsAchievementsModalOpen] = useState(false);
-  const [isDashboardModalOpen, setIsDashboardModalOpen] = useState(false);
-  const [isLeaderboardModalOpen, setIsLeaderboardModalOpen] = useState(false);
-  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isSongChartModalOpen, setIsSongChartModalOpen] = useState(false);
   const [isStationDetailModalOpen, setIsStationDetailModalOpen] = useState(false);
   const [stationForDetail, setStationForDetail] = useState<Station | null>(null);
   const [isEventsModalOpen, setIsEventsModalOpen] = useState(false);
-
   const [tippingModalStation, setTippingModalStation] = useState<Station | null>(null);
   const [genreForSpotlight, setGenreForSpotlight] = useState<string | null>(null);
+  
   const [favoriteStationUrls, setFavoriteStationUrls] = useState<Set<string>>(new Set());
   const [unlockedThemes, setUnlockedThemes] = useState<Set<ThemeName>>(new Set(['dynamic']));
 
@@ -145,7 +140,6 @@ const App: React.FC = () => {
     }
   }, [hasEnteredApp, currentUser, isDataLoading]);
 
-  // --- SEO Effect: Update title and meta tags ---
   useEffect(() => {
     const defaultTitle = "Music Station Radio | Stream Your Favorite Genres";
     const defaultDescription = "Tune in to a world of music. Discover thousands of live radio stations, from Afropop to Reggae, with our modern, AI-enhanced web player. Your next favorite song is playing now.";
@@ -200,11 +194,11 @@ const App: React.FC = () => {
     setUnlockedAchievements({});
     setActiveTheme('dynamic');
     setUnlockedThemes(new Set(['dynamic']));
+    setActiveView('explore');
     
     setIsLoginModalOpen(true);
   }, []);
 
-  // --- Achievements Logic ---
   const unlockAchievement = useCallback((achievementId: AchievementID) => {
     if (!currentUser) return;
     setUnlockedAchievements(prev => {
@@ -273,12 +267,12 @@ const App: React.FC = () => {
               newPoints += 1;
               if (newPoints % 10 === 0) {
                   setToasts(prev => [...prev, {id: Date.now(), title: `Milestone! ${newPoints} Points!`, message: "You're a dedicated listener!", icon: TrophyIcon, type: 'milestone'}]);
-                  pointsToastTimer.current = 0; // Reset timer so regular notification doesn't show
+                  pointsToastTimer.current = 0;
               }
           }
           
           pointsToastTimer.current += 1;
-          if (pointsToastTimer.current >= 300) { // Every 5 minutes
+          if (pointsToastTimer.current >= 300) {
               const pointsInLast5Mins = 5;
               setToasts(prev => [...prev, {id: Date.now(), title: `+${pointsInLast5Mins} Points!`, message: "Keep listening to earn more.", icon: StarIcon, type: 'points'}]);
               pointsToastTimer.current = 0;
@@ -353,7 +347,6 @@ const App: React.FC = () => {
         }
     }
     
-    // Batch update to storage if anything changed
     if (updatedSongVotes !== songVotes || updatedStats !== stats) {
         await updateUserData(currentUser.username, { songVotes: updatedSongVotes, stats: updatedStats });
     }
@@ -400,7 +393,7 @@ const App: React.FC = () => {
     if (!currentUser) return;
 
     const previousVote = stats.songUserVotes?.[songId];
-    if (previousVote === voteType) return; // Already voted this way, do nothing.
+    if (previousVote === voteType) return;
 
     const newUserVotes = { ...(stats.songUserVotes || {}), [songId]: voteType };
     const newPoints = previousVote ? (stats.points || 0) : (stats.points || 0) + 1;
@@ -468,7 +461,6 @@ const App: React.FC = () => {
     if (currentStation?.location) {
       return { ...currentStation.location, zoom: 6 };
     }
-    // Fallback if no station or location
     if (currentStation) {
       return getLocationForGenre(currentStation.genre);
     }
@@ -498,7 +490,6 @@ const App: React.FC = () => {
     setStats(newStats);
     await updateUserData(currentUser.username, { stats: newStats });
     
-    // Add toast notification
     setToasts(prev => [...prev, {
       id: Date.now(),
       title: "Review Submitted!",
@@ -511,11 +502,38 @@ const App: React.FC = () => {
   if (!hasEnteredApp) {
     return <LandingPage onEnter={() => setHasEnteredApp(true)} />;
   }
-
-  const openModal = (setter: React.Dispatch<React.SetStateAction<boolean>>) => () => {
-    setIsDashboardModalOpen(false);
-    setter(true);
+  
+  const renderActiveView = () => {
+    switch (activeView) {
+      case 'dashboard':
+        return <DashboardView user={currentUser} stats={stats} favoritesCount={favoriteStationUrls.size} unlockedAchievements={unlockedAchievements} />;
+      case 'community':
+        return <CommunityFeed />;
+      case 'store':
+        return <StoreView activeTheme={activeTheme} onSetTheme={handleSetTheme} onUnlockTheme={handleUnlockTheme} unlockedThemes={unlockedThemes} currentPoints={stats.points || 0}/>;
+      case 'leaderboard':
+        return <LeaderboardView currentUser={currentUser} userPoints={stats.points || 0} />;
+      case 'map':
+        return <MapView location={mapLocation} stations={allStations} currentStation={currentStation} onSelectStation={handleSelectStation} />;
+      case 'explore':
+      default:
+        return (
+          <StationList 
+            stations={filteredStations} 
+            currentStation={currentStation} 
+            onSelectStation={handleSelectStation} 
+            searchQuery={searchQuery} 
+            onSearchChange={setSearchQuery} 
+            onOpenSubmitModal={() => setIsSubmitModalOpen(true)} 
+            onToggleFavorite={toggleFavorite} 
+            songVotes={songVotes} 
+            onOpenGenreSpotlight={setGenreForSpotlight}
+            onOpenDetailModal={handleOpenStationDetail}
+          />
+        );
+    }
   };
+
 
   return (
     <div className="min-h-screen bg-gray-900" style={{ '--accent-color': accentColor, '--accent-color-rgb': accentColorRgb } as React.CSSProperties}>
@@ -525,36 +543,26 @@ const App: React.FC = () => {
         ))}
         <div className="absolute inset-0 bg-black/60 backdrop-blur-xl"></div>
         <div className="relative min-h-screen bg-gradient-to-br from-gray-900/80 via-black/70 to-gray-800/80 text-gray-200 flex flex-col">
-          <Header currentUser={currentUser} onLogout={handleLogout} onOpenDashboard={() => setIsDashboardModalOpen(true)} points={stats.points || 0} />
+          <Header currentUser={currentUser} onLogout={handleLogout} points={stats.points || 0} />
           
-          {isDataLoading ? (
-             <main className="flex-grow flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--accent-color)]"></div></main>
-          ) : currentUser ? (
-            <>
-              <main className={`flex-grow container mx-auto p-4 md:p-8 transition-all duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'} ${isChatOpen ? 'md:pr-[356px]' : ''} ${currentStation ? 'pb-24 md:pb-32' : ''}`}>
-                <StationList 
-                  stations={filteredStations} 
-                  currentStation={currentStation} 
-                  onSelectStation={handleSelectStation} 
-                  searchQuery={searchQuery} 
-                  onSearchChange={setSearchQuery} 
-                  onOpenSubmitModal={() => setIsSubmitModalOpen(true)} 
-                  onToggleFavorite={toggleFavorite} 
-                  songVotes={songVotes} 
-                  onOpenGenreSpotlight={setGenreForSpotlight}
-                  onOpenDetailModal={handleOpenStationDetail}
-                />
-              </main>
-              {currentStation && <ListeningPartyChat station={currentStation} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />}
-              {currentStation && (
-                <RadioPlayer station={currentStation} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(prev => !prev)} songVotes={songVotes} onVote={handleVote} onRateStation={handleRateStation} userRating={stats.stationRatings?.[currentStation.streamUrl] || 0} onOpenTippingModal={() => setTippingModalStation(currentStation)} allStations={allStations} userSongVotes={stats.songUserVotes} onSelectStation={handleSelectStation} onToggleChat={() => setIsChatOpen(p => !p)} />
-              )}
-              <footer className={`text-center p-4 text-xs text-gray-500 transition-opacity ${isImmersiveMode ? 'opacity-0' : 'opacity-100'}`}>
-                <p>Powered by Music Station Radio</p>
-              </footer>
-            </>
-          ) : (
-            <main className="flex-grow flex items-center justify-center"><p className="text-gray-400">Please log in to continue.</p></main>
+          <div className={`flex flex-grow h-[calc(100vh-68px)] transition-all duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+            {currentUser && <Sidebar activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModalOpen(true)} onOpenEvents={() => setIsEventsModalOpen(true)}/>}
+            
+            {isDataLoading ? (
+              <main className="flex-grow flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--accent-color)]"></div></main>
+            ) : currentUser ? (
+              <>
+                <main className={`flex-grow overflow-y-auto transition-all duration-300 ${isChatOpen ? 'md:pr-[356px]' : ''} ${currentStation ? 'pb-24 md:pb-32' : ''}`}>
+                  {renderActiveView()}
+                </main>
+                {currentStation && <ListeningPartyChat station={currentStation} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />}
+              </>
+            ) : (
+              <main className="flex-grow flex items-center justify-center"><p className="text-gray-400">Please log in to continue.</p></main>
+            )}
+          </div>
+          {currentStation && (
+            <RadioPlayer station={currentStation} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(prev => !prev)} songVotes={songVotes} onVote={handleVote} onRateStation={handleRateStation} userRating={stats.stationRatings?.[currentStation.streamUrl] || 0} onOpenTippingModal={() => setTippingModalStation(currentStation)} allStations={allStations} userSongVotes={stats.songUserVotes} onSelectStation={handleSelectStation} onToggleChat={() => setIsChatOpen(p => !p)} />
           )}
         </div>
       </div>
@@ -562,24 +570,8 @@ const App: React.FC = () => {
       <ToastContainer toasts={toasts} setToasts={setToasts} />
       <LoginModal isOpen={isLoginModalOpen} onLogin={handleLogin} />
       <SubmitStationModal isOpen={isSubmitModalOpen} onClose={() => setIsSubmitModalOpen(false)} onSubmit={handleAddStation} />
-      <StatsModal isOpen={isStatsModalOpen} onClose={() => setIsStatsModalOpen(false)} stats={stats} />
       <AlarmModal isOpen={isAlarmModalOpen} onClose={() => setIsAlarmModalOpen(false)} alarm={alarm} onSetAlarm={handleSetAlarm} favoriteStations={favoriteStations} />
-      <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} activeTheme={activeTheme} onSetTheme={handleSetTheme} onUnlockTheme={handleUnlockTheme} unlockedThemes={unlockedThemes} currentPoints={stats.points || 0}/>
-      <MapModal 
-        isOpen={isMapModalOpen} 
-        onClose={() => setIsMapModalOpen(false)} 
-        location={mapLocation}
-        stations={allStations}
-        currentStation={currentStation}
-        onSelectStation={(station) => {
-          handleSelectStation(station);
-          setIsMapModalOpen(false);
-        }}
-      />
-      <AchievementsModal isOpen={isAchievementsModalOpen} onClose={() => setIsAchievementsModalOpen(false)} unlockedAchievements={unlockedAchievements} />
       <TippingModal isOpen={!!tippingModalStation} onClose={() => setTippingModalStation(null)} station={tippingModalStation} />
-      <LeaderboardModal isOpen={isLeaderboardModalOpen} onClose={() => setIsLeaderboardModalOpen(false)} currentUser={currentUser} userPoints={stats.points || 0} />
-      <HistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} history={stats.songHistory || []} />
       <GenreSpotlightModal isOpen={!!genreForSpotlight} onClose={() => setGenreForSpotlight(null)} genre={genreForSpotlight} />
       <SongChartModal isOpen={isSongChartModalOpen} onClose={() => setIsSongChartModalOpen(false)} songVotes={songVotes} />
       <StationDetailModal 
@@ -602,23 +594,6 @@ const App: React.FC = () => {
         if (stationToPlay) handleSelectStation(stationToPlay);
         setIsEventsModalOpen(false);
       }} />
-      <DashboardModal 
-        isOpen={isDashboardModalOpen} 
-        onClose={() => setIsDashboardModalOpen(false)}
-        user={currentUser}
-        stats={stats}
-        favoritesCount={favoriteStationUrls.size}
-        unlockedAchievements={unlockedAchievements}
-        onOpenStats={openModal(setIsStatsModalOpen)}
-        onOpenAlarm={openModal(setIsAlarmModalOpen)}
-        onOpenSettings={openModal(setIsSettingsModalOpen)}
-        onOpenMap={openModal(setIsMapModalOpen)}
-        onOpenAchievements={openModal(setIsAchievementsModalOpen)}
-        onOpenLeaderboard={openModal(setIsLeaderboardModalOpen)}
-        onOpenHistory={openModal(setIsHistoryModalOpen)}
-        onOpenSongChart={openModal(setIsSongChartModalOpen)}
-        onOpenEvents={openModal(setIsEventsModalOpen)}
-      />
 
       <style>{`
         .accent-color-text { color: var(--accent-color); }
