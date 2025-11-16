@@ -5,12 +5,9 @@ import { Header } from './components/Header';
 import { SubmitStationModal } from './components/SubmitStationModal';
 import { ListeningPartyChat } from './components/ListeningPartyChat';
 import { AlarmModal } from './components/AlarmModal';
-import { StoreView } from './components/StoreView';
-import { MapView } from './components/MapView';
 import { ToastContainer } from './components/Toast';
 import { LoginModal } from './components/LoginModal';
 import { TippingModal } from './components/TippingModal';
-import { LeaderboardView } from './components/LeaderboardView';
 import { GenreSpotlightModal } from './components/GenreSpotlightModal';
 import { SongChartModal } from './components/SongChartModal';
 import { StationDetailModal } from './components/StationDetailModal';
@@ -18,6 +15,9 @@ import { EventsModal } from './components/EventsModal';
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
 import { CommunityFeed } from './components/CommunityFeed';
+import { StoreView } from './components/StoreView';
+import { LeaderboardView } from './components/LeaderboardView';
+import { MapView } from './components/MapView';
 import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon, UserIcon, MOCK_REVIEWS } from './constants';
 import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, StationReview, ActiveView } from './types';
 import { slugify } from './utils/slugify';
@@ -36,7 +36,7 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
-  const [activeView, setActiveView] = useState<ActiveView>('explore');
+  const [activeView, setActiveView] = useState<ActiveView>('dashboard');
 
   const [currentStation, setCurrentStation] = useState<Station | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,7 +50,7 @@ const App: React.FC = () => {
   const [allStations, setAllStations] = useState<Station[]>(defaultStations);
   const [userStations, setUserStations] = useState<Station[]>([]);
   
-  // --- Modals that remain modals ---
+  // --- Modals ---
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isAlarmModalOpen, setIsAlarmModalOpen] = useState(false);
   const [isSongChartModalOpen, setIsSongChartModalOpen] = useState(false);
@@ -194,7 +194,7 @@ const App: React.FC = () => {
     setUnlockedAchievements({});
     setActiveTheme('dynamic');
     setUnlockedThemes(new Set(['dynamic']));
-    setActiveView('explore');
+    setActiveView('dashboard');
     
     setIsLoginModalOpen(true);
   }, []);
@@ -534,7 +534,6 @@ const App: React.FC = () => {
     }
   };
 
-
   return (
     <div className="min-h-screen bg-gray-900" style={{ '--accent-color': accentColor, '--accent-color-rgb': accentColorRgb } as React.CSSProperties}>
       <div className="relative min-h-screen overflow-hidden">
@@ -546,7 +545,7 @@ const App: React.FC = () => {
           <Header currentUser={currentUser} onLogout={handleLogout} points={stats.points || 0} />
           
           <div className={`flex flex-grow h-[calc(100vh-68px)] transition-all duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-            {currentUser && <Sidebar activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModalOpen(true)} onOpenEvents={() => setIsEventsModalOpen(true)}/>}
+            {currentUser && <Sidebar activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModalOpen(true)} onOpenEvents={() => setIsEventsModalOpen(true)} />}
             
             {isDataLoading ? (
               <main className="flex-grow flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--accent-color)]"></div></main>
