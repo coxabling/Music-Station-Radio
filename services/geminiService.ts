@@ -2,7 +2,14 @@ import { GoogleGenAI } from "@google/genai";
 import type { NowPlaying, Station } from '../types';
 import { slugify } from "../utils/slugify";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+let ai: GoogleGenAI;
+
+const getAi = () => {
+    if (!ai) {
+        ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+    }
+    return ai;
+};
 
 const fetchNowPlaying = async (station: Station): Promise<NowPlaying> => {
   const stationIdMatch = station.streamUrl.match(/music-station\.live\/listen\/([^\/]+)/);
@@ -43,7 +50,7 @@ const getSongInfo = async (artist: string, title: string): Promise<string> => {
   try {
     const prompt = `Provide a short, interesting fact or brief bio about the song "${title}" by the artist "${artist}". Focus on the creation of the song, its impact, or a unique detail about the artist related to this track. Keep it concise and engaging for a radio listener.`;
     
-    const response = await ai.models.generateContent({
+    const response = await getAi().models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
     });
@@ -59,7 +66,7 @@ const fetchLyrics = async (artist: string, title: string): Promise<string> => {
   try {
     const prompt = `Find the full lyrics for the song "${title}" by "${artist}". Output only the lyrics. If you cannot find the lyrics, respond with the exact text 'LYRICS_NOT_FOUND'.`;
     
-    const response = await ai.models.generateContent({
+    const response = await getAi().models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
     });
@@ -75,7 +82,7 @@ const getGenreInfo = async (genre: string): Promise<string> => {
   try {
     const prompt = `Give me a fun, short summary of the "${genre}" music genre. Highlight its key characteristics, origins, and some notable artists. Keep it engaging and concise (2-3 paragraphs) for a radio listener discovering new music.`;
     
-    const response = await ai.models.generateContent({
+    const response = await getAi().models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
     });
