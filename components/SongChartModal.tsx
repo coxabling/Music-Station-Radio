@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import type { SongVote } from '../types';
 import { getCommunityHitsSummary } from '../services/geminiService';
 
@@ -16,49 +16,54 @@ const GeminiIcon: React.FC<{className?: string}> = ({className}) => (
       <path d="M12.012 2.25c.345 0 .68.018 1.004.053a9.75 9.75 0 0 1 8.213 8.213c.035.324.053.66.053 1.004s-.018.68-.053 1.004a9.75 9.75 0 0 1-8.213 8.213c-.324.035-.66.053-1.004.053s-.68-.018-1.004-.053a9.75 9.75 0 0 1-8.213-8.213c-.035-.324-.053-.66-.053-1.004s.018-.68.053-1.004a9.75 9.75 0 0 1 8.213-8.213c.324-.035.66.053 1.004-.053ZM8.26 8.906a.75.75 0 0 0-.53 1.28l1.47 1.47-1.47 1.47a.75.75 0 1 0 1.06 1.06l1.47-1.47 1.47 1.47a.75.75 0 1 0 1.06-1.06l-1.47-1.47 1.47-1.47a.75.75 0 1 0-1.06-1.06l-1.47 1.47-1.47-1.47a.75.75 0 0 0-.53-.22Zm6.75 3.344a.75.75 0 0 0-1.06-1.06l-1.47 1.47-1.47-1.47a.75.75 0 1 0-1.06 1.06l1.47 1.47-1.47 1.47a.75.75 0 1 0 1.06 1.06l1.47-1.47 1.47 1.47a.75.75 0 1 0 1.06-1.06l-1.47-1.47 1.47-1.47Z" />
     </svg>
 );
+const RefreshIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h5M20 20v-5h-5M4 4l1.5 1.5A9 9 0 0120.5 10.5M20 20l-1.5-1.5A9 9 0 003.5 13.5" />
+    </svg>
+);
 
 
 export const SongChartModal: React.FC<SongChartModalProps> = ({ isOpen, onClose, songVotes }) => {
   const [summary, setSummary] = useState('');
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
-  const [cachedSummary, setCachedSummary] = useState({ signature: '', text: '', timestamp: 0 });
   
   const rankedList = useMemo(() => {
-    // FIX: Cast Object.values to SongVote[] to ensure correct type inference for filter and sort.
     return (Object.values(songVotes) as SongVote[])
       .filter(song => song.likes > 0)
       .sort((a, b) => b.likes - a.likes)
-      .slice(0, 20); // Get top 20
+      .slice(0, 20);
   }, [songVotes]);
 
-  useEffect(() => {
-    if (!isOpen) {
-      setSummary(''); // Clear displayed summary when closed, but keep cache
+  const handleFetchSummary = useCallback(async () => {
+    if (rankedList.length === 0) {
+      setSummary("The community chart is quiet for now. Like some songs to see what's trending!");
       return;
     }
-
-    if (rankedList.length > 0) {
-      const now = Date.now();
-      const currentSignature = rankedList.slice(0, 5).map(s => s.id).join(',');
-      const isCacheStale = now - cachedSummary.timestamp > 5 * 60 * 1000; // 5 minute cache validity
-
-      if (currentSignature !== cachedSummary.signature || isCacheStale) {
-        const fetchSummary = async () => {
-          setIsSummaryLoading(true);
-          const result = await getCommunityHitsSummary(rankedList);
-          setSummary(result);
-          setCachedSummary({ signature: currentSignature, text: result, timestamp: now });
-          setIsSummaryLoading(false);
-        };
-        fetchSummary();
-      } else {
-        setSummary(cachedSummary.text);
-        setIsSummaryLoading(false); // Ensure loading is off if using cache
-      }
-    } else {
-      setSummary(''); // Handle case where there are no ranked songs
+    setIsSummaryLoading(true);
+    try {
+      const result = await getCommunityHitsSummary(rankedList);
+      setSummary(result);
+    } catch (error: any) {
+        console.error("Error getting community hits summary from Gemini:", error);
+        let errorMessage = "Could not get summary. Please try again later.";
+        if (error.message && error.message.includes("RESOURCE_EXHAUSTED")) {
+            errorMessage = "DJ is thinking too hard! Rate limit reached. Please wait a moment and try refreshing.";
+        }
+        setSummary(errorMessage);
+    } finally {
+      setIsSummaryLoading(false);
     }
-  }, [isOpen, rankedList, cachedSummary]);
+  }, [rankedList]);
+
+
+  useEffect(() => {
+    if (isOpen) {
+      handleFetchSummary();
+    } else {
+      setSummary(''); // Clear summary when modal is closed
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]); // Intentionally only runs on open/close to prevent re-fetching when song votes change.
   
   if (!isOpen) return null;
 
@@ -89,20 +94,32 @@ export const SongChartModal: React.FC<SongChartModalProps> = ({ isOpen, onClose,
         <div className="p-6 overflow-y-auto">
           {rankedList.length > 0 && (
             <div className="mb-6 p-4 bg-gray-900/50 border border-gray-700/50 rounded-lg">
-              {isSummaryLoading ? (
-                <div className="flex items-center gap-3">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[var(--accent-color)]"></div>
-                  <p className="text-gray-400">Analyzing the community vibe...</p>
+              <div className="flex justify-between items-start gap-4">
+                <div className="flex-1 min-w-0">
+                  {isSummaryLoading && !summary ? (
+                     <div className="space-y-2 animate-pulse">
+                        <div className="h-4 bg-gray-700 rounded w-3/4"></div>
+                        <div className="h-4 bg-gray-700 rounded w-1/2"></div>
+                    </div>
+                  ) : summary ? (
+                     <div>
+                        <p className="text-gray-300 italic">"{summary}"</p>
+                        <div className="flex justify-end items-center gap-1 text-xs text-gray-500 mt-2">
+                            <GeminiIcon className="w-3 h-3"/>
+                            <span>Summary by Gemini</span>
+                        </div>
+                    </div>
+                  ) : null}
                 </div>
-              ) : (
-                <div>
-                  <p className="text-gray-300 italic">"{summary}"</p>
-                  <div className="flex justify-end items-center gap-1 text-xs text-gray-500 mt-2">
-                      <GeminiIcon className="w-3 h-3"/>
-                      <span>Summary by Gemini</span>
-                  </div>
-                </div>
-              )}
+                <button 
+                  onClick={handleFetchSummary} 
+                  disabled={isSummaryLoading} 
+                  className="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-wait"
+                  aria-label="Refresh summary"
+                >
+                    <RefreshIcon className={`w-5 h-5 ${isSummaryLoading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
             </div>
           )}
 

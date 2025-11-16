@@ -32,7 +32,7 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, points })
         <div className="w-1/3 flex items-center justify-center">
           <MusicIcon />
           <h1 className="ml-3 text-xl font-bold font-orbitron tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-color)] to-purple-500">
-            MUSIC STATION RADIO
+            MS RADIO
           </h1>
         </div>
         <div className="w-1/3 flex items-center justify-end gap-2 sm:gap-4 text-gray-400">
