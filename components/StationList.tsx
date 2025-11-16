@@ -12,6 +12,7 @@ interface StationListProps {
   onToggleFavorite: (station: Station) => void;
   songVotes: Record<string, SongVote>;
   onOpenGenreSpotlight: (genre: string) => void;
+  onOpenDetailModal: (station: Station) => void;
 }
 
 const PlayIndicator: React.FC = () => ( <div className="absolute top-2 right-2 bg-[var(--accent-color)] rounded-full p-1 shadow-lg animate-pulse"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-black" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.546l-6.38 8.195A2 2 0 005.46 15H14.54a2 2 0 001.84-3.259L10 3.546z" transform="rotate(90 10 10)" /></svg></div>);
@@ -22,7 +23,7 @@ const GridIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-
 const ListIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>;
 const ThumbUpIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333V17a1 1 0 001 1h6.364a1 1 0 00.942-.671l1.757-6.327a1 1 0 00-.942-1.329H13V4.5a1.5 1.5 0 00-3 0v5.833H6z" /></svg>;
 const SortIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9M3 12h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" /></svg>;
-const InfoIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+const InfoIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>;
 
 
 const TabButton: React.FC<{label: string; isActive: boolean; onClick: () => void}> = ({ label, isActive, onClick }) => (
@@ -31,7 +32,7 @@ const TabButton: React.FC<{label: string; isActive: boolean; onClick: () => void
 
 type SortMode = 'name' | 'rating';
 
-export const StationList: React.FC<StationListProps> = ({ stations, currentStation, onSelectStation, searchQuery, onSearchChange, onOpenSubmitModal, onToggleFavorite, songVotes, onOpenGenreSpotlight }) => {
+export const StationList: React.FC<StationListProps> = ({ stations, currentStation, onSelectStation, searchQuery, onSearchChange, onOpenSubmitModal, onToggleFavorite, songVotes, onOpenGenreSpotlight, onOpenDetailModal }) => {
   const [viewMode, setViewMode] = useState<LayoutMode>('grid');
   const [activeTab, setActiveTab] = useState<'all' | 'favorites' | 'community'>('all');
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
@@ -113,7 +114,7 @@ export const StationList: React.FC<StationListProps> = ({ stations, currentStati
                   </button>
                   {isActive && genre !== 'All' && (
                       <button onClick={() => onOpenGenreSpotlight(genre)} className="px-2 py-1 bg-[var(--accent-color)]/20 border-y border-r border-[var(--accent-color)] text-[var(--accent-color)] rounded-r-full hover:bg-[var(--accent-color)]/30" title={`Learn about ${genre}`}>
-                          <InfoIcon />
+                          <InfoIcon className="h-4 w-4"/>
                       </button>
                   )}
               </div>
@@ -149,6 +150,7 @@ export const StationList: React.FC<StationListProps> = ({ stations, currentStati
                     <StarRating rating={station.rating || 0} readOnly={true} starClassName="h-4 w-4" />
                     <span className="text-xs text-gray-500">({station.ratingsCount || 0})</span>
                 </div>
+                <button onClick={() => onOpenDetailModal(station)} className="absolute top-2 left-2 p-1.5 bg-black/50 rounded-full transition-opacity opacity-0 group-hover:opacity-100 hover:!opacity-100 hover:bg-black/70" title="More Info"><InfoIcon className="h-5 w-5"/></button>
                 <button onClick={() => onToggleFavorite(station)} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full transition-opacity opacity-0 group-hover:opacity-100 hover:!opacity-100 hover:bg-black/70"><HeartIcon isFavorite={!!station.isFavorite} /></button>
                 {currentStation?.name === station.name && <PlayIndicator />}
               </div>
@@ -167,7 +169,11 @@ export const StationList: React.FC<StationListProps> = ({ stations, currentStati
                         <span className="text-xs text-gray-500">({station.ratingsCount || 0})</span>
                     </div>
                 </div>
-                <div className="flex items-center gap-4"><button onClick={() => onToggleFavorite(station)} className="p-2 text-gray-400 hover:text-pink-500 rounded-full"><HeartIcon isFavorite={!!station.isFavorite} /></button>{currentStation?.streamUrl === station.streamUrl && ( <div className="w-6 h-6 rounded-full bg-[var(--accent-color)] animate-pulse"></div> )}</div>
+                 <div className="flex items-center gap-2">
+                    <button onClick={() => onOpenDetailModal(station)} className="p-2 text-gray-400 hover:text-white rounded-full"><InfoIcon className="h-5 w-5"/></button>
+                    <button onClick={() => onToggleFavorite(station)} className="p-2 text-gray-400 hover:text-pink-500 rounded-full"><HeartIcon isFavorite={!!station.isFavorite} /></button>
+                    {currentStation?.streamUrl === station.streamUrl && ( <div className="w-6 h-6 rounded-full bg-[var(--accent-color)] animate-pulse"></div> )}
+                </div>
               </div>
             ))}
           </div>

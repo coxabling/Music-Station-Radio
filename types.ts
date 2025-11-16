@@ -83,6 +83,7 @@ export interface ListeningStats {
   maxStreak?: number;
   genresPlayed?: string[];
   songHistory?: SongHistoryItem[];
+  stationReviews?: Record<string, StationReview[]>; // { [stationUrl]: reviews[] }
 }
 
 // Type for Alarm Clock
@@ -152,4 +153,35 @@ export interface LeaderboardEntry {
 export interface TranslationLanguage {
     code: string;
     name: string;
+}
+
+// New interface for Station Reviews
+export interface StationReview {
+  author: string;
+  rating: number; // 1-5
+  text: string;
+  createdAt: string; // ISO date string
+}
+
+// New interface for Listening Events
+export interface ListeningEvent {
+    id: string;
+    title: string;
+    description: string;
+    stationName: string;
+    genre: string;
+    startTime: string; // ISO date string
+    endTime: string; // ISO date string
+}
+
+// Represents the complete data structure for a single user, to be stored in the database.
+export interface UserData {
+    stats: ListeningStats;
+    alarm: Alarm | null;
+    songVotes: Record<string, SongVote>;
+    unlockedAchievements: Record<string, UnlockedAchievement>;
+    userStations: Station[];
+    favoriteStationUrls: string[];
+    activeTheme: ThemeName;
+    unlockedThemes: ThemeName[];
 }

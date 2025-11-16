@@ -33,7 +33,6 @@ export const AlarmModal: React.FC<AlarmModalProps> = ({ isOpen, onClose, alarm, 
       isActive: true,
     };
     onSetAlarm(newAlarm);
-    localStorage.setItem('alarm', JSON.stringify(newAlarm));
     onClose();
   };
   
@@ -41,7 +40,6 @@ export const AlarmModal: React.FC<AlarmModalProps> = ({ isOpen, onClose, alarm, 
     if (alarm) {
         const cancelledAlarm = { ...alarm, isActive: false };
         onSetAlarm(cancelledAlarm);
-        localStorage.setItem('alarm', JSON.stringify(cancelledAlarm));
     }
     onClose();
   }
@@ -50,7 +48,6 @@ export const AlarmModal: React.FC<AlarmModalProps> = ({ isOpen, onClose, alarm, 
     if(alarm){
         const disabledAlarm = { ...alarm, isActive: false };
         onSetAlarm(disabledAlarm);
-        localStorage.setItem('alarm', JSON.stringify(disabledAlarm));
     }
   }
 

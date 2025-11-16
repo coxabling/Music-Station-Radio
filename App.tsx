@@ -17,13 +17,15 @@ import { LeaderboardModal } from './components/LeaderboardModal';
 import { HistoryModal } from './components/HistoryModal';
 import { GenreSpotlightModal } from './components/GenreSpotlightModal';
 import { SongChartModal } from './components/SongChartModal';
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon, UserIcon } from './constants';
-import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme } from './types';
+import { StationDetailModal } from './components/StationDetailModal';
+import { EventsModal } from './components/EventsModal';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon, UserIcon, MOCK_REVIEWS } from './constants';
+import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, StationReview } from './types';
 import { slugify } from './utils/slugify';
 import { getDominantColor } from './utils/colorExtractor';
-import { getInitialStats, getInitialAlarm, getInitialSongVotes, getInitialUnlockedAchievements, getInitialUserStations, getInitialFavorites, getInitialTheme, getUnlockedThemes, saveUnlockedThemes } from './utils/storage';
 import { getLocationForGenre } from './utils/genreToLocation';
 import { LandingPage } from './components/LandingPage';
+import { getUserData, updateUserData } from './services/apiService';
 
 const hexToRgb = (hex: string) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -46,6 +48,7 @@ const App: React.FC = () => {
   const [activeTheme, setActiveTheme] = useState<ThemeName>('dynamic');
 
   const [allStations, setAllStations] = useState<Station[]>(defaultStations);
+  const [userStations, setUserStations] = useState<Station[]>([]);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [isAlarmModalOpen, setIsAlarmModalOpen] = useState(false);
@@ -56,18 +59,22 @@ const App: React.FC = () => {
   const [isLeaderboardModalOpen, setIsLeaderboardModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isSongChartModalOpen, setIsSongChartModalOpen] = useState(false);
+  const [isStationDetailModalOpen, setIsStationDetailModalOpen] = useState(false);
+  const [stationForDetail, setStationForDetail] = useState<Station | null>(null);
+  const [isEventsModalOpen, setIsEventsModalOpen] = useState(false);
+
   const [tippingModalStation, setTippingModalStation] = useState<Station | null>(null);
   const [genreForSpotlight, setGenreForSpotlight] = useState<string | null>(null);
   const [favoriteStationUrls, setFavoriteStationUrls] = useState<Set<string>>(new Set());
   const [unlockedThemes, setUnlockedThemes] = useState<Set<ThemeName>>(new Set(['dynamic']));
 
-  const [isPartyMode, setIsPartyMode] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [isImmersiveMode, setIsImmersiveMode] = useState(false);
 
-  const [stats, setStats] = useState<ListeningStats>(() => getInitialStats(null));
-  const [alarm, setAlarm] = useState<Alarm | null>(() => getInitialAlarm(null));
-  const [songVotes, setSongVotes] = useState<Record<string, SongVote>>(() => getInitialSongVotes(null));
-  const [unlockedAchievements, setUnlockedAchievements] = useState<Record<string, UnlockedAchievement>>(() => getInitialUnlockedAchievements(null));
+  const [stats, setStats] = useState<ListeningStats>({ totalTime: 0, stationPlays: {}, points: 0 });
+  const [alarm, setAlarm] = useState<Alarm | null>(null);
+  const [songVotes, setSongVotes] = useState<Record<string, SongVote>>({});
+  const [unlockedAchievements, setUnlockedAchievements] = useState<Record<string, UnlockedAchievement>>({});
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const statsUpdateInterval = useRef<number | null>(null);
   const alarmTimeout = useRef<number | null>(null);
@@ -82,33 +89,24 @@ const App: React.FC = () => {
   
   const accentColorRgb = useMemo(() => hexToRgb(accentColor), [accentColor]);
 
-  const getUserKey = (key: string) => currentUser ? `userData_${currentUser.username}_${key}` : null;
-
-  const loadUserData = useCallback((username: string) => {
+  const loadUserData = useCallback(async (username: string) => {
     setIsDataLoading(true);
 
-    const userStations = getInitialUserStations(username);
-    const favUrls = new Set(getInitialFavorites(username));
-    const theme = getInitialTheme(username);
-    const unlocked = getUnlockedThemes(username);
-    setUnlockedThemes(new Set(['dynamic', ...unlocked]));
-
-    if (theme && THEMES.some(t => t.name === theme)) {
-      setActiveTheme(theme);
-    } else {
-      setActiveTheme('dynamic');
-    }
-
+    const data = await getUserData(username);
+    
+    const favUrls = new Set(data.favoriteStationUrls);
     const stationsWithFavorites = defaultStations.map(s => ({...s, isFavorite: favUrls.has(s.streamUrl)}));
-    const userStationsWithFavorites = userStations.map(s => ({...s, isFavorite: favUrls.has(s.streamUrl)}));
+    const userStationsWithFavorites = data.userStations.map(s => ({...s, isFavorite: favUrls.has(s.streamUrl)}));
     
     setAllStations([...stationsWithFavorites, ...userStationsWithFavorites]);
+    setUserStations(data.userStations);
     setFavoriteStationUrls(favUrls);
-
-    setStats(getInitialStats(username));
-    setAlarm(getInitialAlarm(username));
-    setSongVotes(getInitialSongVotes(username));
-    setUnlockedAchievements(getInitialUnlockedAchievements(username));
+    setActiveTheme(data.activeTheme);
+    setUnlockedThemes(new Set(data.unlockedThemes));
+    setStats(data.stats);
+    setAlarm(data.alarm);
+    setSongVotes(data.songVotes);
+    setUnlockedAchievements(data.unlockedAchievements);
     
     const params = new URLSearchParams(window.location.search);
     const stationSlug = params.get('station');
@@ -121,7 +119,7 @@ const App: React.FC = () => {
         });
       }, 0);
     }
-    if(params.get('party') === 'true') setIsPartyMode(true);
+    if(params.get('party') === 'true') setIsChatOpen(true);
     
     setIsDataLoading(false);
   }, []);
@@ -173,12 +171,12 @@ const App: React.FC = () => {
   }, [currentStation]);
 
 
-  const handleLogin = useCallback((username: string) => {
+  const handleLogin = useCallback(async (username: string) => {
     const user = { username };
     setCurrentUser(user);
     localStorage.setItem('currentUser', JSON.stringify(user));
     setIsLoginModalOpen(false);
-    loadUserData(username);
+    await loadUserData(username);
     setToasts(prev => [...prev, {
       id: Date.now(),
       title: `Welcome, ${username}!`,
@@ -194,8 +192,9 @@ const App: React.FC = () => {
     localStorage.removeItem('currentUser');
     
     setAllStations(defaultStations);
+    setUserStations([]);
     setFavoriteStationUrls(new Set());
-    setStats(getInitialStats(null));
+    setStats({ totalTime: 0, stationPlays: {}, points: 0 });
     setAlarm(null);
     setSongVotes({});
     setUnlockedAchievements({});
@@ -207,6 +206,7 @@ const App: React.FC = () => {
 
   // --- Achievements Logic ---
   const unlockAchievement = useCallback((achievementId: AchievementID) => {
+    if (!currentUser) return;
     setUnlockedAchievements(prev => {
       if (prev[achievementId]) return prev;
 
@@ -216,8 +216,7 @@ const App: React.FC = () => {
       console.log(`%c[Achievement Unlocked] %c${achievement.name}`, "color: #67e8f9; font-weight: bold;", "color: white;");
 
       const newUnlocked: Record<string, UnlockedAchievement> = { ...prev, [achievementId]: { id: achievementId, unlockedAt: new Date().toISOString() }};
-      const key = getUserKey('unlockedAchievements');
-      if (key) localStorage.setItem(key, JSON.stringify(newUnlocked));
+      updateUserData(currentUser.username, { unlockedAchievements: newUnlocked });
 
       setToasts(prevToasts => [...prevToasts, { id: Date.now(), title: achievement.name, icon: achievement.icon, type: 'achievement' }]);
       return newUnlocked;
@@ -234,8 +233,8 @@ const App: React.FC = () => {
     if ((stats.currentStreak || 0) >= 3) unlockAchievement('streak_3');
     if ((stats.currentStreak || 0) >= 7) unlockAchievement('streak_7');
     if (favoriteStationUrls.size > 0) unlockAchievement('curator');
-    if (isPartyMode) unlockAchievement('party_starter');
-  }, [stats, favoriteStationUrls, isPartyMode, hasEnteredApp, unlockAchievement, currentUser]);
+    if (isChatOpen) unlockAchievement('party_starter');
+  }, [stats, favoriteStationUrls, isChatOpen, hasEnteredApp, unlockAchievement, currentUser]);
 
   useEffect(() => {
     if (currentStation && currentUser) {
@@ -253,8 +252,7 @@ const App: React.FC = () => {
         const genresPlayed = new Set(prevStats.genresPlayed || []);
         genresPlayed.add(currentStation.genre.split('/')[0].trim());
         const newStats: ListeningStats = { ...prevStats, lastListenDate: today, currentStreak: currentStreak, maxStreak: Math.max(prevStats.maxStreak || 0, currentStreak), genresPlayed: Array.from(genresPlayed) };
-        const key = getUserKey('listeningStats');
-        if (key) localStorage.setItem(key, JSON.stringify(newStats));
+        updateUserData(currentUser.username, { stats: newStats });
         return newStats;
       });
     }
@@ -287,8 +285,7 @@ const App: React.FC = () => {
           }
           
           const newStats: ListeningStats = { ...prevStats, totalTime: newTotalTime, points: newPoints, stationPlays: newStationPlays };
-          const key = getUserKey('listeningStats');
-          if (key) localStorage.setItem(key, JSON.stringify(newStats));
+          updateUserData(currentUser.username, { stats: newStats });
           return newStats;
         });
 
@@ -314,8 +311,7 @@ const App: React.FC = () => {
         if (stationToPlay) handleSelectStation(stationToPlay);
         const newAlarm = { ...alarm, isActive: false };
         setAlarm(newAlarm);
-        const key = getUserKey('alarm');
-        if (key) localStorage.setItem(key, JSON.stringify(newAlarm));
+        updateUserData(currentUser.username, { alarm: newAlarm });
       }, timeToAlarm);
     }
     return () => { if (alarmTimeout.current) clearTimeout(alarmTimeout.current); };
@@ -335,53 +331,45 @@ const App: React.FC = () => {
       } catch (error) { console.warn("Could not extract color from album art, using default.", error); setAlbumArtColor('#67e8f9'); }
     } else { setAlbumArtColor('#67e8f9'); }
     if (newArt !== backgrounds[activeBgIndex]) { const nextIndex = 1 - activeBgIndex; const newBackgrounds = [...backgrounds] as [string | null, string | null]; newBackgrounds[nextIndex] = newArt; setBackgrounds(newBackgrounds); setActiveBgIndex(nextIndex); }
-    if (nowPlaying?.songId && !songVotes[nowPlaying.songId] && currentUser) {
-      setSongVotes(prev => {
-        if (prev[nowPlaying.songId]) return prev;
+    
+    if (!currentUser) return;
+    
+    let updatedSongVotes = songVotes;
+    let updatedStats = stats;
+
+    if (nowPlaying?.songId && !songVotes[nowPlaying.songId]) {
         const newEntry: SongVote = { id: nowPlaying.songId!, artist: nowPlaying.artist, title: nowPlaying.title, albumArt: nowPlaying.albumArt || currentStation!.coverArt, likes: Math.floor(Math.random() * 15) + 1, dislikes: Math.floor(Math.random() * 5)};
-        const newVotes = { ...prev, [nowPlaying.songId!]: newEntry };
-        const key = getUserKey('songVotes');
-        if (key) localStorage.setItem(key, JSON.stringify(newVotes));
-        return newVotes;
-      });
+        updatedSongVotes = { ...songVotes, [nowPlaying.songId!]: newEntry };
+        setSongVotes(updatedSongVotes);
     }
 
-    // Update song history
-    if (nowPlaying?.songId && currentUser && currentStation && nowPlaying.title !== "Live Stream" && nowPlaying.title !== "Station Data Unavailable") {
-        setStats(prevStats => {
-            const history = prevStats.songHistory || [];
-            if (history[0]?.songId === nowPlaying.songId) return prevStats; // Don't add duplicates
-            
-            const newHistoryItem = {
-                songId: nowPlaying.songId,
-                title: nowPlaying.title,
-                artist: nowPlaying.artist,
-                albumArt: nowPlaying.albumArt || currentStation.coverArt,
-                stationName: currentStation.name,
-                playedAt: new Date().toISOString(),
-            };
-            const updatedHistory = [newHistoryItem, ...history].slice(0, 50); // Keep last 50
-            const newStats = { ...prevStats, songHistory: updatedHistory };
-            const key = getUserKey('listeningStats');
-            if(key) localStorage.setItem(key, JSON.stringify(newStats));
-            return newStats;
-        });
+    if (nowPlaying?.songId && currentStation && nowPlaying.title !== "Live Stream" && nowPlaying.title !== "Station Data Unavailable") {
+        const history = stats.songHistory || [];
+        if (history[0]?.songId !== nowPlaying.songId) {
+            const newHistoryItem = { songId: nowPlaying.songId, title: nowPlaying.title, artist: nowPlaying.artist, albumArt: nowPlaying.albumArt || currentStation.coverArt, stationName: currentStation.name, playedAt: new Date().toISOString() };
+            const updatedHistory = [newHistoryItem, ...history].slice(0, 50);
+            updatedStats = { ...stats, songHistory: updatedHistory };
+            setStats(updatedStats);
+        }
+    }
+    
+    // Batch update to storage if anything changed
+    if (updatedSongVotes !== songVotes || updatedStats !== stats) {
+        await updateUserData(currentUser.username, { songVotes: updatedSongVotes, stats: updatedStats });
     }
 
-  }, [activeBgIndex, backgrounds, songVotes, currentStation, currentUser]);
+  }, [activeBgIndex, backgrounds, songVotes, stats, currentStation, currentUser]);
   
-  const handleAddStation = (newStation: Station) => {
+  const handleAddStation = async (newStation: Station) => {
     if (!currentUser) return;
     const stationWithFavorite = {...newStation, isFavorite: favoriteStationUrls.has(newStation.streamUrl)};
+    
+    const newUserStations = [...userStations, newStation];
+    setUserStations(newUserStations);
     setAllStations(prev => [...prev, stationWithFavorite]);
-    try {
-      const key = getUserKey('userStations');
-      if (!key) return;
-      const storedStations = localStorage.getItem(key);
-      const userStations = storedStations ? JSON.parse(storedStations) : [];
-      userStations.push(newStation);
-      localStorage.setItem(key, JSON.stringify(userStations));
-    } catch (error) { console.error("Failed to save new station:", error); }
+    
+    await updateUserData(currentUser.username, { userStations: newUserStations });
+
     setIsSubmitModalOpen(false);
     unlockAchievement('station_submit');
   };
@@ -393,61 +381,43 @@ const App: React.FC = () => {
     else newFavoriteUrls.add(stationToToggle.streamUrl);
     setFavoriteStationUrls(newFavoriteUrls);
     setAllStations(prevStations => prevStations.map(s => s.streamUrl === stationToToggle.streamUrl ? { ...s, isFavorite: !s.isFavorite } : s));
-    try {
-      const key = getUserKey('favoriteStations');
-      if (key) localStorage.setItem(key, JSON.stringify(Array.from(newFavoriteUrls)));
-    } catch (error) { console.error("Failed to save favorites:", error); }
+    updateUserData(currentUser.username, { favoriteStationUrls: Array.from(newFavoriteUrls) });
   };
 
   const handleSetTheme = (themeName: ThemeName) => {
     if (!currentUser) return;
     setActiveTheme(themeName);
-    try {
-      const key = getUserKey('activeTheme');
-      if (key) localStorage.setItem(key, themeName);
-    } catch (error) { console.error("Failed to save theme:", error); }
+    updateUserData(currentUser.username, { activeTheme: themeName });
   };
+
+  const handleSetAlarm = (newAlarm: Alarm | null) => {
+    if (!currentUser) return;
+    setAlarm(newAlarm);
+    updateUserData(currentUser.username, { alarm: newAlarm });
+  }
   
-  const handleVote = useCallback((songId: string, voteType: 'like' | 'dislike') => {
+  const handleVote = useCallback(async (songId: string, voteType: 'like' | 'dislike') => {
     if (!currentUser) return;
 
     const previousVote = stats.songUserVotes?.[songId];
     if (previousVote === voteType) return; // Already voted this way, do nothing.
 
-    // Update user's personal vote record and award a point
-    setStats(prevStats => {
-        const newUserVotes = { ...(prevStats.songUserVotes || {}), [songId]: voteType };
-        // Award a point for engaging, but only if it's a new vote
-        const newPoints = previousVote ? prevStats.points : (prevStats.points || 0) + 1;
-        const newStats = { ...prevStats, songUserVotes: newUserVotes, points: newPoints };
-        const key = getUserKey('listeningStats');
-        if (key) localStorage.setItem(key, JSON.stringify(newStats));
-        return newStats;
-    });
+    const newUserVotes = { ...(stats.songUserVotes || {}), [songId]: voteType };
+    const newPoints = previousVote ? (stats.points || 0) : (stats.points || 0) + 1;
+    const newStats = { ...stats, songUserVotes: newUserVotes, points: newPoints };
+    setStats(newStats);
 
-    // Update the public-facing aggregate song votes
-    setSongVotes(prevVotes => {
-        const newVotes = { ...prevVotes };
-        if (!newVotes[songId]) return prevVotes; // Should not happen if UI is correct
-
-        const songVote = { ...newVotes[songId] };
-
-        // Increment the new vote type
-        if (voteType === 'like') songVote.likes += 1;
-        else songVote.dislikes += 1;
-
-        // If there was a previous vote, decrement the old vote type
-        if (previousVote === 'like') songVote.likes = Math.max(0, songVote.likes - 1);
-        if (previousVote === 'dislike') songVote.dislikes = Math.max(0, songVote.dislikes - 1);
+    const newVotes = { ...songVotes };
+    const songVote = { ...newVotes[songId] };
+    if (voteType === 'like') songVote.likes += 1;
+    else songVote.dislikes += 1;
+    if (previousVote === 'like') songVote.likes = Math.max(0, songVote.likes - 1);
+    if (previousVote === 'dislike') songVote.dislikes = Math.max(0, songVote.dislikes - 1);
+    newVotes[songId] = songVote;
+    setSongVotes(newVotes);
         
-        newVotes[songId] = songVote;
-        
-        const key = getUserKey('songVotes');
-        if (key) localStorage.setItem(key, JSON.stringify(newVotes));
-        
-        return newVotes;
-    });
-}, [currentUser, stats.songUserVotes, stats.points]);
+    await updateUserData(currentUser.username, { stats: newStats, songVotes: newVotes });
+}, [currentUser, stats, songVotes]);
 
   const handleRateStation = useCallback((stationUrl: string, rating: number) => {
     if (!currentUser) return;
@@ -469,32 +439,28 @@ const App: React.FC = () => {
     setStats(prevStats => {
         const newRatings = { ...prevStats.stationRatings, [stationUrl]: rating };
         const newStats = { ...prevStats, stationRatings: newRatings };
-        const key = getUserKey('listeningStats');
-        if (key) localStorage.setItem(key, JSON.stringify(newStats));
+        updateUserData(currentUser.username, { stats: newStats });
         return newStats;
     });
 
   }, [currentUser, stats.stationRatings]);
   
-  const handleUnlockTheme = useCallback((theme: Theme) => {
+  const handleUnlockTheme = useCallback(async (theme: Theme) => {
     if (!currentUser || !theme.cost) return;
     const currentPoints = stats.points || 0;
     if (currentPoints >= theme.cost) {
-        setStats(prev => {
-            const newStats = {...prev, points: currentPoints - theme.cost};
-            const key = getUserKey('listeningStats');
-            if (key) localStorage.setItem(key, JSON.stringify(newStats));
-            return newStats;
-        });
-        setUnlockedThemes(prev => {
-            const newUnlocked = new Set<ThemeName>(prev);
-            newUnlocked.add(theme.name);
-            if(currentUser) saveUnlockedThemes(currentUser.username, Array.from(newUnlocked));
-            return newUnlocked;
-        });
+        const newStats = {...stats, points: currentPoints - theme.cost};
+        setStats(newStats);
+        
+        const newUnlocked = new Set<ThemeName>(unlockedThemes);
+        newUnlocked.add(theme.name);
+        setUnlockedThemes(newUnlocked);
+        
+        await updateUserData(currentUser.username, { stats: newStats, unlockedThemes: Array.from(newUnlocked) });
+
         setToasts(prev => [...prev, {id: Date.now(), title: "Theme Unlocked!", message: `You can now use the ${theme.displayName} theme.`, icon: StarIcon, type: 'theme_unlocked'}]);
     }
-  }, [currentUser, stats.points]);
+  }, [currentUser, stats, unlockedThemes]);
 
   const favoriteStations = useMemo(() => allStations.filter(s => s.isFavorite), [allStations]);
   
@@ -509,6 +475,39 @@ const App: React.FC = () => {
     return { lat: 5.6, lng: 23.3, zoom: 4 };
   }, [currentStation]);
 
+  const handleOpenStationDetail = (station: Station) => {
+    setStationForDetail(station);
+    setIsStationDetailModalOpen(true);
+  };
+  
+  const handleAddReview = async (stationUrl: string, review: Omit<StationReview, 'createdAt' | 'author'>) => {
+    if (!currentUser) return;
+    
+    const newReview: StationReview = {
+        ...review,
+        author: currentUser.username,
+        createdAt: new Date().toISOString(),
+    };
+
+    const userReviews = stats.stationReviews?.[stationUrl] || [];
+    const updatedReviewsForStation = [...userReviews, newReview];
+    
+    const newStationReviews = { ...(stats.stationReviews || {}), [stationUrl]: updatedReviewsForStation };
+    
+    const newStats = { ...stats, stationReviews: newStationReviews };
+    setStats(newStats);
+    await updateUserData(currentUser.username, { stats: newStats });
+    
+    // Add toast notification
+    setToasts(prev => [...prev, {
+      id: Date.now(),
+      title: "Review Submitted!",
+      message: `Thanks for sharing your thoughts on ${stationForDetail?.name}.`,
+      icon: StarIcon,
+      type: 'points'
+    }]);
+  };
+
   if (!hasEnteredApp) {
     return <LandingPage onEnter={() => setHasEnteredApp(true)} />;
   }
@@ -517,7 +516,6 @@ const App: React.FC = () => {
     setIsDashboardModalOpen(false);
     setter(true);
   };
-
 
   return (
     <div className="min-h-screen bg-gray-900" style={{ '--accent-color': accentColor, '--accent-color-rgb': accentColorRgb } as React.CSSProperties}>
@@ -533,7 +531,7 @@ const App: React.FC = () => {
              <main className="flex-grow flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--accent-color)]"></div></main>
           ) : currentUser ? (
             <>
-              <main className={`flex-grow container mx-auto p-4 md:p-8 transition-all duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'} ${currentStation ? 'pb-24 md:pb-32' : ''}`}>
+              <main className={`flex-grow container mx-auto p-4 md:p-8 transition-all duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'} ${isChatOpen ? 'md:pr-[356px]' : ''} ${currentStation ? 'pb-24 md:pb-32' : ''}`}>
                 <StationList 
                   stations={filteredStations} 
                   currentStation={currentStation} 
@@ -544,11 +542,12 @@ const App: React.FC = () => {
                   onToggleFavorite={toggleFavorite} 
                   songVotes={songVotes} 
                   onOpenGenreSpotlight={setGenreForSpotlight}
+                  onOpenDetailModal={handleOpenStationDetail}
                 />
               </main>
-              {isPartyMode && currentStation && <ListeningPartyChat stationName={currentStation.name} />}
+              {currentStation && <ListeningPartyChat station={currentStation} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />}
               {currentStation && (
-                <RadioPlayer station={currentStation} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(prev => !prev)} songVotes={songVotes} onVote={handleVote} onRateStation={handleRateStation} userRating={stats.stationRatings?.[currentStation.streamUrl] || 0} onOpenTippingModal={() => setTippingModalStation(currentStation)} allStations={allStations} userSongVotes={stats.songUserVotes} onSelectStation={handleSelectStation} />
+                <RadioPlayer station={currentStation} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(prev => !prev)} songVotes={songVotes} onVote={handleVote} onRateStation={handleRateStation} userRating={stats.stationRatings?.[currentStation.streamUrl] || 0} onOpenTippingModal={() => setTippingModalStation(currentStation)} allStations={allStations} userSongVotes={stats.songUserVotes} onSelectStation={handleSelectStation} onToggleChat={() => setIsChatOpen(p => !p)} />
               )}
               <footer className={`text-center p-4 text-xs text-gray-500 transition-opacity ${isImmersiveMode ? 'opacity-0' : 'opacity-100'}`}>
                 <p>Powered by Music Station Radio</p>
@@ -564,7 +563,7 @@ const App: React.FC = () => {
       <LoginModal isOpen={isLoginModalOpen} onLogin={handleLogin} />
       <SubmitStationModal isOpen={isSubmitModalOpen} onClose={() => setIsSubmitModalOpen(false)} onSubmit={handleAddStation} />
       <StatsModal isOpen={isStatsModalOpen} onClose={() => setIsStatsModalOpen(false)} stats={stats} />
-      <AlarmModal isOpen={isAlarmModalOpen} onClose={() => setIsAlarmModalOpen(false)} alarm={alarm} onSetAlarm={setAlarm} favoriteStations={favoriteStations} />
+      <AlarmModal isOpen={isAlarmModalOpen} onClose={() => setIsAlarmModalOpen(false)} alarm={alarm} onSetAlarm={handleSetAlarm} favoriteStations={favoriteStations} />
       <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} activeTheme={activeTheme} onSetTheme={handleSetTheme} onUnlockTheme={handleUnlockTheme} unlockedThemes={unlockedThemes} currentPoints={stats.points || 0}/>
       <MapModal 
         isOpen={isMapModalOpen} 
@@ -583,6 +582,26 @@ const App: React.FC = () => {
       <HistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} history={stats.songHistory || []} />
       <GenreSpotlightModal isOpen={!!genreForSpotlight} onClose={() => setGenreForSpotlight(null)} genre={genreForSpotlight} />
       <SongChartModal isOpen={isSongChartModalOpen} onClose={() => setIsSongChartModalOpen(false)} songVotes={songVotes} />
+      <StationDetailModal 
+        isOpen={isStationDetailModalOpen}
+        onClose={() => setIsStationDetailModalOpen(false)}
+        station={stationForDetail}
+        allStations={allStations}
+        mockReviews={MOCK_REVIEWS}
+        userReviews={stats.stationReviews?.[stationForDetail?.streamUrl || ''] || []}
+        onAddReview={handleAddReview}
+        onSelectStation={(s) => {
+            handleSelectStation(s);
+            setIsStationDetailModalOpen(false);
+        }}
+        onRateStation={handleRateStation}
+        userRating={stats.stationRatings?.[stationForDetail?.streamUrl || ''] || 0}
+      />
+      <EventsModal isOpen={isEventsModalOpen} onClose={() => setIsEventsModalOpen(false)} onSelectStation={(stationName) => {
+        const stationToPlay = allStations.find(s => s.name === stationName);
+        if (stationToPlay) handleSelectStation(stationToPlay);
+        setIsEventsModalOpen(false);
+      }} />
       <DashboardModal 
         isOpen={isDashboardModalOpen} 
         onClose={() => setIsDashboardModalOpen(false)}
@@ -598,6 +617,7 @@ const App: React.FC = () => {
         onOpenLeaderboard={openModal(setIsLeaderboardModalOpen)}
         onOpenHistory={openModal(setIsHistoryModalOpen)}
         onOpenSongChart={openModal(setIsSongChartModalOpen)}
+        onOpenEvents={openModal(setIsEventsModalOpen)}
       />
 
       <style>{`

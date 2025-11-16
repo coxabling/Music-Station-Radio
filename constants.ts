@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Station, EQBand, EQPreset, Theme, Achievement, AchievementID, LeaderboardEntry, TranslationLanguage } from './types';
+import type { Station, EQBand, EQPreset, Theme, Achievement, AchievementID, LeaderboardEntry, TranslationLanguage, ListeningEvent, StationReview } from './types';
 import { getLocationForGenre } from './utils/genreToLocation';
 
 // --- Achievement Icons (using React.createElement to avoid JSX in .ts file) ---
@@ -176,3 +176,36 @@ export const SUPPORTED_TRANSLATION_LANGUAGES: TranslationLanguage[] = [
     { code: 'it', name: 'Italian' },
     { code: 'ko', name: 'Korean' },
 ];
+
+// New mock data for scheduled events
+export const LISTENING_EVENTS: ListeningEvent[] = [
+    {
+        id: 'evt1',
+        title: 'Reggae Roots Revival',
+        description: 'Join us for a two-hour deep dive into classic roots reggae and dub from the 70s and 80s.',
+        stationName: 'High Grade Radio',
+        genre: 'Reggae',
+        startTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours from now
+        endTime: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),   // 4 hours from now
+    },
+    {
+        id: 'evt2',
+        title: 'Afropop Future Forward',
+        description: 'Discover the future of Afropop. We\'re spinning the latest tracks from breakout artists across the continent.',
+        stationName: 'Nam Radio',
+        genre: 'Afropop',
+        startTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(), // 26 hours from now
+        endTime: new Date(Date.now() + 28 * 60 * 60 * 1000).toISOString(), // 28 hours from now
+    },
+];
+
+// New mock data for station reviews
+export const MOCK_REVIEWS: Record<string, StationReview[]> = {
+    "https://music-station.live/listen/high_grade_radio/radio.mp3": [
+        { author: 'ReggaeFan', rating: 5, text: 'Best reggae station on the web, hands down. The selection is always on point.', createdAt: new Date(Date.now() - 86400000).toISOString() },
+        { author: 'DubWise', rating: 4, text: 'Solid grooves, but I wish they played more deep cuts from the 70s.', createdAt: new Date(Date.now() - 172800000).toISOString() }
+    ],
+    "https://music-station.live/listen/namradio/radio.mp3": [
+        { author: 'AfroQueen', rating: 5, text: 'My daily dose of Afropop! Always keeps me dancing.', createdAt: new Date(Date.now() - 259200000).toISOString() },
+    ]
+};

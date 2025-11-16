@@ -21,6 +21,7 @@ const GeminiIcon: React.FC<{className?: string}> = ({className}) => (
 export const SongChartModal: React.FC<SongChartModalProps> = ({ isOpen, onClose, songVotes }) => {
   const [summary, setSummary] = useState('');
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  const [cachedSummary, setCachedSummary] = useState({ signature: '', text: '', timestamp: 0 });
   
   const rankedList = useMemo(() => {
     // FIX: Cast Object.values to SongVote[] to ensure correct type inference for filter and sort.
@@ -31,19 +32,33 @@ export const SongChartModal: React.FC<SongChartModalProps> = ({ isOpen, onClose,
   }, [songVotes]);
 
   useEffect(() => {
-    if (isOpen && rankedList.length > 0) {
-      const fetchSummary = async () => {
-        setIsSummaryLoading(true);
-        const result = await getCommunityHitsSummary(rankedList);
-        setSummary(result);
-        setIsSummaryLoading(false);
-      };
-      fetchSummary();
-    } else if (!isOpen) {
-        // Reset when modal is closed
-        setSummary('');
+    if (!isOpen) {
+      setSummary(''); // Clear displayed summary when closed, but keep cache
+      return;
     }
-  }, [isOpen, rankedList]);
+
+    if (rankedList.length > 0) {
+      const now = Date.now();
+      const currentSignature = rankedList.slice(0, 5).map(s => s.id).join(',');
+      const isCacheStale = now - cachedSummary.timestamp > 5 * 60 * 1000; // 5 minute cache validity
+
+      if (currentSignature !== cachedSummary.signature || isCacheStale) {
+        const fetchSummary = async () => {
+          setIsSummaryLoading(true);
+          const result = await getCommunityHitsSummary(rankedList);
+          setSummary(result);
+          setCachedSummary({ signature: currentSignature, text: result, timestamp: now });
+          setIsSummaryLoading(false);
+        };
+        fetchSummary();
+      } else {
+        setSummary(cachedSummary.text);
+        setIsSummaryLoading(false); // Ensure loading is off if using cache
+      }
+    } else {
+      setSummary(''); // Handle case where there are no ranked songs
+    }
+  }, [isOpen, rankedList, cachedSummary]);
   
   if (!isOpen) return null;
 

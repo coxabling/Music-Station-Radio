@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { Station, NowPlaying, EQSettings, SongVote } from '../types';
 import { fetchNowPlaying } from '../services/geminiService';
@@ -31,6 +28,7 @@ const ShoppingCartIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className
 const ShareIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" /></svg>;
 const VolumeUpIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>;
 const VolumeOffIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clipRule="evenodd" /><path d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" /></svg>;
+const ChatIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>;
 
 interface RadioPlayerProps {
   station: Station;
@@ -47,10 +45,11 @@ interface RadioPlayerProps {
   onOpenTippingModal: () => void;
   onSelectStation: (station: Station) => void;
   userSongVotes?: Record<string, 'like' | 'dislike'>;
+  onToggleChat: () => void;
 }
 
 export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
-  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes } = props;
+  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat } = props;
 
   const [isPlaying, setIsPlaying] = useState(true);
   const [volume, setVolume] = useState(0.75);
@@ -224,11 +223,12 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
         <div className="flex items-center justify-around text-gray-400 relative">
           <ControlButton icon={<InfoIcon/>} label="Info" onClick={() => setIsInfoModalOpen(true)}/>
           <ControlButton icon={<EqIcon/>} label="Equalizer" onClick={() => setIsEqModalOpen(true)}/>
-           <ControlButton icon={<ShareIcon/>} label="Share" onClick={() => setIsShareModalOpen(true)} hasFeature={isSong}/>
+          <ControlButton icon={<ChatIcon/>} label="Chat" onClick={onToggleChat}/>
           <div className="relative">
             <ControlButton icon={<SimilarIcon/>} label="Similar" onClick={() => setIsSimilarStationsOpen(prev => !prev)}/>
             {isSimilarStationsOpen && <SimilarStations isOpen={isSimilarStationsOpen} onClose={() => setIsSimilarStationsOpen(false)} station={station} allStations={allStations} onSelectStation={(s) => { setIsExpanded(false); props.onSelectStation(s); }} />}
           </div>
+          <ControlButton icon={<ShareIcon/>} label="Share" onClick={() => setIsShareModalOpen(true)} hasFeature={isSong}/>
           <ControlButton icon={<TipIcon/>} label="Tip Jar" onClick={onOpenTippingModal} hasFeature={!!station.tippingUrl}/>
           <ControlButton icon={<ShoppingCartIcon/>} label="Buy Song" onClick={handleBuyNow} hasFeature={isSong}/>
         </div>

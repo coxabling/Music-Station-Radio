@@ -12,6 +12,7 @@ const TrophyIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 
 const HistoryIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z" /></svg>;
 const LeaderboardIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
 const ChartBarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>;
+const CalendarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
 
 
 interface DashboardModalProps {
@@ -29,6 +30,7 @@ interface DashboardModalProps {
     onOpenLeaderboard: () => void;
     onOpenHistory: () => void;
     onOpenSongChart: () => void;
+    onOpenEvents: () => void;
 }
 
 const StatHighlight: React.FC<{ icon: React.ReactNode; value: string | number; label: string; }> = ({ icon, value, label }) => (
@@ -50,7 +52,7 @@ const ActionButton: React.FC<{ icon: React.ReactNode; label: string; onClick: ()
 
 
 export const DashboardModal: React.FC<DashboardModalProps> = (props) => {
-    const { isOpen, onClose, user, stats, favoritesCount, unlockedAchievements, onOpenStats, onOpenAlarm, onOpenSettings, onOpenMap, onOpenAchievements, onOpenLeaderboard, onOpenHistory, onOpenSongChart } = props;
+    const { isOpen, onClose, user, stats, favoritesCount, unlockedAchievements, onOpenStats, onOpenAlarm, onOpenSettings, onOpenMap, onOpenAchievements, onOpenLeaderboard, onOpenHistory, onOpenSongChart, onOpenEvents } = props;
     
     if (!isOpen || !user) return null;
 
@@ -114,11 +116,12 @@ export const DashboardModal: React.FC<DashboardModalProps> = (props) => {
                            <ActionButton icon={<LeaderboardIcon />} label="Leaderboard" onClick={onOpenLeaderboard} />
                            <ActionButton icon={<ChartBarIcon />} label="Song Chart" onClick={onOpenSongChart} />
                            <ActionButton icon={<HistoryIcon />} label="History" onClick={onOpenHistory} />
+                           <ActionButton icon={<CalendarIcon />} label="Events" onClick={onOpenEvents} />
                            <ActionButton icon={<StatsIcon />} label="My Stats" onClick={onOpenStats} />
                            <ActionButton icon={<TrophyIcon />} label="Achievements" onClick={onOpenAchievements} />
                            <ActionButton icon={<AlarmIcon />} label="Alarm Clock" onClick={onOpenAlarm} />
-                           <ActionButton icon={<MapIcon />} label="Explore Origins" onClick={onOpenMap} />
-                           <ActionButton icon={<SettingsIcon />} label="Settings" onClick={onOpenSettings} />
+                           <ActionButton icon={<MapIcon />} label="Explore Map" onClick={onOpenMap} />
+                           {/* <ActionButton icon={<SettingsIcon />} label="Settings" onClick={onOpenSettings} /> */}
                         </div>
                     </div>
 
