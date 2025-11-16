@@ -18,6 +18,7 @@ import { CommunityFeed } from './components/CommunityFeed';
 import { StoreView } from './components/StoreView';
 import { LeaderboardView } from './components/LeaderboardView';
 import { MapView } from './components/MapView';
+import { SongHistoryModal } from './components/SongHistoryModal';
 import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon, UserIcon, MOCK_REVIEWS } from './constants';
 import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, StationReview, ActiveView } from './types';
 import { slugify } from './utils/slugify';
@@ -57,6 +58,7 @@ const App: React.FC = () => {
   const [isStationDetailModalOpen, setIsStationDetailModalOpen] = useState(false);
   const [stationForDetail, setStationForDetail] = useState<Station | null>(null);
   const [isEventsModalOpen, setIsEventsModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [tippingModalStation, setTippingModalStation] = useState<Station | null>(null);
   const [genreForSpotlight, setGenreForSpotlight] = useState<string | null>(null);
   
@@ -545,7 +547,7 @@ const App: React.FC = () => {
           <Header currentUser={currentUser} onLogout={handleLogout} points={stats.points || 0} />
           
           <div className={`flex flex-grow h-[calc(100vh-68px)] transition-all duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-            {currentUser && <Sidebar activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModalOpen(true)} onOpenEvents={() => setIsEventsModalOpen(true)} />}
+            {currentUser && <Sidebar activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModalOpen(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} />}
             
             {isDataLoading ? (
               <main className="flex-grow flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--accent-color)]"></div></main>
@@ -593,6 +595,7 @@ const App: React.FC = () => {
         if (stationToPlay) handleSelectStation(stationToPlay);
         setIsEventsModalOpen(false);
       }} />
+      <SongHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} history={stats.songHistory || []} />
 
       <style>{`
         .accent-color-text { color: var(--accent-color); }

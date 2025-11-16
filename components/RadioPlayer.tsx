@@ -236,7 +236,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                 </button>
             )}
             <div className="flex items-center justify-around text-gray-400 relative">
-                <ControlButton icon={<InfoIcon/>} label="Info" onClick={() => setIsInfoModalOpen(true)}/>
+                <ControlButton icon={<InfoIcon/>} label="Info" onClick={() => setIsInfoModalOpen(true)} hasFeature={isSong}/>
                 <ControlButton icon={<EqIcon/>} label="Equalizer" onClick={() => setIsEqModalOpen(true)}/>
                 <ControlButton icon={<ChatIcon/>} label="Chat" onClick={onToggleChat}/>
                 <div className="relative">

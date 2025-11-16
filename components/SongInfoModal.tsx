@@ -39,6 +39,14 @@ export const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose, n
   const [copyButtonText, setCopyButtonText] = useState('Copy Lyrics');
   const [targetLanguage, setTargetLanguage] = useState(SUPPORTED_TRANSLATION_LANGUAGES[0].name);
 
+  const getErrorMessage = (error: unknown) => {
+    let errorMessage = "An error occurred. Please try again later.";
+    if (error instanceof Error && error.message.includes("RESOURCE_EXHAUSTED")) {
+        errorMessage = "Our AI service is a bit overwhelmed! Please wait a moment and try again.";
+    }
+    return errorMessage;
+  }
+
   useEffect(() => {
     if (isOpen && nowPlaying && nowPlaying.title !== 'Live Stream' && nowPlaying.title !== 'Station Data Unavailable') {
       setActiveTab('info');
@@ -53,7 +61,7 @@ export const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose, n
           setInfoContent(info);
         } catch (error) {
           console.error("Failed to fetch song info:", error);
-          setInfoContent("Could not retrieve information at this time. Please try again later.");
+          setInfoContent(getErrorMessage(error));
         } finally {
           setIsInfoLoading(false);
         }
@@ -72,7 +80,7 @@ export const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose, n
         setLyricsContent(lyrics.trim());
       } catch (error) {
         console.error("Failed to fetch lyrics:", error);
-        setLyricsContent("Could not retrieve lyrics at this time. Please try again later.");
+        setLyricsContent(getErrorMessage(error));
       } finally {
         setIsLyricsLoading(false);
       }
@@ -87,7 +95,7 @@ export const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose, n
       setTranslatedLyrics(translation.trim());
     } catch (error) {
       console.error("Failed to fetch translation:", error);
-      setTranslatedLyrics("Could not translate the lyrics at this time. Please try again later.");
+      setTranslatedLyrics(getErrorMessage(error));
     } finally {
       setIsTranslating(false);
     }
@@ -220,14 +228,14 @@ export const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose, n
         
         <div className="border-b border-gray-700/50 px-4">
             <nav className="flex space-x-2" role="tablist" aria-label="Song Information">
-                <TabButton tab="info" label="Info" />
-                <TabButton tab="lyrics" label="Lyrics" />
+                <TabButton tab="info" label="Info" disabled={!isSong} />
+                <TabButton tab="lyrics" label="Lyrics" disabled={!isSong} />
                 <TabButton tab="translate" label="Translate" disabled={!isSong} />
             </nav>
         </div>
         
         <div className="p-6 overflow-y-auto flex-grow" role="tabpanel">
-          {renderContent()}
+          {isSong ? renderContent() : <p className="text-gray-400 text-center">Detailed information is not available for this stream.</p>}
         </div>
 
         {isSong && (

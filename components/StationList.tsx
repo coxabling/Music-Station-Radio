@@ -142,7 +142,7 @@ export const StationList: React.FC<StationListProps> = ({ stations, currentStati
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {displayedStations.map((station, index) => (
               <div key={station.streamUrl} className="relative group flex flex-col station-card-animate" style={{ animationDelay: `${index * 30}ms`}}>
-                <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-lg overflow-hidden transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-color)] focus-visible:ring-opacity-75 shadow-lg hover:shadow-[var(--accent-color)]/40 hover:scale-[1.03] ${ currentStation?.name === station.name ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/50' : 'ring-2 ring-gray-700/50 hover:ring-[var(--accent-color)]/70' }`} style={{ aspectRatio: '1 / 1' }} aria-label={`Play ${station.name}`} >
+                <button onClick={() => onOpenDetailModal(station)} className={`w-full text-left rounded-lg overflow-hidden transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-color)] focus-visible:ring-opacity-75 shadow-lg hover:shadow-[var(--accent-color)]/40 hover:scale-[1.03] ${ currentStation?.name === station.name ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/50' : 'ring-2 ring-gray-700/50 hover:ring-[var(--accent-color)]/70' }`} style={{ aspectRatio: '1 / 1' }} aria-label={`View details for ${station.name}`} >
                   <img src={station.coverArt} alt={station.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                   <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-colors duration-300 p-4 flex flex-col justify-end"><h3 className="font-bold text-lg text-white truncate">{station.name}</h3><p className="text-xs text-gray-300 truncate">{station.genre}</p></div>
                 </button>
@@ -150,7 +150,6 @@ export const StationList: React.FC<StationListProps> = ({ stations, currentStati
                     <StarRating rating={station.rating || 0} readOnly={true} starClassName="h-4 w-4" />
                     <span className="text-xs text-gray-500">({station.ratingsCount || 0})</span>
                 </div>
-                <button onClick={() => onOpenDetailModal(station)} className="absolute top-2 left-2 p-1.5 bg-black/50 rounded-full transition-opacity opacity-0 group-hover:opacity-100 hover:!opacity-100 hover:bg-black/70" title="More Info"><InfoIcon className="h-5 w-5"/></button>
                 <button onClick={() => onToggleFavorite(station)} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full transition-opacity opacity-0 group-hover:opacity-100 hover:!opacity-100 hover:bg-black/70"><HeartIcon isFavorite={!!station.isFavorite} /></button>
                 {currentStation?.name === station.name && <PlayIndicator />}
               </div>
@@ -161,7 +160,7 @@ export const StationList: React.FC<StationListProps> = ({ stations, currentStati
             {displayedStations.map((station, index) => (
               <div key={station.streamUrl} className={`flex items-center p-3 rounded-lg transition-colors duration-200 station-card-animate ${currentStation?.streamUrl === station.streamUrl ? 'bg-gray-700/50' : 'bg-gray-800/30 hover:bg-gray-800/60'}`} style={{ animationDelay: `${index * 30}ms`}}>
                 <img src={station.coverArt} alt={station.name} className="w-12 h-12 rounded-md object-cover mr-4" />
-                <div className="flex-1 cursor-pointer" onClick={() => onSelectStation(station)}>
+                <div className="flex-1 cursor-pointer" onClick={() => onOpenDetailModal(station)}>
                     <h3 className="font-semibold text-white">{station.name}</h3>
                     <p className="text-sm text-gray-400">{station.genre}</p>
                     <div className="flex items-center gap-2 mt-1">
@@ -170,7 +169,6 @@ export const StationList: React.FC<StationListProps> = ({ stations, currentStati
                     </div>
                 </div>
                  <div className="flex items-center gap-2">
-                    <button onClick={() => onOpenDetailModal(station)} className="p-2 text-gray-400 hover:text-white rounded-full"><InfoIcon className="h-5 w-5"/></button>
                     <button onClick={() => onToggleFavorite(station)} className="p-2 text-gray-400 hover:text-pink-500 rounded-full"><HeartIcon isFavorite={!!station.isFavorite} /></button>
                     {currentStation?.streamUrl === station.streamUrl && ( <div className="w-6 h-6 rounded-full bg-[var(--accent-color)] animate-pulse"></div> )}
                 </div>

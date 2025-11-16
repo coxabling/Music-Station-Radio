@@ -18,6 +18,9 @@ interface StationDetailModalProps {
 
 type ActiveTab = 'reviews' | 'similar';
 
+const PlayIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.546l-6.38 8.195A2 2 0 005.46 15H14.54a2 2 0 001.84-3.259L10 3.546z" transform="rotate(90 10 10)" /></svg>;
+
+
 const TabButton: React.FC<{label: string; isActive: boolean; onClick: () => void}> = ({ label, isActive, onClick }) => (
     <button onClick={onClick} className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors focus:outline-none ${ isActive ? 'bg-gray-700/50 text-[var(--accent-color)] border-b-2 border-[var(--accent-color)]' : 'text-gray-400 hover:text-white' }`}>{label}</button>
 );
@@ -113,10 +116,21 @@ export const StationDetailModal: React.FC<StationDetailModalProps> = (props) => 
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </header>
+
+        <div className="px-4 pt-4 flex items-center justify-between gap-4">
+            <div>
+                <p className="text-xs text-gray-400 mb-1">Your Rating</p>
+                <StarRating rating={userRating} onRate={(r) => onRateStation(station.streamUrl, r)} starClassName="h-6 w-6"/>
+            </div>
+            <button onClick={() => onSelectStation(station)} className="flex items-center gap-2 bg-[var(--accent-color)] hover:opacity-80 text-black font-bold py-2.5 px-6 rounded-md transition-opacity">
+                <PlayIcon className="h-5 w-5"/>
+                Tune In
+            </button>
+        </div>
         
-        <div className="border-b border-gray-700/50 px-4">
+        <div className="border-b border-gray-700/50 px-4 mt-4">
             <nav className="flex space-x-2" role="tablist">
-                <TabButton label="Reviews" isActive={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} />
+                <TabButton label={`Reviews (${allReviewsForStation.length})`} isActive={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} />
                 <TabButton label="Listeners Also Like" isActive={activeTab === 'similar'} onClick={() => setActiveTab('similar')} />
             </nav>
         </div>

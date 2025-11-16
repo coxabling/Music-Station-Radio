@@ -61,6 +61,15 @@ interface AfricaMapProps {
   onSelectStation: (station: Station) => void;
 }
 
+const MapError: React.FC<{title: string; message: string; details?: string}> = ({title, message, details}) => (
+    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-900 text-red-400 p-4 text-center">
+        <h3 className="font-bold text-lg mb-2">{title}</h3>
+        <p className="text-sm">{message}</p>
+        {details && <p className="text-xs text-gray-500 mt-4">{details}</p>}
+    </div>
+);
+
+
 export const AfricaMap: React.FC<AfricaMapProps> = ({ center, zoom, stations, currentStation, onSelectStation }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
@@ -71,26 +80,23 @@ export const AfricaMap: React.FC<AfricaMapProps> = ({ center, zoom, stations, cu
 
   useEffect(() => {
     const authFailureCallback = () => {
-        setError("Google Maps API Authentication Failed. The provided MAPS_API_KEY might be invalid, restricted, or missing required APIs (Maps JavaScript API). See: https://developers.google.com/maps/documentation/javascript/error-messages#invalid-key-map-error");
+        setError("API Authentication Failed");
     };
 
-    // Use a dedicated API key for Google Maps for better security and management.
     const mapsApiKey = process.env.MAPS_API_KEY;
 
     if (mapsApiKey) {
         window.gm_authFailure = authFailureCallback;
-
         loadGoogleMapsApi(mapsApiKey)
         .then(() => setIsApiLoaded(true))
         .catch((err) => {
             console.error(err);
-            setError("Failed to load Google Maps. Please check your network connection.");
+            setError("Failed to load Google Maps script. Please check your network connection.");
         });
     } else {
-        setError("Google Maps API key is not configured. Please provide it in the MAPS_API_KEY environment variable.");
+        setError("API Key Missing");
     }
 
-    // Cleanup on unmount
     return () => {
         if (window.gm_authFailure === authFailureCallback) {
             delete window.gm_authFailure;
@@ -107,7 +113,7 @@ export const AfricaMap: React.FC<AfricaMapProps> = ({ center, zoom, stations, cu
             disableDefaultUI: true,
             zoomControl: true,
             // A Map ID is required for using Advanced Markers and cloud-based map styling.
-            // Replace 'DEMO_MAP_ID' with your actual Map ID from Google Cloud Console.
+            // This demo uses a placeholder ID. Replace with your actual Map ID from Google Cloud Console for production.
             mapId: 'DEMO_MAP_ID',
         });
         mapInstance.current = map;
@@ -176,7 +182,13 @@ export const AfricaMap: React.FC<AfricaMapProps> = ({ center, zoom, stations, cu
   }, [stations, currentStation, onSelectStation, isApiLoaded]);
 
   if (error) {
-    return <div className="w-full h-full flex items-center justify-center bg-gray-900 text-red-400 p-4 text-center">{error}</div>
+    if (error === "API Key Missing") {
+        return <MapError title="Map Unavailable" message="The MAPS_API_KEY environment variable is not configured." details="This feature requires a valid Google Maps JavaScript API key. Please refer to the setup instructions." />;
+    }
+    if (error === "API Authentication Failed") {
+         return <MapError title="Map Authentication Failed" message="The provided Google Maps API Key is invalid or restricted." details="Please check your key, billing status, and ensure the Maps JavaScript API is enabled in your Google Cloud project." />;
+    }
+    return <MapError title="Map Error" message={error} />;
   }
 
   return (
