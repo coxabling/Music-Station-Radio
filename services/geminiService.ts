@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import type { NowPlaying, Station } from '../types';
+import type { NowPlaying, Station, SongVote } from '../types';
 import { slugify } from "../utils/slugify";
 
 let ai: GoogleGenAI;
@@ -94,5 +94,46 @@ const getGenreInfo = async (genre: string): Promise<string> => {
   }
 };
 
+const translateLyrics = async (lyrics: string, language: string): Promise<string> => {
+  try {
+    const prompt = `Translate the following song lyrics into ${language}. Preserve the line breaks and poetic structure. Output only the translated lyrics. If you cannot perform the translation, respond with the exact text 'TRANSLATION_FAILED'.\n\nLyrics:\n${lyrics}`;
+    
+    const response = await getAi().models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+    });
 
-export { fetchNowPlaying, getSongInfo, fetchLyrics, getGenreInfo };
+    return response.text;
+  } catch (error) {
+    console.error(`Error translating lyrics to ${language} from Gemini:`, error);
+    return "Could not translate the lyrics at this time. Please try again later.";
+  }
+};
+
+const getCommunityHitsSummary = async (songs: SongVote[]): Promise<string> => {
+  if (songs.length === 0) {
+    return "The community chart is quiet for now. Like some songs to see what's trending!";
+  }
+  
+  try {
+    const songList = songs
+      .slice(0, 10) // Use top 10 for a concise prompt
+      .map(song => `- ${song.artist} - "${song.title}"`)
+      .join('\n');
+
+    const prompt = `You are a charismatic radio DJ. Look at this list of top songs voted on by our community. Write a short, engaging summary (2-3 sentences) about the vibe of the chart. Mention a couple of key genres or the general mood. Don't just list the songs. Here is the list of songs (Artist - Title): \n\n${songList}`;
+
+    const response = await getAi().models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+    });
+
+    return response.text;
+  } catch (error) {
+    console.error("Error getting community hits summary from Gemini:", error);
+    return "Having trouble reading the room... Check back in a bit for the community vibe!";
+  }
+};
+
+
+export { fetchNowPlaying, getSongInfo, fetchLyrics, getGenreInfo, translateLyrics, getCommunityHitsSummary };

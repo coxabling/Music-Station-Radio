@@ -138,7 +138,7 @@ export interface ToastData {
   title: string;
   message?: string;
   icon: React.FC<{className?: string}>;
-  type?: 'achievement' | 'points' | 'milestone' | 'theme_unlocked';
+  type?: 'achievement' | 'points' | 'milestone' | 'theme_unlocked' | 'login';
 }
 
 // Type for Leaderboard
@@ -146,4 +146,10 @@ export interface LeaderboardEntry {
     rank: number;
     username: string;
     points: number;
+}
+
+// Type for Lyric Translation
+export interface TranslationLanguage {
+    code: string;
+    name: string;
 }

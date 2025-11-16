@@ -16,7 +16,8 @@ import { TippingModal } from './components/TippingModal';
 import { LeaderboardModal } from './components/LeaderboardModal';
 import { HistoryModal } from './components/HistoryModal';
 import { GenreSpotlightModal } from './components/GenreSpotlightModal';
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon } from './constants';
+import { SongChartModal } from './components/SongChartModal';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon, UserIcon } from './constants';
 import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme } from './types';
 import { slugify } from './utils/slugify';
 import { getDominantColor } from './utils/colorExtractor';
@@ -54,6 +55,7 @@ const App: React.FC = () => {
   const [isDashboardModalOpen, setIsDashboardModalOpen] = useState(false);
   const [isLeaderboardModalOpen, setIsLeaderboardModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isSongChartModalOpen, setIsSongChartModalOpen] = useState(false);
   const [tippingModalStation, setTippingModalStation] = useState<Station | null>(null);
   const [genreForSpotlight, setGenreForSpotlight] = useState<string | null>(null);
   const [favoriteStationUrls, setFavoriteStationUrls] = useState<Set<string>>(new Set());
@@ -177,6 +179,13 @@ const App: React.FC = () => {
     localStorage.setItem('currentUser', JSON.stringify(user));
     setIsLoginModalOpen(false);
     loadUserData(username);
+    setToasts(prev => [...prev, {
+      id: Date.now(),
+      title: `Welcome, ${username}!`,
+      message: "Your journey through sound continues.",
+      icon: UserIcon,
+      type: 'login'
+    }]);
   }, [loadUserData]);
   
   const handleLogout = useCallback(() => {
@@ -573,6 +582,7 @@ const App: React.FC = () => {
       <LeaderboardModal isOpen={isLeaderboardModalOpen} onClose={() => setIsLeaderboardModalOpen(false)} currentUser={currentUser} userPoints={stats.points || 0} />
       <HistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} history={stats.songHistory || []} />
       <GenreSpotlightModal isOpen={!!genreForSpotlight} onClose={() => setGenreForSpotlight(null)} genre={genreForSpotlight} />
+      <SongChartModal isOpen={isSongChartModalOpen} onClose={() => setIsSongChartModalOpen(false)} songVotes={songVotes} />
       <DashboardModal 
         isOpen={isDashboardModalOpen} 
         onClose={() => setIsDashboardModalOpen(false)}
@@ -587,6 +597,7 @@ const App: React.FC = () => {
         onOpenAchievements={openModal(setIsAchievementsModalOpen)}
         onOpenLeaderboard={openModal(setIsLeaderboardModalOpen)}
         onOpenHistory={openModal(setIsHistoryModalOpen)}
+        onOpenSongChart={openModal(setIsSongChartModalOpen)}
       />
 
       <style>{`

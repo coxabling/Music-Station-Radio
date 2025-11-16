@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { NowPlaying } from '../types';
-import { getSongInfo, fetchLyrics } from '../services/geminiService';
+import { getSongInfo, fetchLyrics, translateLyrics } from '../services/geminiService';
+import { SUPPORTED_TRANSLATION_LANGUAGES } from '../constants';
 
 interface SongInfoModalProps {
   isOpen: boolean;
@@ -8,7 +9,7 @@ interface SongInfoModalProps {
   nowPlaying: NowPlaying | null;
 }
 
-type ActiveTab = 'info' | 'lyrics';
+type ActiveTab = 'info' | 'lyrics' | 'translate';
 
 const LoadingSpinner: React.FC = () => (
     <div className="flex justify-center items-center h-full">
@@ -29,16 +30,20 @@ export const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose, n
   
   const [infoContent, setInfoContent] = useState('');
   const [lyricsContent, setLyricsContent] = useState('');
+  const [translatedLyrics, setTranslatedLyrics] = useState('');
   
   const [isInfoLoading, setIsInfoLoading] = useState(false);
   const [isLyricsLoading, setIsLyricsLoading] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+  
   const [copyButtonText, setCopyButtonText] = useState('Copy Lyrics');
+  const [targetLanguage, setTargetLanguage] = useState(SUPPORTED_TRANSLATION_LANGUAGES[0].name);
 
   useEffect(() => {
     if (isOpen && nowPlaying && nowPlaying.title !== 'Live Stream' && nowPlaying.title !== 'Station Data Unavailable') {
-      // Reset state on open
       setActiveTab('info');
       setLyricsContent('');
+      setTranslatedLyrics('');
       setCopyButtonText('Copy Lyrics');
       
       const fetchInitialInfo = async () => {
@@ -53,7 +58,7 @@ export const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose, n
   }, [isOpen, nowPlaying]);
 
   const handleFetchLyrics = async () => {
-      if (!nowPlaying || lyricsContent) return; // Don't re-fetch
+      if (!nowPlaying || lyricsContent) return;
       
       setIsLyricsLoading(true);
       const lyrics = await fetchLyrics(nowPlaying.artist, nowPlaying.title);
@@ -61,9 +66,18 @@ export const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose, n
       setIsLyricsLoading(false);
   }
   
+  const handleFetchTranslation = async () => {
+    if (!lyricsContent || lyricsContent === 'LYRICS_NOT_FOUND') return;
+    setIsTranslating(true);
+    setTranslatedLyrics('');
+    const translation = await translateLyrics(lyricsContent, targetLanguage);
+    setTranslatedLyrics(translation.trim());
+    setIsTranslating(false);
+  };
+  
   const handleTabChange = (tab: ActiveTab) => {
     setActiveTab(tab);
-    if (tab === 'lyrics') {
+    if ((tab === 'lyrics' || tab === 'translate') && !lyricsContent) {
         handleFetchLyrics();
     }
   }
@@ -92,7 +106,6 @@ export const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose, n
 
   const isSong = nowPlaying && nowPlaying.title !== 'Live Stream' && nowPlaying.title !== 'Station Data Unavailable';
 
-
   const renderContent = () => {
       if (activeTab === 'info') {
           if (isInfoLoading) return <LoadingSpinner />;
@@ -104,20 +117,57 @@ export const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose, n
           if (lyricsContent === 'LYRICS_NOT_FOUND') {
               return <p className="text-gray-400 text-center">Sorry, lyrics for this song could not be found.</p>;
           }
-          // The pre tag respects whitespace and newlines, perfect for lyrics
           return <pre className="text-gray-300 whitespace-pre-wrap leading-relaxed font-sans">{lyricsContent}</pre>;
       }
+
+      if (activeTab === 'translate') {
+        if (isLyricsLoading) return <div className="text-center text-gray-400"><LoadingSpinner /> <p className="mt-2">Loading original lyrics first...</p></div>;
+        if (lyricsContent === 'LYRICS_NOT_FOUND') {
+            return <p className="text-gray-400 text-center">Original lyrics not found, cannot translate.</p>;
+        }
+
+        return (
+            <div>
+                <div className="flex items-center gap-2 mb-4">
+                    <select
+                        value={targetLanguage}
+                        onChange={(e) => setTargetLanguage(e.target.value)}
+                        className="flex-grow bg-gray-900/50 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-1 focus:ring-[var(--accent-color)]"
+                    >
+                        {SUPPORTED_TRANSLATION_LANGUAGES.map(lang => (
+                            <option key={lang.code} value={lang.name}>{lang.name}</option>
+                        ))}
+                    </select>
+                    <button
+                        onClick={handleFetchTranslation}
+                        disabled={isTranslating}
+                        className="bg-[var(--accent-color)] hover:opacity-80 text-black font-bold py-2 px-4 rounded-md transition-opacity disabled:opacity-50"
+                    >
+                        {isTranslating ? 'Translating...' : 'Translate'}
+                    </button>
+                </div>
+                {isTranslating && <LoadingSpinner />}
+                {translatedLyrics && translatedLyrics !== 'TRANSLATION_FAILED' && (
+                    <pre className="text-gray-300 whitespace-pre-wrap leading-relaxed font-sans">{translatedLyrics}</pre>
+                )}
+                {translatedLyrics === 'TRANSLATION_FAILED' && (
+                    <p className="text-gray-400 text-center">Sorry, we couldn't translate these lyrics.</p>
+                )}
+            </div>
+        );
+    }
       return null;
   }
 
-  const TabButton: React.FC<{tab: ActiveTab, label: string}> = ({ tab, label }) => (
+  const TabButton: React.FC<{tab: ActiveTab, label: string, disabled?: boolean}> = ({ tab, label, disabled }) => (
     <button
         onClick={() => handleTabChange(tab)}
+        disabled={disabled}
         className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors focus:outline-none ${
             activeTab === tab 
             ? 'bg-gray-700/50 text-[var(--accent-color)] border-b-2 border-[var(--accent-color)]' 
             : 'text-gray-400 hover:text-white'
-        }`}
+        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         aria-label={`Switch to ${label} tab`}
     >
         {label}
@@ -154,6 +204,7 @@ export const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose, n
             <nav className="flex space-x-2" role="tablist" aria-label="Song Information">
                 <TabButton tab="info" label="Info" />
                 <TabButton tab="lyrics" label="Lyrics" />
+                <TabButton tab="translate" label="Translate" disabled={!isSong} />
             </nav>
         </div>
         
