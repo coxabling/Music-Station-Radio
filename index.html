@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- SEO -->
+    <title>Music Station Radio | Stream Your Favorite Genres</title>
+    <meta name="description" content="Tune in to a world of music. Discover thousands of live radio stations, from Afropop to Reggae, with our modern, AI-enhanced web player. Your next favorite song is playing now." />
+    <meta name="keywords" content="Online Radio, Music Streaming, Web Radio, Radio Player, Live Radio, Afropop, Reggae, World Music, Free Radio" />
+    <link rel="canonical" href="https://music-station-radio.com/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://music-station-radio.com/" />
+    <meta property="og:title" content="Music Station Radio | Stream Your Favorite Genres" />
+    <meta property="og:description" content="Tune in to a world of music. Discover live stations with our AI-enhanced web player." />
+    <meta property="og:image" content="https://storage.googleapis.com/aistudio-hosting/public-assets/music-station-radio-social-card.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://music-station-radio.com/" />
+    <meta property="twitter:title" content="Music Station Radio | Stream Your Favorite Genres" />
+    <meta property="twitter:description" content="Tune in to a world of music. Discover live stations with our AI-enhanced web player." />
+    <meta property="twitter:image" content="https://storage.googleapis.com/aistudio-hosting/public-assets/music-station-radio-social-card.png" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#111827" />
+
+    <!-- iOS support -->
+    <link rel="apple-touch-icon" href="/icon-192x192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Music Station Radio">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <script>
+      // Force dark mode on page load to prevent FOUC
+      document.documentElement.classList.add('dark');
+    </script>
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "RadioBroadcastService",
+      "name": "Music Station Radio",
+      "description": "An online radio streaming service featuring a diverse collection of music genres from around the world, including Afropop, Reggae, and World Music.",
+      "provider": {
+        "@type": "Organization",
+        "name": "Music Station Radio",
+        "url": "https://music-station-radio.com/"
+      },
+      "url": "https://music-station-radio.com/"
+    }
+    </script>
+    <style>
+      body {
+        font-family: 'Poppins', sans-serif;
+        background-color: #030712; /* gray-950 */
+      }
+      .font-orbitron {
+        font-family: 'Orbitron', sans-serif;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.1"
+  }
+}
+</script>
+</head>
+  <body class="dark">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            })
+            .catch(error => {
+              console.log('ServiceWorker registration failed: ', error);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>
