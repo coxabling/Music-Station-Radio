@@ -297,7 +297,8 @@ const App: React.FC = () => {
           if (lastDate === yesterdayStr) currentStreak += 1;
           else currentStreak = 1;
         }
-        // FIX: Explicitly type the Set to avoid 'unknown[]' error.
+        // FIX: When initializing a Set with a potentially empty array, TypeScript infers its type as `unknown`.
+        // Explicitly setting the type to `Set<string>` ensures that `Array.from` returns `string[]` as expected.
         const genresPlayed = new Set<string>(prevStats.genresPlayed || []);
         genresPlayed.add(currentStation.genre.split('/')[0].trim());
         const newStats: ListeningStats = { ...prevStats, lastListenDate: today, currentStreak: currentStreak, maxStreak: Math.max(prevStats.maxStreak || 0, currentStreak), genresPlayed: Array.from(genresPlayed) };

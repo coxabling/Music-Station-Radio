@@ -63,7 +63,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, onO
         <nav className="hidden md:flex w-20 bg-gray-950/30 p-2 flex-shrink-0 flex-col items-center gap-3 border-r border-white/10">
             <NavButton label="Home" icon={getHomeIcon()} isActive={isDashboardActive} onClick={handleDashboardClick} />
             <NavButton label="Explore" icon={<ExploreIcon className="w-6 h-6"/>} isActive={activeView === 'explore'} onClick={() => setActiveView('explore')} />
-            <NavButton label="Rooms" icon={<ChatBubbleIcon className="w-6 h-6"/>} isActive={activeView === 'genre_chat'} onClick={() => setActiveView('genre_chat')} />
             
             <div className="w-full h-px bg-gray-700 my-2" />
 
