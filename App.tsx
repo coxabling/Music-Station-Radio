@@ -460,47 +460,71 @@ const App: React.FC = () => {
     updateUserData(currentUser.username, { activeView: view });
   }, [currentUser]);
 
+  const handleGoToHome = useCallback(() => {
+    let targetView: ActiveView = 'explore';
+    if (currentUser) {
+        switch (currentUser.role) {
+            case 'artist':
+                targetView = 'artist_dashboard';
+                break;
+            case 'owner':
+                targetView = 'station_manager_dashboard';
+                break;
+            case 'admin':
+                targetView = 'admin';
+                break;
+            case 'user':
+            default:
+                targetView = 'explore';
+                break;
+        }
+    }
+    handleSetActiveView(targetView);
+  }, [currentUser, handleSetActiveView]);
+
   const handleSetAlarm = (newAlarm: Alarm | null) => {
     if (!currentUser) return;
     setAlarm(newAlarm);
     updateUserData(currentUser.username, { alarm: newAlarm });
   }
   
+  // FIX: Refactored to use state updater functions correctly and avoid race conditions.
   const handleVote = useCallback((songId: string, voteType: 'like' | 'dislike') => {
     if (!currentUser) return;
 
-    let finalStats: ListeningStats;
-    let finalVotes: Record<string, SongVote>;
-
     setStats(prevStats => {
         const previousVote = prevStats.songUserVotes?.[songId];
-        if (previousVote === voteType) return prevStats;
+        if (previousVote === voteType) {
+            return prevStats; // No change
+        }
 
         const newUserVotes = { ...(prevStats.songUserVotes || {}), [songId]: voteType };
         const newPoints = previousVote ? (prevStats.points || 0) : (prevStats.points || 0) + 1;
-        finalStats = { ...prevStats, songUserVotes: newUserVotes, points: newPoints };
-        return finalStats;
-    });
-
-    setSongVotes(prevVotes => {
-        const newVotes = { ...prevVotes };
-        const songVote = { ...newVotes[songId] };
-        if (voteType === 'like') songVote.likes += 1;
-        else songVote.dislikes += 1;
+        const newStats = { ...prevStats, songUserVotes: newUserVotes, points: newPoints };
         
-        const previousVote = stats.songUserVotes?.[songId]; // Use non-functional state here for previous vote check
-        if (previousVote === 'like') songVote.likes = Math.max(0, songVote.likes - 1);
-        if (previousVote === 'dislike') songVote.dislikes = Math.max(0, songVote.dislikes - 1);
-        
-        newVotes[songId] = songVote;
-        finalVotes = newVotes;
+        setSongVotes(prevVotes => {
+            const newVotes = { ...prevVotes };
+            const songVote = { ...newVotes[songId] };
 
-        // Save both states together after they've been calculated
-        updateUserData(currentUser.username, { stats: finalStats, songVotes: finalVotes });
+            // Increment new vote type
+            if (voteType === 'like') songVote.likes += 1;
+            else songVote.dislikes += 1;
+            
+            // Decrement old vote type if it existed
+            if (previousVote === 'like') songVote.likes = Math.max(0, songVote.likes - 1);
+            if (previousVote === 'dislike') songVote.dislikes = Math.max(0, songVote.dislikes - 1);
+            
+            newVotes[songId] = songVote;
+            
+            // Persist both changes
+            updateUserData(currentUser.username, { stats: newStats, songVotes: newVotes });
 
-        return newVotes;
+            return newVotes;
+        });
+
+        return newStats;
     });
-}, [currentUser, stats.songUserVotes]);
+}, [currentUser]);
 
   const handleRateStation = useCallback((stationUrl: string, rating: number) => {
     if (!currentUser) return;
@@ -873,7 +897,7 @@ const App: React.FC = () => {
         <div className="absolute inset-0 bg-black/70 backdrop-blur-2xl"></div>
 
         <div className="relative text-gray-200 flex flex-col h-full pt-16">
-          <Header currentUser={currentUser} onLogout={handleLogout} points={stats.points || 0} />
+          <Header currentUser={currentUser} onLogout={handleLogout} points={stats.points || 0} onGoToHome={handleGoToHome} />
           
           <div className={`flex flex-1 overflow-hidden transition-opacity duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
             {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={handleSetActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModalOpen(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} />}

@@ -14,9 +14,12 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, u
   const rankedList = useMemo(() => {
     if (!currentUser) return [];
 
+    // Remove current user from mock data to ensure their latest points are used
+    const otherUsers = LEADERBOARD_DATA.filter(u => u.username !== currentUser.username);
+
     const userEntry = { username: currentUser.username, points: userPoints, role: currentUser.role };
-    const combined = [...LEADERBOARD_DATA, userEntry]
-      .filter((v,i,a)=>a.findIndex(v2=>(v2.username===v.username))===i) // Make unique
+    
+    const combined = [...otherUsers, userEntry]
       .sort((a, b) => b.points - a.points)
       .map((user, index) => ({ ...user, rank: index + 1 }));
       
