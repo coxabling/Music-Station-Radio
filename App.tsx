@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -22,7 +23,7 @@ import { AdminDashboardView } from './components/AdminDashboardView';
 import { StationManagerDashboardView } from './components/StationManagerDashboardView';
 import { ArtistDashboardView } from './components/ArtistDashboardView';
 import { RightPanel } from './components/RightPanel';
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon, UserIcon, ExploreIcon, RocketIcon, UploadIcon, ShieldCheckIcon, MUSIC_SUBMISSION_COST } from './constants';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon, UserIcon, ExploreIcon, RocketIcon, UploadIcon, ShieldCheckIcon, MUSIC_SUBMISSION_COST, XCircleIcon } from './constants';
 import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, StationReview, ActiveView, UserData, MusicSubmission } from './types';
 import { slugify } from './utils/slugify';
 import { getDominantColor } from './utils/colorExtractor';
@@ -472,6 +473,35 @@ const App: React.FC = () => {
     unlockAchievement('station_submit');
   };
   
+  const handleDeleteStation = useCallback(async (stationToDelete: Station) => {
+    if (currentUser?.role !== 'admin') return;
+
+    // Remove from global list
+    const newAllStations = allStations.filter(s => s.streamUrl !== stationToDelete.streamUrl);
+    setAllStations(newAllStations);
+
+    if (stationToDelete.owner) {
+        const ownerData = await getUserData(stationToDelete.owner);
+        if (ownerData) {
+             const updatedOwnerStations = ownerData.userStations.filter(s => s.streamUrl !== stationToDelete.streamUrl);
+             await updateUserData(stationToDelete.owner, { userStations: updatedOwnerStations });
+        }
+    }
+
+    // If the current user owns it (e.g. admin is testing), update local state
+    if (stationToDelete.owner === currentUser.username) {
+         setUserStations(prev => prev.filter(s => s.streamUrl !== stationToDelete.streamUrl));
+    }
+
+    setToasts(prev => [...prev, {
+        id: Date.now(),
+        title: "Station Deleted",
+        message: `${stationToDelete.name} has been removed.`,
+        icon: XCircleIcon,
+        type: 'error'
+    }]);
+  }, [currentUser, allStations]);
+
   const toggleFavorite = (stationToToggle: Station) => {
     if (!currentUser) return;
     const newFavoriteUrls = new Set(favoriteStationUrls);
@@ -480,7 +510,7 @@ const App: React.FC = () => {
     setFavoriteStationUrls(newFavoriteUrls);
     setAllStations(prevStations => prevStations.map(s => s.streamUrl === stationToToggle.streamUrl ? { ...s, isFavorite: !s.isFavorite } : s));
     // FIX: Using Array.from() to convert the Set to an array. Spreading a Set (`...newFavoriteUrls`) can lead to type inference issues in some TypeScript configurations.
-    updateUserData(currentUser.username, { favoriteStationUrls: Array.from(newFavoriteUrls) });
+    updateUserData(currentUser.username, { favoriteStationUrls: Array.from(newFavoriteUrls) as string[] });
   };
 
   const handleSetTheme = (themeName: ThemeName) => {
@@ -692,15 +722,24 @@ const App: React.FC = () => {
   }, []);
 
   const handleUpdateStation = useCallback(async (updatedStation: Station) => {
-    if (!currentUser || updatedStation.owner !== currentUser.username) return;
+    if (!currentUser || (updatedStation.owner !== currentUser.username && currentUser.role !== 'admin')) return;
 
     const newAllStations = allStations.map(s => s.streamUrl === updatedStation.streamUrl ? updatedStation : s);
     setAllStations(newAllStations);
 
+    // If this station is in the user's personal list, update it there too
     if (userStations.some(s => s.streamUrl === updatedStation.streamUrl)) {
         const newUserStations = userStations.map(s => s.streamUrl === updatedStation.streamUrl ? updatedStation : s);
         setUserStations(newUserStations);
         await updateUserData(currentUser.username, { userStations: newUserStations });
+    } 
+    // If admin is editing someone else's station, we should persist this change to that user's data
+    else if (updatedStation.owner) {
+         const ownerData = await getUserData(updatedStation.owner);
+         if (ownerData) {
+             const updatedOwnerStations = ownerData.userStations.map(s => s.streamUrl === updatedStation.streamUrl ? updatedStation : s);
+             await updateUserData(updatedStation.owner, { userStations: updatedOwnerStations });
+         }
     }
     
     if (currentStation?.streamUrl === updatedStation.streamUrl) {
@@ -899,7 +938,7 @@ const App: React.FC = () => {
       case 'leaderboard':
         return <LeaderboardView currentUser={currentUser} userPoints={stats.points || 0} />;
       case 'admin':
-        return <AdminDashboardView stations={allStations} onApproveClaim={handleApproveClaim} onDenyClaim={handleDenyClaim} currentUser={currentUser} onUpdateUserRole={handleUpdateUserRole} />;
+        return <AdminDashboardView stations={allStations} onApproveClaim={handleApproveClaim} onDenyClaim={handleDenyClaim} currentUser={currentUser} onUpdateUserRole={handleUpdateUserRole} onEditStation={handleOpenEditModal} onDeleteStation={handleDeleteStation} />;
       case 'dashboard':
         return <DashboardView user={currentUser} stats={stats} favoritesCount={favoriteStationUrls.size} unlockedAchievements={unlockedAchievements} />;
       case 'explore':
