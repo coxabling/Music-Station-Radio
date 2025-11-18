@@ -31,6 +31,30 @@ const VolumeOffIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h
 const ChatIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>;
 const ShoppingCartIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" /></svg>;
 
+ const FullscreenIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1v4m0 0h-4m4-4l-5 5M4 16v4m0 0h4m-4-4l5-5m11 5l-5-5" />
+  </svg>
+ );
+ const ExitFullscreenIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10 4H4v6m0 0l6-6m-6 6l6 6M14 20h6v-6m0 0l-6 6m6-6l-6-6" />
+  </svg>
+ );
+
+ const HideHeaderIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18" />
+  </svg>
+ );
+
+ const ShowHeaderIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18" />
+  </svg>
+ );
 interface RadioPlayerProps {
   station: Station;
   allStations: Station[];
@@ -53,10 +77,12 @@ interface RadioPlayerProps {
   onHidePlayer: () => void;
   isVisible: boolean;
   onOpenBuyNow: () => void;
+  isHeaderVisible: boolean;
+  onToggleHeader: () => void;
 }
 
 export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
-  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible, onOpenBuyNow } = props;
+  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible, onOpenBuyNow, isHeaderVisible, onToggleHeader } = props;
 
   const [isPlaying, setIsPlaying] = useState(true);
   const [volume, setVolume] = useState(0.75);
@@ -190,9 +216,19 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
     >
       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-black/50"></div>
       <div className="flex-shrink-0 text-center relative z-10">
-        <button onClick={() => setIsExpanded(false)} className="absolute top-0 left-0 text-gray-400 hover:text-white"><ChevronDownIcon/></button>
-        <p className="text-sm font-semibold uppercase tracking-wider">Now Playing</p>
-        <p className="text-xs text-gray-400">{station.name}</p>
+        <button onClick={() => setIsExpanded(false)} className="absolute top-0 left-0 p-4 text-gray-400 hover:text-white"><ChevronDownIcon/></button>
+        <div className="absolute top-0 right-0 flex items-center">
+          <button onClick={onToggleHeader} className="p-4 text-gray-400 hover:text-white" title={isHeaderVisible ? "Hide Header" : "Show Header"}>
+            {isHeaderVisible ? <HideHeaderIcon /> : <ShowHeaderIcon />}
+          </button>
+          <button onClick={onToggleImmersive} className="p-4 text-gray-400 hover:text-white" title={isImmersive ? "Exit Immersive Mode" : "Enter Immersive Mode"}>
+            {isImmersive ? <ExitFullscreenIcon /> : <FullscreenIcon />}
+          </button>
+        </div>
+        <div className="pt-3">
+          <p className="text-sm font-semibold uppercase tracking-wider">Now Playing</p>
+          <p className="text-xs text-gray-400">{station.name}</p>
+        </div>
       </div>
       <div className="relative flex-grow flex flex-col items-center justify-center gap-4 text-center px-4 z-10">
         {raidStatus === 'voting' && raidTarget && (

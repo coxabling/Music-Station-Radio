@@ -46,6 +46,7 @@ const App: React.FC = () => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [activeView, setActiveView] = useState<ActiveView>('explore');
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
 
   const [currentStation, setCurrentStation] = useState<Station | null>(null);
   const [stationForDetail, setStationForDetail] = useState<Station | null>(null);
@@ -98,6 +99,10 @@ const App: React.FC = () => {
   const pointsToastTimer = useRef<number>(0);
   const mainContentRef = useRef<HTMLElement | null>(null);
   
+  const handleToggleHeader = useCallback(() => {
+    setIsHeaderVisible(p => !p);
+  }, []);
+
   const accentColor = useMemo(() => {
     if (activeTheme === 'dynamic') {
       return albumArtColor;
@@ -591,8 +596,8 @@ const App: React.FC = () => {
         newUnlocked.add(theme.name);
         setUnlockedThemes(newUnlocked);
         
-        // FIX: Replaced spread syntax with Array.from to fix type inference issue.
-        await updateUserData(currentUser.username, { stats: newStats, unlockedThemes: Array.from(newUnlocked) });
+        // FIX: Explicitly cast to ThemeName[] to fix type inference issue with Set to array conversion.
+        await updateUserData(currentUser.username, { stats: newStats, unlockedThemes: [...newUnlocked] as ThemeName[] });
 
         setToasts(prev => [...prev, {id: Date.now(), title: "Theme Unlocked!", message: `You can now use the ${theme.displayName} theme.`, icon: StarIcon, type: 'theme_unlocked'}]);
     }
@@ -925,8 +930,8 @@ const App: React.FC = () => {
         ))}
         <div className="absolute inset-0 bg-black/70 backdrop-blur-2xl"></div>
 
-        <div className="relative text-gray-200 flex flex-col h-full pt-16">
-          <Header currentUser={currentUser} onLogout={handleLogout} points={stats.points || 0} onGoToHome={handleGoToHome} />
+        <div className={`relative text-gray-200 flex flex-col h-full transition-[padding-top] duration-300 ${isHeaderVisible ? 'pt-16' : 'pt-0'}`}>
+          <Header currentUser={currentUser} onLogout={handleLogout} points={stats.points || 0} onGoToHome={handleGoToHome} isVisible={isHeaderVisible} />
           
           <div className={`flex flex-1 overflow-hidden transition-opacity duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
             {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={handleSetActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModalOpen(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} />}
@@ -985,6 +990,8 @@ const App: React.FC = () => {
               onHidePlayer={() => setIsPlayerVisible(false)}
               isVisible={isPlayerVisible}
               onOpenBuyNow={() => setIsBuyNowModalOpen(true)}
+              isHeaderVisible={isHeaderVisible}
+              onToggleHeader={handleToggleHeader}
             />
           )}
         </div>
