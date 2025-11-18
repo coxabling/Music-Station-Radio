@@ -90,6 +90,7 @@ const App: React.FC = () => {
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const [raidStatus, setRaidStatus] = useState<'idle' | 'voting'>('idle');
   const [raidTarget, setRaidTarget] = useState<Station | null>(null);
+  const [isPlayerVisible, setIsPlayerVisible] = useState(true);
 
   const statsUpdateInterval = useRef<number | null>(null);
   const alarmTimeout = useRef<number | null>(null);
@@ -363,7 +364,12 @@ const App: React.FC = () => {
   
   const filteredStations = useMemo(() => allStations.filter(station => station.name.toLowerCase().includes(searchQuery.toLowerCase()) || station.genre.toLowerCase().includes(searchQuery.toLowerCase())), [searchQuery, allStations]);
 
-  const handleSelectStation = (station: Station) => { if (currentStation?.streamUrl !== station.streamUrl) setCurrentStation(station); };
+  const handleSelectStation = (station: Station) => { 
+    if (currentStation?.streamUrl !== station.streamUrl) {
+      setCurrentStation(station); 
+    }
+    setIsPlayerVisible(true);
+  };
   const handleNextStation = () => { if (!currentStation) return; const currentIndex = filteredStations.findIndex(s => s.streamUrl === currentStation.streamUrl); const nextIndex = (currentIndex + 1) % filteredStations.length; handleSelectStation(filteredStations[nextIndex]); };
   const handlePreviousStation = () => { if (!currentStation) return; const currentIndex = filteredStations.findIndex(s => s.streamUrl === currentStation.streamUrl); const prevIndex = (currentIndex - 1 + filteredStations.length) % filteredStations.length; handleSelectStation(filteredStations[prevIndex]); };
   
@@ -889,12 +895,23 @@ const App: React.FC = () => {
               <main className="flex-grow flex items-center justify-center"><p className="text-gray-400">Please log in to continue.</p></main>
             )}
           </div>
-          {currentStation && (
-            <RadioPlayer station={currentStation} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(prev => !prev)} songVotes={songVotes} onVote={handleVote} onRateStation={handleRateStation} userRating={stats.stationRatings?.[currentStation.streamUrl] || 0} onOpenTippingModal={() => setTippingModalStation(currentStation)} allStations={allStations} userSongVotes={stats.songUserVotes} onSelectStation={handleSelectStation} onToggleChat={() => setIsChatOpen(p => !p)} onStartRaid={handleStartRaid} raidStatus={raidStatus} raidTarget={raidTarget} />
+          {currentStation && isPlayerVisible && (
+            <RadioPlayer station={currentStation} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(prev => !prev)} songVotes={songVotes} onVote={handleVote} onRateStation={handleRateStation} userRating={stats.stationRatings?.[currentStation.streamUrl] || 0} onOpenTippingModal={() => setTippingModalStation(currentStation)} allStations={allStations} userSongVotes={stats.songUserVotes} onSelectStation={handleSelectStation} onToggleChat={() => setIsChatOpen(p => !p)} onStartRaid={handleStartRaid} raidStatus={raidStatus} raidTarget={raidTarget} onHidePlayer={() => setIsPlayerVisible(false)} />
           )}
         </div>
       </div>
       
+      {currentStation && !isPlayerVisible && (
+        <button
+            onClick={() => setIsPlayerVisible(true)}
+            className="fixed bottom-4 right-4 z-50 flex items-center gap-2 bg-gray-800/80 backdrop-blur-md py-2 px-4 rounded-full shadow-lg text-white hover:bg-[var(--accent-color)] hover:text-black transition-all animate-fade-in"
+            aria-label="Show player"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+            <span className="hidden sm:inline">Show Player</span>
+        </button>
+      )}
+
       <ToastContainer toasts={toasts} setToasts={setToasts} />
       <LoginModal isOpen={isLoginModalOpen} onLogin={handleLogin} />
       <SubmitStationModal isOpen={isSubmitModalOpen} onClose={() => setIsSubmitModalOpen(false)} onSubmit={handleAddStation} />

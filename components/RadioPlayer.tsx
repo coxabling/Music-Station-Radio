@@ -50,10 +50,11 @@ interface RadioPlayerProps {
   onStartRaid: (targetStation: Station) => void;
   raidStatus: 'idle' | 'voting';
   raidTarget: Station | null;
+  onHidePlayer: () => void;
 }
 
 export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
-  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget } = props;
+  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer } = props;
 
   const [isPlaying, setIsPlaying] = useState(true);
   const [volume, setVolume] = useState(0.75);
@@ -288,6 +289,9 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                 </button>
                 <button onClick={(e) => { e.stopPropagation(); setIsExpanded(true); }} className="text-gray-400 hover:text-white hidden md:block" aria-label="Expand player">
                     <ChevronUpIcon />
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); onHidePlayer(); }} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-700/50" aria-label="Hide player">
+                    <ChevronDownIcon />
                 </button>
             </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useLayoutEffect } from 'react';
 import type { ChatMessage, Station, NowPlaying } from '../types';
 import { SendIcon } from '../constants';
 
@@ -72,7 +72,6 @@ const ChatMessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
                 {!isYou && <span className="text-xs text-gray-400 font-semibold px-3">{message.author}</span>}
                 <div 
                     className={`relative px-4 py-2 rounded-2xl max-w-xs md:max-w-sm group ${isYou ? 'bg-[var(--accent-color)] text-black rounded-br-none' : 'bg-gray-700/80 text-white rounded-bl-none'}`}
-                    // FIX: (Line 90) Switched to toLocaleString with options to prevent an arguments error with toLocaleTimeString and provide a consistent format.
                     title={new Date(message.id).toLocaleString(undefined, { hour: 'numeric', minute: '2-digit' })}
                 >
                     {message.text}
@@ -91,10 +90,11 @@ const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStat
     const lastAnnouncedSongIdRef = useRef<string | null>(null);
 
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        // FIX: Pass options object to scrollIntoView for smooth scrolling.
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
 
-    useEffect(scrollToBottom, [messages, isTyping]);
+    useLayoutEffect(scrollToBottom, [messages, isTyping]);
     
     // DJ Auto Announcer
     useEffect(() => {
@@ -171,15 +171,15 @@ const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStat
 
     return (
         <div className="h-full grid grid-cols-1 md:grid-cols-[1fr_280px] gap-6 animate-fade-in">
-            <div className="flex-grow flex flex-col bg-gray-900/50 rounded-lg overflow-hidden border border-gray-700/50">
+            <div className="flex-1 flex flex-col bg-gray-900/50 rounded-lg overflow-hidden border border-gray-700/50">
                 <header className="p-3 border-b border-gray-700/50 flex items-center gap-4 flex-shrink-0">
                     <button onClick={onBack} className="text-sm bg-gray-700/50 hover:bg-gray-700 text-gray-300 font-semibold py-1 px-3 rounded-md transition-colors">&larr; Back</button>
                     <h3 className="text-lg font-semibold text-cyan-300 font-orbitron">{genre} Room</h3>
                 </header>
-                <div className="flex-grow p-4 overflow-y-auto">
+                <div className="flex-1 p-4 overflow-y-auto">
                     <ul className="space-y-4">
                         {messages.map(msg => <ChatMessageBubble key={msg.id} message={msg} />)}
-                        {isTyping && (
+                         {isTyping && (
                             <li className="flex items-end gap-2 animate-fade-in-up">
                                 <div className="w-8 h-8 rounded-full flex-shrink-0 bg-gray-600 flex items-center justify-center text-white font-bold text-sm">G</div>
                                 <div className="px-4 py-3 rounded-2xl rounded-bl-none bg-gray-700/80 text-white">
