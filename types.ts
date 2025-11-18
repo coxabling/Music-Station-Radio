@@ -42,6 +42,7 @@ export interface ChatMessage {
   isDJ?: boolean;
   avatarColor: string;
   initials: string;
+  frame?: string; // CSS class for the avatar frame
 }
 
 // Types for Visualizer Customization
@@ -49,6 +50,8 @@ export type PaletteName = 'neonSunset' | 'coolOcean' | 'monochrome';
 export type ColorPalette = readonly string[];
 
 // Types for Audio Equalizer
+export type BiquadFilterType = "lowpass" | "highpass" | "bandpass" | "lowshelf" | "highshelf" | "peaking" | "notch" | "allpass";
+
 export interface EQBand {
   freq: number;
   type: BiquadFilterType;
@@ -135,7 +138,7 @@ export type AchievementID =
   | 'curator' | 'explorer_3' | 'explorer_5'
   | 'streak_3' | 'streak_7' | 'station_submit'
   | 'night_owl' | 'early_bird' | 'party_starter'
-  | 'raid_leader';
+  | 'raid_leader' | 'collector';
 
 export interface Achievement {
   id: AchievementID;
@@ -155,7 +158,7 @@ export interface ToastData {
   title: string;
   message?: string;
   icon: React.FC<{className?: string}>;
-  type?: 'achievement' | 'points' | 'milestone' | 'theme_unlocked' | 'login' | 'error' | 'raid';
+  type?: 'achievement' | 'points' | 'milestone' | 'theme_unlocked' | 'login' | 'error' | 'raid' | 'success' | 'hype';
 }
 
 // Type for Leaderboard
@@ -192,8 +195,67 @@ export interface ListeningEvent {
     endTime: string; // ISO date string
 }
 
+// New Social Types
+export interface AvatarFrame {
+    id: string;
+    name: string;
+    cssClass: string; // Tailwind classes for styling
+    cost: number;
+    description?: string;
+}
+
+export interface FriendActivity {
+    username: string;
+    stationName: string;
+    stationStreamUrl: string;
+    status: 'online' | 'offline';
+    avatarColor: string;
+    frame?: string;
+}
+
 // For unified sidebar navigation
 export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard';
+
+// Gamification Types
+export interface Bet {
+  id: string;
+  songTitle: string;
+  artist: string;
+  amount: number;
+  odds: number;
+  potentialPayout: number;
+  placedAt: string;
+  status: 'pending' | 'won' | 'lost';
+}
+
+export interface Quest {
+  id: string;
+  title: string;
+  description: string;
+  progress: number;
+  goal: number;
+  reward: number;
+  isClaimed: boolean;
+}
+
+export interface CollectorCard {
+  id: string;
+  name: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  image: string;
+  description: string;
+  acquiredAt: string;
+}
+
+export interface Lounge {
+  id: string;
+  name: string;
+  host: string;
+  isPrivate: boolean;
+  password?: string;
+  station: Station;
+  listeners: number;
+}
 
 // Represents the complete data structure for a single user, to be stored in the database.
 export interface UserData {
@@ -207,6 +269,15 @@ export interface UserData {
     activeTheme: ThemeName;
     unlockedThemes: ThemeName[];
     activeView?: ActiveView;
+    
+    // Social
+    activeFrame?: string; // ID of active frame
+    unlockedFrames: string[]; // IDs of unlocked frames
+
+    // Gamification
+    quests?: Quest[];
+    bets?: Bet[];
+    collection?: CollectorCard[];
 }
 
 // For community feed

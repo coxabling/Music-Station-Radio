@@ -1,5 +1,6 @@
 
 import React, { useRef, useEffect, useState } from 'react';
+import * as THREE from 'three';
 import type { PaletteName, ColorPalette } from '../types';
 
 interface VisualizerProps {
@@ -7,7 +8,7 @@ interface VisualizerProps {
   isPlaying: boolean;
 }
 
-type VisualizationMode = 'bars' | 'waveform' | 'orbs';
+type VisualizationMode = 'bars' | 'waveform' | 'orbs' | 'tunnel';
 
 const colorPalettes: Record<PaletteName, ColorPalette> = {
     neonSunset: ['#67e8f9', '#a855f7', '#ec4899'], // cyan-300, purple-500, pink-500
@@ -20,7 +21,6 @@ const PaletteIcon: React.FC = () => (
         <path fillRule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm12 2H4v12h12V4zM6 6a2 2 0 100 4 2 2 0 000-4zm0 6a2 2 0 100 4 2 2 0 000-4zm10-6a2 2 0 10-4 0 2 2 0 004 0zM9 9a1 1 0 100 2 1 1 0 000-2zm4 0a1 1 0 100 2 1 1 0 000-2z" clipRule="evenodd" />
     </svg>
 );
-
 
 // Drawing function for Bars
 const drawBars = (ctx: CanvasRenderingContext2D, dataArray: Uint8Array, width: number, height: number, bufferLength: number, colors: ColorPalette) => {
@@ -125,15 +125,23 @@ const drawOrbs = (ctx: CanvasRenderingContext2D, dataArray: Uint8Array, width: n
 };
 
 export const Visualizer: React.FC<VisualizerProps> = ({ analyser, isPlaying }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameId = useRef<number>(0);
   const [mode, setMode] = useState<VisualizationMode>('bars');
   const [palette, setPalette] = useState<PaletteName>('neonSunset');
   const [isHovered, setIsHovered] = useState(false);
+  
+  // Three.js refs
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const meshRef = useRef<THREE.LineSegments | null>(null);
+
 
   const cycleMode = () => {
     setMode(prevMode => {
-      const modes: VisualizationMode[] = ['bars', 'waveform', 'orbs'];
+      const modes: VisualizationMode[] = ['bars', 'waveform', 'orbs', 'tunnel'];
       const currentIndex = modes.indexOf(prevMode);
       return modes[(currentIndex + 1) % modes.length];
     });
@@ -148,12 +156,73 @@ export const Visualizer: React.FC<VisualizerProps> = ({ analyser, isPlaying }) =
       })
   }
 
+  // Cleanup Three.js
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !analyser) return;
+      return () => {
+          if (rendererRef.current) {
+              rendererRef.current.dispose();
+              rendererRef.current = null;
+          }
+          if (sceneRef.current) {
+              sceneRef.current.clear();
+              sceneRef.current = null;
+          }
+      }
+  }, []);
 
-    const canvasCtx = canvas.getContext('2d');
-    if (!canvasCtx) return;
+  useEffect(() => {
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+    if (!container || !canvas || !analyser) return;
+
+    if (mode === 'tunnel') {
+        // Init Three.js if needed
+        if (!rendererRef.current) {
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+            rendererRef.current = renderer;
+            
+            const scene = new THREE.Scene();
+            // scene.fog = new THREE.FogExp2(0x000000, 0.15);
+            sceneRef.current = scene;
+
+            const camera = new THREE.PerspectiveCamera(70, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.z = 40;
+            cameraRef.current = camera;
+
+            const geometry = new THREE.CylinderGeometry(5, 5, 50, 32, 16, true);
+            const material = new THREE.MeshBasicMaterial({ 
+                color: colorPalettes[palette][0], 
+                wireframe: true,
+                side: THREE.DoubleSide
+            });
+            const mesh = new THREE.LineSegments(new THREE.WireframeGeometry(geometry), material);
+            mesh.rotation.x = Math.PI / 2;
+            scene.add(mesh);
+            meshRef.current = mesh;
+        } else {
+            // Ensure canvas is visible and sized correctly if switching back
+            const renderer = rendererRef.current;
+            renderer.domElement.style.display = 'block';
+            if (canvas) canvas.style.display = 'none';
+        }
+        
+        // Update material color based on palette
+        if (meshRef.current) {
+             // @ts-ignore
+             meshRef.current.material.color.set(colorPalettes[palette][0]);
+        }
+
+    } else {
+        // Hide Three.js canvas if not in tunnel mode
+        if (rendererRef.current) {
+            rendererRef.current.domElement.style.display = 'none';
+        }
+        if (canvas) {
+            canvas.style.display = 'block';
+        }
+    }
 
     const bufferLength = analyser.frequencyBinCount;
     const frequencyDataArray = new Uint8Array(bufferLength);
@@ -163,20 +232,35 @@ export const Visualizer: React.FC<VisualizerProps> = ({ analyser, isPlaying }) =
     const draw = () => {
       animationFrameId.current = requestAnimationFrame(draw);
       
-      switch(mode) {
-        case 'waveform':
-          analyser.getByteTimeDomainData(timeDomainDataArray);
-          drawWaveform(canvasCtx, timeDomainDataArray, canvas.width, canvas.height, currentColors);
-          break;
-        case 'orbs':
+      if (mode === 'tunnel' && rendererRef.current && sceneRef.current && cameraRef.current && meshRef.current) {
           analyser.getByteFrequencyData(frequencyDataArray);
-          drawOrbs(canvasCtx, frequencyDataArray, canvas.width, canvas.height, bufferLength, currentColors);
-          break;
-        case 'bars':
-        default:
-          analyser.getByteFrequencyData(frequencyDataArray);
-          drawBars(canvasCtx, frequencyDataArray, canvas.width, canvas.height, bufferLength, currentColors);
-          break;
+          const bass = frequencyDataArray.slice(0, 20).reduce((a,b)=>a+b,0) / 20;
+          const scale = 1 + (bass / 255);
+          
+          meshRef.current.scale.set(scale, 1, scale);
+          meshRef.current.rotation.y += 0.005 + (bass / 10000);
+          // @ts-ignore
+          meshRef.current.material.color.setHSL((Date.now() % 5000) / 5000, 1, 0.5); 
+          
+          rendererRef.current.render(sceneRef.current, cameraRef.current);
+      } else if (canvas) {
+          const canvasCtx = canvas.getContext('2d');
+          if (canvasCtx) {
+               switch(mode) {
+                case 'waveform':
+                  analyser.getByteTimeDomainData(timeDomainDataArray);
+                  drawWaveform(canvasCtx, timeDomainDataArray, canvas.width, canvas.height, currentColors);
+                  break;
+                case 'orbs':
+                  analyser.getByteFrequencyData(frequencyDataArray);
+                  drawOrbs(canvasCtx, frequencyDataArray, canvas.width, canvas.height, bufferLength, currentColors);
+                  break;
+                case 'bars':
+                  analyser.getByteFrequencyData(frequencyDataArray);
+                  drawBars(canvasCtx, frequencyDataArray, canvas.width, canvas.height, bufferLength, currentColors);
+                  break;
+              }
+          }
       }
     };
     
@@ -184,7 +268,10 @@ export const Visualizer: React.FC<VisualizerProps> = ({ analyser, isPlaying }) =
       draw();
     } else {
       cancelAnimationFrame(animationFrameId.current);
-      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+      if (canvas) {
+          const ctx = canvas.getContext('2d');
+          if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
     }
 
     return () => {
@@ -200,13 +287,14 @@ export const Visualizer: React.FC<VisualizerProps> = ({ analyser, isPlaying }) =
 
   return (
     <div 
-        className="relative cursor-pointer"
+        ref={containerRef}
+        className="relative cursor-pointer w-full max-w-xs h-[60px] rounded-md overflow-hidden"
         onClick={cycleMode}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         title="Click to change visualizer style"
     >
-        <canvas ref={canvasRef} width="300" height="60" className="w-full max-w-xs rounded-md" />
+        <canvas ref={canvasRef} width="300" height="60" className="w-full h-full" />
         <div className={`absolute inset-0 flex items-center justify-center bg-black/50 rounded-md transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
             <div className='text-center'>
                 <p className="text-xs font-semibold capitalize tracking-wider">{mode}</p>

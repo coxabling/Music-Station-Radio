@@ -1,3 +1,4 @@
+
 import type { UserData } from '../types';
 
 const SIMULATED_LATENCY = 50; // ms
@@ -33,6 +34,10 @@ const createDefaultUserData = (): Omit<UserData, 'role'> => ({
     activeTheme: 'dynamic',
     unlockedThemes: ['dynamic'],
     activeView: 'dashboard',
+    unlockedFrames: [],
+    quests: [],
+    bets: [],
+    collection: [],
 });
 
 

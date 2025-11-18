@@ -1,13 +1,13 @@
 
 import React from 'react';
-import type { Station, EQBand, EQPreset, Theme, Achievement, AchievementID, LeaderboardEntry, TranslationLanguage, ListeningEvent, StationReview, CommunityEvent, MusicSubmission } from './types';
+import type { Station, EQBand, EQPreset, Theme, Achievement, AchievementID, LeaderboardEntry, TranslationLanguage, ListeningEvent, StationReview, CommunityEvent, MusicSubmission, AvatarFrame, FriendActivity, Quest, CollectorCard } from './types';
 
 // --- Achievement Icons (using React.createElement to avoid JSX in .ts file) ---
 const PlayIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8.006v3.988a1 1 0 001.555.832l3.197-2.005a1 1 0 000-1.664L9.555 7.168z", clipRule: "evenodd" }));
 export const ClockIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.415L11 9.586V6z", clipRule: "evenodd"}));
 const HeartIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {fillRule: "evenodd", d: "M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z", clipRule: "evenodd"}));
 const CompassIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.527-1.912 6.01 6.01 0 012.436 5.332A6.01 6.01 0 0115.668 12a6.012 6.012 0 01-1.912 2.706C13.488 14.27 13.026 14 12.5 14a1.5 1.5 0 01-1.5-1.5V12a2 2 0 00-4 0 2 2 0 01-1.527 1.912 6.01 6.01 0 01-2.436-5.332z", clipRule: "evenodd"}));
-const FireIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {fillRule: "evenodd", d: "M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010-1.414l3-3a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0zm8.586 8.586a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414l3 3a1 1 0 010 1.414z", clipRule: "evenodd"}));
+export const FireIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {fillRule: "evenodd", d: "M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010-1.414l3-3a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0zm8.586 8.586a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414l3 3a1 1 0 010 1.414z", clipRule: "evenodd"}));
 const PlusCircleIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z", clipRule: "evenodd"}));
 const MoonIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {d: "M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"}));
 const SunIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {fillRule: "evenodd", d: "M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 14.464A1 1 0 106.465 13.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zm-1.414-2.12a1 1 0 011.414 0l.707.707a1 1 0 11-1.414 1.414l-.707-.707a1 1 0 010-1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z", clipRule: "evenodd"}));
@@ -24,6 +24,7 @@ export const BriefcaseIcon: React.FC<{className?: string}> = ({className = ''}) 
 export const CheckCircleIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns:"http://www.w3.org/2000/svg", className, viewBox:"0 0 20 20", fill:"currentColor"}, React.createElement('path', {fillRule:"evenodd", d:"M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z", clipRule:"evenodd"}));
 export const XCircleIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns:"http://www.w3.org/2000/svg", className, viewBox:"0 0 20 20", fill:"currentColor"}, React.createElement('path', {fillRule:"evenodd", d:"M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z", clipRule:"evenodd"}));
 export const UserCircleIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns:"http://www.w3.org/2000/svg", className, viewBox:"0 0 20 20", fill:"currentColor"}, React.createElement('path', {fillRule:"evenodd", d:"M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z", clipRule:"evenodd"}));
+export const UserGroupIcon: React.FC<{className?: string}> = ({className}) => React.createElement('svg', {xmlns:"http://www.w3.org/2000/svg", className, fill:"none", viewBox:"0 0 24 24", strokeWidth:1.5, stroke:"currentColor"}, React.createElement('path', {strokeLinecap:"round", strokeLinejoin:"round", d:"M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m-7.5-2.969A3 3 0 006 10.729v8.54a3 3 0 001.258 2.548m-4.01-15.045A3 3 0 004.01 4.5v8.54a3 3 0 001.258 2.548M12 15a3 3 0 100-6 3 3 0 000 6z"}));
 
 
 // --- Sidebar Icons ---
@@ -35,6 +36,7 @@ export const LeaderboardIconSidebar: React.FC<{className?: string}> = ({classNam
 export const ChatBubbleIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.76 9.76 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"}));
 export const SendIcon: React.FC<{className?: string}> = ({className}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {d: "M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"}));
 export const AdminIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, fill:"none", viewBox:"0 0 24 24", strokeWidth:1.5, stroke:"currentColor"}, React.createElement('path', {strokeLinecap:"round", strokeLinejoin:"round", d: "M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.39.44 1.052.12 1.45l-.527.737c-.25.35-.272.806-.108 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.11v1.093c0 .55-.398 1.02-.94 1.11l-.893.149c-.425.07-.764.383-.93.78-.164.398-.142.854.108 1.204l.527.738c.32.397.27.96-.12 1.45l-.773.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.93l-.149.894c-.09.542-.56.94-1.11.94h-1.093c-.55 0-1.02-.398-1.11-.94l-.149-.894a1.725 1.725 0 0 1-.93-.78c-.398-.164-.854-.142-1.204.108l-.738.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.39 1.052.44 1.45.12l.527-.737c.25-.35.272-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.11V3.94Z"}));
+const CollectionIcon: React.FC<{className?: string}> = ({className}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"}));
 
 
 export const ACHIEVEMENTS: Record<AchievementID, Achievement> = {
@@ -51,6 +53,7 @@ export const ACHIEVEMENTS: Record<AchievementID, Achievement> = {
   'early_bird': { id: 'early_bird', name: 'Early Bird', description: 'Listen between 5 AM and 8 AM.', icon: SunIcon },
   'party_starter': { id: 'party_starter', name: 'Party Starter', description: 'Engage with the Listening Party.', icon: SparklesIcon },
   'raid_leader': { id: 'raid_leader', name: 'Raid Leader', description: 'Initiate your first station raid.', icon: RocketIcon },
+  'collector': { id: 'collector', name: 'Collector', description: 'Collect 5 rare items.', icon: CollectionIcon },
 };
 
 const initialStations: Station[] = [
@@ -152,174 +155,106 @@ const initialStations: Station[] = [
 
 export const stations: Station[] = initialStations;
 
+export const THEMES: Theme[] = [
+  { name: 'dynamic', displayName: 'Dynamic (Album Art)', color: '#67e8f9' }, // Cyan default
+  { name: 'kente', displayName: 'Kente Cloth', color: '#f59e0b', cost: 100, description: 'Vibrant patterns inspired by Ghanaian Kente.' },
+  { name: 'sahara', displayName: 'Sahara Sunset', color: '#ea580c', cost: 150, description: 'Warm oranges and deep purples.' },
+  { name: 'naija', displayName: 'Naija Green', color: '#16a34a', cost: 100, description: 'Bold greens representing Nigerian spirit.' },
+  { name: 'galaxy', displayName: 'Galaxy', color: '#8b5cf6', cost: 300, description: 'Deep space vibes.' },
+  { name: 'cyberpunk', displayName: 'Cyberpunk', color: '#ec4899', cost: 300, description: 'Neon lights and dark streets.' },
+  { name: 'midnight', displayName: 'Midnight', color: '#1e1b4b', cost: 150, description: 'Dark blue tones for night owls.' },
+  { name: 'forest', displayName: 'Forest', color: '#064e3b', cost: 150, description: 'Calm and natural greens.' },
+  { name: 'royal', displayName: 'Royal', color: '#4c1d95', cost: 200, description: 'Elegant purple and gold.' },
+  { name: 'retro', displayName: 'Retro', color: '#f43f5e', cost: 200, description: '80s synthwave aesthetics.' },
+];
 
-// Constants for the Audio Equalizer
+export const MUSIC_SUBMISSION_COST = 500;
+
+export const INITIAL_QUESTS: Quest[] = [
+  { id: 'q1', title: 'First Tune In', description: 'Listen to any station.', progress: 0, goal: 1, reward: 50, isClaimed: false },
+  { id: 'q2', title: 'Explorer', description: 'Listen to 3 different genres.', progress: 0, goal: 3, reward: 100, isClaimed: false },
+];
+
+export const CARDS_DB: Omit<CollectorCard, 'id' | 'acquiredAt'>[] = [
+  { name: 'Golden Vinyl', rarity: 'legendary', image: 'https://picsum.photos/seed/vinyl/100', description: 'A rare golden record.' },
+  { name: 'Retro Mic', rarity: 'rare', image: 'https://picsum.photos/seed/mic/100', description: 'Old school microphone.' },
+  { name: 'Boombox', rarity: 'common', image: 'https://picsum.photos/seed/boombox/100', description: 'Classic street sound.' },
+];
+
 export const EQ_BANDS: EQBand[] = [
   { freq: 60, type: 'lowshelf' },
+  { freq: 170, type: 'peaking' },
   { freq: 310, type: 'peaking' },
+  { freq: 600, type: 'peaking' },
   { freq: 1000, type: 'peaking' },
+  { freq: 3000, type: 'peaking' },
   { freq: 6000, type: 'peaking' },
+  { freq: 12000, type: 'peaking' },
+  { freq: 14000, type: 'peaking' },
   { freq: 16000, type: 'highshelf' },
 ];
 
 export const EQ_PRESETS: EQPreset[] = [
-    { name: 'Flat', values: [0, 0, 0, 0, 0] },
-    { name: 'Bass Boost', values: [6, 4, 0, 0, 0] },
-    { name: 'Vocal Booster', values: [0, 2, 4, 3, 0] },
-    { name: 'Treble Boost', values: [0, 0, 0, 4, 6] },
-    { name: 'Rock', values: [4, 2, -2, 3, 4] },
-    { name: 'Pop', values: [-1, 3, 4, 2, -1] },
+  { name: 'Flat', values: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  { name: 'Bass Boost', values: [5, 4, 3, 1, 0, 0, 0, 0, 0, 0] },
+  { name: 'Vocal', values: [-2, -2, 0, 2, 4, 4, 2, 0, 0, 0] },
+  { name: 'Treble', values: [0, 0, 0, 0, 0, 1, 3, 5, 5, 5] },
 ];
 
-// Constants for UI Themes
-export const THEMES: Theme[] = [
-  { 
-    name: 'dynamic', 
-    displayName: 'Dynamic (Default)', 
-    color: '#67e8f9', 
-    gradient: 'linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%)',
-    description: 'Adapts to the album art of the current track.'
-  },
-  { 
-    name: 'kente', 
-    displayName: 'Kente Cloth', 
-    color: '#FBBF24', 
-    cost: 100,
-    gradient: 'linear-gradient(135deg, #F59E0B 0%, #D97706 50%, #B45309 100%)',
-    description: 'Warm golds and earth tones inspired by woven patterns.'
-  },
-  { 
-    name: 'sahara', 
-    displayName: 'Sahara Sunset', 
-    color: '#F97316', 
-    cost: 100,
-    gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #c2410c 100%)',
-    description: 'Burning orange hues of the desert sun.'
-  },
-  { 
-    name: 'naija', 
-    displayName: 'Naija Pop', 
-    color: '#22C55E', 
-    cost: 150,
-    gradient: 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)',
-    description: 'Vibrant greens reflecting growth and energy.'
-  },
-  { 
-    name: 'galaxy', 
-    displayName: 'Galaxy', 
-    color: '#8b5cf6', 
-    cost: 300,
-    gradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%)',
-    description: 'Deep cosmic purples and stardust.'
-  },
-  {
-      name: 'cyberpunk',
-      displayName: 'Cyberpunk',
-      color: '#e879f9',
-      cost: 500,
-      gradient: 'linear-gradient(135deg, #22d3ee 0%, #e879f9 100%)',
-      description: 'Neon lights and digital dreams.'
-  },
-  {
-      name: 'midnight',
-      displayName: 'Midnight City',
-      color: '#3b82f6',
-      cost: 250,
-      gradient: 'linear-gradient(135deg, #1e1b4b 0%, #3b82f6 100%)',
-      description: 'Sleek, dark blues for the night owl.'
-  },
-  {
-      name: 'forest',
-      displayName: 'Rainforest',
-      color: '#10b981',
-      cost: 200,
-      gradient: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)',
-      description: 'Lush greens and calming nature vibes.'
-  },
-  {
-      name: 'royal',
-      displayName: 'Royalty',
-      color: '#eab308',
-      cost: 400,
-      gradient: 'linear-gradient(135deg, #4c1d95 0%, #eab308 100%)',
-      description: 'Luxurious purple and gold.'
-  },
-  {
-      name: 'retro',
-      displayName: 'Synthwave',
-      color: '#f43f5e',
-      cost: 350,
-      gradient: 'linear-gradient(135deg, #f43f5e 0%, #facc15 100%)',
-      description: '80s sunset aesthetics.'
-  }
+export const LEADERBOARD_DATA: LeaderboardEntry[] = [
+    { rank: 1, username: 'VibeMaster', points: 15420, role: 'user' },
+    { rank: 2, username: 'AfroBeatQueen', points: 14200, role: 'artist' },
+    { rank: 3, username: 'BassHead99', points: 12150, role: 'user' },
+    { rank: 4, username: 'RadioRebel', points: 10500, role: 'owner' },
+    { rank: 5, username: 'ChillWave', points: 9800, role: 'user' },
+    { rank: 6, username: 'GlobalListener', points: 8400, role: 'user' },
+    { rank: 7, username: 'MusicLover1', points: 7200, role: 'user' },
+    { rank: 8, username: 'BeatDrop', points: 6500, role: 'artist' },
+    { rank: 9, username: 'SonicSurfer', points: 5900, role: 'user' },
+    { rank: 10, username: 'AudioPhile', points: 5200, role: 'user' },
 ];
 
-// Cost for submitting a music track
-export const MUSIC_SUBMISSION_COST = 50;
-
-// Simulated leaderboard data
-export const LEADERBOARD_DATA: Omit<LeaderboardEntry, 'rank'>[] = [
-    { username: "DJ_VibeMaster", points: 12543, role: 'owner' },
-    { username: "AudioPhile", points: 11892, role: 'user' },
-    { username: "GrooveMachine", points: 10567, role: 'owner' },
-    { username: "Tuner_Pro", points: 9872, role: 'user' },
-    { username: "BeatSeeker", points: 8501, role: 'user' },
-    { username: "Radio_Head", points: 7634, role: 'user' },
-    { username: "EchoChamber", points: 6921, role: 'artist' },
-    { username: "SoundSurfer", points: 5432, role: 'user' },
-    { username: "MixMaestro", points: 4987, role: 'artist' },
-    { username: "RhythmRider", points: 3210, role: 'user' },
-];
-
-// Constants for Lyric Translation
 export const SUPPORTED_TRANSLATION_LANGUAGES: TranslationLanguage[] = [
+    { code: 'en', name: 'English' },
     { code: 'es', name: 'Spanish' },
     { code: 'fr', name: 'French' },
     { code: 'de', name: 'German' },
-    { code: 'ja', name: 'Japanese' },
     { code: 'pt', name: 'Portuguese' },
-    { code: 'it', name: 'Italian' },
-    { code: 'ko', name: 'Korean' },
+    { code: 'sw', name: 'Swahili' },
+    { code: 'yo', name: 'Yoruba' },
 ];
 
-// New mock data for scheduled events
 export const LISTENING_EVENTS: ListeningEvent[] = [
-    {
-        id: 'evt1',
-        title: 'Reggae Roots Revival',
-        description: 'Join us for a two-hour deep dive into classic roots reggae and dub from the 70s and 80s.',
-        stationName: 'High Grade Radio',
-        genre: 'Reggae',
-        startTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours from now
-        endTime: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),   // 4 hours from now
-    },
-    {
-        id: 'evt2',
-        title: 'Afropop Future Forward',
-        description: 'Discover the future of Afropop. We\'re spinning the latest tracks from breakout artists across the continent.',
-        stationName: 'Nam Radio',
-        genre: 'Afropop',
-        startTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(), // 26 hours from now
-        endTime: new Date(Date.now() + 28 * 60 * 60 * 1000).toISOString(), // 28 hours from now
-    },
+    { id: 'e1', title: 'Afrobeat Sunset Session', description: 'Live mix of the hottest Afrobeat tracks.', stationName: 'Pamtengo Radio', genre: 'Afrobeat', startTime: new Date(Date.now() + 3600000).toISOString(), endTime: new Date(Date.now() + 7200000).toISOString() },
+    { id: 'e2', title: 'Reggae Sunday', description: 'Classic roots and culture.', stationName: 'High Grade Radio', genre: 'Reggae', startTime: new Date(Date.now() + 86400000).toISOString(), endTime: new Date(Date.now() + 90000000).toISOString() },
 ];
 
-// New mock data for station reviews
+export const COMMUNITY_EVENTS: CommunityEvent[] = [
+    { id: 1, username: 'BeatSeeker', role: 'user', action: 'just unlocked', details: 'Genre Explorer', timestamp: new Date(Date.now() - 120000).toISOString(), icon: CompassIcon },
+    { id: 2, username: 'DJ_VibeMaster', role: 'owner', action: 'started a raid on', details: 'Nam Radio', timestamp: new Date(Date.now() - 300000).toISOString(), icon: RocketIcon },
+    { id: 3, username: 'SoulSister', role: 'user', action: 'reached', details: 'Level 10', timestamp: new Date(Date.now() - 600000).toISOString(), icon: StarIcon },
+];
+
 export const MOCK_REVIEWS: Record<string, StationReview[]> = {
-    "https://music-station.live/listen/high_grade_radio/radio.mp3": [
-        { author: 'ReggaeFan', authorRole: 'user', rating: 5, text: 'Best reggae station on the web, hands down. The selection is always on point.', createdAt: new Date(Date.now() - 86400000).toISOString() },
-        { author: 'DubWise', authorRole: 'artist', rating: 4, text: 'Solid grooves, but I wish they played more deep cuts from the 70s.', createdAt: new Date(Date.now() - 172800000).toISOString() }
-    ],
-    "https://music-station.live/listen/namradio/radio.mp3": [
-        { author: 'AfroQueen', authorRole: 'user', rating: 5, text: 'My daily dose of Afropop! Always keeps me dancing.', createdAt: new Date(Date.now() - 259200000).toISOString() },
+    'https://music-station.live/listen/high_grade_radio/radio.mp3': [
+        { author: 'ReggaeFan1', rating: 5, text: 'Best vibes all day!', createdAt: new Date(Date.now() - 10000000).toISOString() },
+        { author: 'Listener2', rating: 4, text: 'Great selection.', createdAt: new Date(Date.now() - 20000000).toISOString() }
     ]
 };
 
-// New mock data for community feed
-export const COMMUNITY_EVENTS: CommunityEvent[] = [
-    { id: 1, username: 'GrooveMachine', role: 'owner', action: 'unlocked achievement', details: 'Hour of Power', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), icon: ClockIcon },
-    { id: 2, username: 'DJ_VibeMaster', role: 'owner', action: 'favorited a station', details: 'High Grade Radio', timestamp: new Date(Date.now() - 3.5 * 60 * 60 * 1000).toISOString(), icon: HeartIcon },
-    { id: 3, username: 'AudioPhile', role: 'user', action: 'discovered a new genre', details: 'Afropop', timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), icon: CompassIcon },
-    { id: 4, username: 'BeatSeeker', role: 'user', action: 'reached a 3-day streak', timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(), icon: FireIcon },
-    { id: 5, username: 'RhythmRider', role: 'user', action: 'submitted a new station', details: 'Indie Wave FM', timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), icon: PlusCircleIcon },
+// --- SOCIAL & COMMUNITY CONSTANTS ---
+
+export const AVATAR_FRAMES: AvatarFrame[] = [
+    { id: 'neon_pulse', name: 'Neon Pulse', cssClass: 'ring-2 ring-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]', cost: 200 },
+    { id: 'gold_chain', name: 'Gold Chain', cssClass: 'ring-2 ring-yellow-500 border-yellow-400 border-2 border-dashed', cost: 500 },
+    { id: 'royal_crown', name: 'Royal Crown', cssClass: 'ring-4 ring-purple-600 shadow-lg shadow-purple-900/50', cost: 800 },
+    { id: 'fire_aura', name: 'Fire Aura', cssClass: 'ring-2 ring-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.8)] animate-pulse', cost: 350 },
+    { id: 'eco_leaf', name: 'Eco Vibe', cssClass: 'ring-2 ring-green-500 border-green-400 border-double border-4', cost: 150 },
+];
+
+export const MOCK_FRIENDS: FriendActivity[] = [
+    { username: 'BeatSeeker', stationName: 'High Grade Radio', stationStreamUrl: 'https://music-station.live/listen/high_grade_radio/radio.mp3', status: 'online', avatarColor: '#34d399', frame: 'neon_pulse' },
+    { username: 'RhythmRider', stationName: 'Nam Radio', stationStreamUrl: 'https://music-station.live/listen/namradio/radio.mp3', status: 'online', avatarColor: '#fbbf24' },
+    { username: 'SoulSister', stationName: 'Offline', stationStreamUrl: '', status: 'offline', avatarColor: '#f472b6', frame: 'gold_chain' },
+    { username: 'BassHead', stationName: 'Global Groove Radio', stationStreamUrl: 'https://s2.stationplaylist.com:7094/listen.aac', status: 'online', avatarColor: '#a78bfa', frame: 'fire_aura' },
 ];

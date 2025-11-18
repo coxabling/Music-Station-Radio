@@ -1,12 +1,15 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import type { ChatMessage, Station, NowPlaying } from '../types';
+import { AVATAR_FRAMES } from '../constants';
 
 interface ListeningPartyChatProps {
     station: Station;
     isOpen: boolean;
     onClose: () => void;
     nowPlaying: NowPlaying | null;
+    userPoints: number; // Passed if needed for future logic
+    activeFrame?: string; // New
 }
 
 const botMessages = [
@@ -31,7 +34,7 @@ const getAvatarInfo = (author: string): {initials: string, color: string} => {
 }
 
 
-export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station, isOpen, onClose, nowPlaying }) => {
+export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station, isOpen, onClose, nowPlaying, activeFrame }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -39,6 +42,11 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    
+    const getFrameClass = (frameId?: string) => {
+        if (!frameId) return '';
+        return AVATAR_FRAMES.find(f => f.id === frameId)?.cssClass || '';
     }
 
     useEffect(scrollToBottom, [messages]);
@@ -101,6 +109,7 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
                 text: input.trim(),
                 avatarColor: userInfo.color,
                 initials: userInfo.initials,
+                frame: activeFrame // Use current frame
             }]);
             setInput('');
         }
@@ -124,13 +133,22 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
                                 </li>
                             );
                         }
+                        const isYou = msg.author === 'You';
                         return (
-                            <li key={msg.id} className={`text-sm animate-fade-in ${msg.author === 'You' ? 'text-right' : 'text-left'}`}>
-                                <div className={`inline-block rounded-lg px-2 py-1 ${
-                                    msg.author === 'You' ? 'bg-cyan-600/50' :
-                                    msg.isBot ? 'bg-gray-700/50' : ''
+                            <li key={msg.id} className={`text-sm animate-fade-in flex items-end gap-1.5 ${isYou ? 'flex-row-reverse' : 'flex-row'}`}>
+                                {/* Avatar Circle with Frame */}
+                                {isYou && (
+                                     <div 
+                                        className={`w-6 h-6 rounded-full flex-shrink-0 bg-[var(--accent-color)] ${getFrameClass(msg.frame)}`}
+                                        title={msg.author}
+                                     />
+                                )}
+
+                                <div className={`inline-block rounded-lg px-2 py-1 max-w-[85%] ${
+                                    isYou ? 'bg-cyan-600/50' :
+                                    msg.isBot ? 'bg-gray-700/50' : 'bg-gray-800/50'
                                 }`}>
-                                    <span className={`block font-bold text-xs ${msg.author === 'You' ? 'text-cyan-200' : 'text-purple-300'}`}>
+                                    <span className={`block font-bold text-xs ${isYou ? 'text-cyan-200' : 'text-purple-300'}`}>
                                         {msg.author}
                                     </span>
                                     <span className="text-gray-200">{msg.text}</span>

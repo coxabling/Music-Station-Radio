@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react';
 import type { Station, User, ListeningStats, StationReview, NowPlaying } from '../types';
 import { StationInfoPanel } from './StationInfoPanel';
 import { CommunityFeed } from './CommunityFeed';
 import { GenreChatView } from './GenreChatView';
-import { MOCK_REVIEWS } from '../constants'; // MOCK_REVIEWS needed for StationInfoPanel
+import { FriendActivityList } from './FriendActivityList';
+import { MOCK_REVIEWS, UserGroupIcon } from '../constants';
 
 const InfoIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>;
 const CommunityIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m-7.5-2.969A3 3 0 006 10.729v8.54a3 3 0 001.258 2.548m-4.01-15.045A3 3 0 004.01 4.5v8.54a3 3 0 001.258 2.548M12 15a3 3 0 100-6 3 3 0 000 6z" /></svg>;
@@ -22,9 +24,10 @@ interface RightPanelProps {
     onOpenMusicSubmissionModal: (station: Station) => void;
     onOpenClaimModal: (station: Station) => void;
     nowPlaying: NowPlaying | null;
+    onGiftStation?: (station: Station) => void;
 }
 
-type ActiveTab = 'details' | 'community' | 'chat';
+type ActiveTab = 'details' | 'community' | 'chat' | 'friends';
 
 const TabButton: React.FC<{ icon: React.ReactNode; isActive: boolean; onClick: () => void; label: string }> = ({ icon, isActive, onClick, label }) => (
     <button 
@@ -48,6 +51,8 @@ export const RightPanel: React.FC<RightPanelProps> = (props) => {
                 return <CommunityFeed isPanel />;
             case 'chat':
                 return <GenreChatView {...props} isPanel />;
+            case 'friends':
+                return <FriendActivityList allStations={props.allStations} onJoinStation={props.onSelectStation} />;
             case 'details':
             default:
                 return (
@@ -67,9 +72,10 @@ export const RightPanel: React.FC<RightPanelProps> = (props) => {
         <aside className="hidden lg:flex w-96 bg-gray-950/30 border-l border-white/10 flex-shrink-0 flex-col">
             <div className="flex-shrink-0 border-b border-gray-700/50">
                 <nav className="flex items-center" role="tablist">
-                    <TabButton icon={<InfoIcon className="h-5 w-5"/>} isActive={activeTab === 'details'} onClick={() => setActiveTab('details')} label="Station Details" />
-                    <TabButton icon={<CommunityIcon className="h-5 w-5"/>} isActive={activeTab === 'community'} onClick={() => setActiveTab('community')} label="Community Feed" />
-                    <TabButton icon={<ChatBubbleIcon className="h-5 w-5"/>} isActive={activeTab === 'chat'} onClick={() => setActiveTab('chat')} label="Genre Chat" />
+                    <TabButton icon={<InfoIcon className="h-5 w-5"/>} isActive={activeTab === 'details'} onClick={() => setActiveTab('details')} label="Details" />
+                    <TabButton icon={<CommunityIcon className="h-5 w-5"/>} isActive={activeTab === 'community'} onClick={() => setActiveTab('community')} label="Feed" />
+                    <TabButton icon={<ChatBubbleIcon className="h-5 w-5"/>} isActive={activeTab === 'chat'} onClick={() => setActiveTab('chat')} label="Chat" />
+                    <TabButton icon={<UserGroupIcon className="h-5 w-5"/>} isActive={activeTab === 'friends'} onClick={() => setActiveTab('friends')} label="Friends" />
                 </nav>
             </div>
             <div id="right-panel-content" className="flex-grow overflow-y-auto" role="tabpanel">
