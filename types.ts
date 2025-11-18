@@ -189,16 +189,6 @@ export interface ListeningEvent {
     endTime: string; // ISO date string
 }
 
-// AzuraCast API Schedule Entry
-export interface AzuraCastScheduleEntry {
-  id: number;
-  start: string; // ISO 8601
-  end: string; // ISO 8601
-  name: string;
-  is_now: boolean;
-  description?: string;
-}
-
 // For unified sidebar navigation
 export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard';
 
