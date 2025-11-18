@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import type { Station } from '../types';
 
 interface SubmitStationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (station: Station) => void;
+  onSubmit: (station: Omit<Station, 'owner' | 'isFavorite' | 'rating' | 'ratingsCount' | 'location'>) => void;
 }
 
 export const SubmitStationModal: React.FC<SubmitStationModalProps> = ({ isOpen, onClose, onSubmit }) => {

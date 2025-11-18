@@ -1,6 +1,7 @@
 import React from 'react';
 import type { User } from '../types';
 import { StarIcon, UserIcon } from '../constants';
+import { RoleBadge } from './RoleBadge';
 
 interface HeaderProps {
     currentUser: User | null;
@@ -23,6 +24,7 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, points })
                         <UserIcon className="h-5 w-5 text-cyan-300" />
                     </div>
                     <span className="font-semibold text-sm hidden md:inline text-white">{currentUser.username}</span>
+                    <RoleBadge role={currentUser.role} />
                 </div>
                 <div className="flex items-center gap-1.5 text-yellow-300 text-sm font-mono">
                     <StarIcon className="h-4 w-4" />

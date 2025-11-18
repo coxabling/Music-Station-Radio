@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import type { User } from '../types';
 import { LEADERBOARD_DATA } from '../constants';
+import { RoleBadge } from './RoleBadge';
 
 interface LeaderboardViewProps {
   currentUser: User | null;
@@ -13,8 +14,9 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, u
   const rankedList = useMemo(() => {
     if (!currentUser) return [];
 
-    const userEntry = { username: currentUser.username, points: userPoints };
+    const userEntry = { username: currentUser.username, points: userPoints, role: currentUser.role };
     const combined = [...LEADERBOARD_DATA, userEntry]
+      .filter((v,i,a)=>a.findIndex(v2=>(v2.username===v.username))===i) // Make unique
       .sort((a, b) => b.points - a.points)
       .map((user, index) => ({ ...user, rank: index + 1 }));
       
@@ -41,7 +43,10 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, u
                                 {user.rank}
                                 {user.rank <= 3 && <TrophyIcon className="w-4 h-4 ml-1" />}
                             </div>
-                            <div className="flex-1 font-semibold text-white truncate">{user.username}</div>
+                            <div className="flex-1 font-semibold text-white truncate flex items-center gap-2">
+                                <span>{user.username}</span>
+                                {user.role && <RoleBadge role={user.role} />}
+                            </div>
                             <div className="font-mono text-cyan-300">{user.points.toLocaleString()} pts</div>
                         </li>
                     )
@@ -53,7 +58,10 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, u
                      <p className="text-center text-sm text-gray-400 mb-2">Your Ranking</p>
                      <div className="flex items-center gap-4 p-3 rounded-lg bg-[var(--accent-color)]/20 border border-[var(--accent-color)]/50">
                         <div className="w-8 text-center font-bold text-lg text-gray-400">{rankedList.find(u => u.username === currentUser?.username)?.rank}</div>
-                        <div className="flex-1 font-semibold text-white truncate">{currentUser?.username}</div>
+                        <div className="flex-1 font-semibold text-white truncate flex items-center gap-2">
+                            <span>{currentUser?.username}</span>
+                            {currentUser?.role && <RoleBadge role={currentUser.role} />}
+                        </div>
                         <div className="font-mono text-cyan-300">{userPoints.toLocaleString()} pts</div>
                      </div>
                  </div>

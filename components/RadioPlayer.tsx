@@ -121,8 +121,13 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
         setIsPlaying(true);
         setupAudioContext();
       }).catch(error => {
-        console.error("Audio playback failed:", error);
-        setIsPlaying(false);
+        // This error is expected when a user changes stations quickly.
+        // The new 'load' request for the next station interrupts the previous 'play' request.
+        // We can safely ignore it to prevent console spam.
+        if (error.name !== 'AbortError') {
+            console.error("Audio playback failed:", error);
+            setIsPlaying(false);
+        }
       });
     }
     getSong();

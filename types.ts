@@ -2,6 +2,7 @@ import type * as React from 'react';
 
 export interface User {
   username: string;
+  role: 'user' | 'artist' | 'owner' | 'admin';
 }
 
 export interface Station {
@@ -15,6 +16,14 @@ export interface Station {
   rating?: number;
   ratingsCount?: number;
   location?: { lat: number; lng: number };
+  owner?: string;
+  acceptsSubmissions?: boolean;
+  claimRequest?: {
+    username: string;
+    reason: string;
+    submittedAt: string;
+  };
+  submissions?: MusicSubmission[];
 }
 
 export interface NowPlaying {
@@ -29,6 +38,7 @@ export interface ChatMessage {
   author: string;
   text: string;
   isBot?: boolean;
+  isDJ?: boolean;
   avatarColor: string;
   initials: string;
 }
@@ -150,6 +160,7 @@ export interface LeaderboardEntry {
     rank: number;
     username: string;
     points: number;
+    role?: User['role'];
 }
 
 // Type for Lyric Translation
@@ -161,6 +172,7 @@ export interface TranslationLanguage {
 // New interface for Station Reviews
 export interface StationReview {
   author: string;
+  authorRole?: User['role'];
   rating: number; // 1-5
   text: string;
   createdAt: string; // ISO date string
@@ -178,10 +190,11 @@ export interface ListeningEvent {
 }
 
 // For unified sidebar navigation
-export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat';
+export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard';
 
 // Represents the complete data structure for a single user, to be stored in the database.
 export interface UserData {
+    role: 'user' | 'artist' | 'owner' | 'admin';
     stats: ListeningStats;
     alarm: Alarm | null;
     songVotes: Record<string, SongVote>;
@@ -201,4 +214,20 @@ export interface CommunityEvent {
     details?: string;
     timestamp: string; // ISO Date string
     icon: React.FC<{className?: string}>;
+    role?: User['role'];
+}
+
+// For music submissions by artists
+export interface MusicSubmission {
+    id: string;
+    artistName: string;
+    songTitle: string;
+    trackUrl: string;
+    submittedAt: string; // ISO date string
+    submittedBy: string; // username of the artist
+    stationStreamUrl: string;
+    stationName: string;
+    status: 'pending' | 'approved' | 'rejected';
+    managerComment?: string;
+    reviewedAt?: string; // ISO date string
 }

@@ -1,5 +1,6 @@
+
 import React, { useState, useMemo } from 'react';
-import type { Station, LayoutMode, SongVote } from '../types';
+import type { Station, LayoutMode, SongVote, User } from '../types';
 import { StarRating } from './StarRating';
 
 interface StationListProps {
@@ -14,6 +15,7 @@ interface StationListProps {
   onOpenGenreSpotlight: (genre: string) => void;
   onOpenDetailModal: (station: Station) => void;
   onPlayFromCommunity: (songId: string) => void;
+  currentUser: User | null;
 }
 
 const PlayIndicator: React.FC = () => ( <div className="absolute top-2 right-2 bg-[var(--accent-color)] rounded-full p-1 shadow-lg animate-pulse"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-black" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.546l-6.38 8.195A2 2 0 005.46 15H14.54a2 2 0 001.84-3.259L10 3.546z" transform="rotate(90 10 10)" /></svg></div>);
@@ -33,7 +35,7 @@ const TabButton: React.FC<{label: string; isActive: boolean; onClick: () => void
 
 type SortMode = 'name' | 'rating';
 
-export const StationList: React.FC<StationListProps> = ({ stations, currentStation, onSelectStation, searchQuery, onSearchChange, onOpenSubmitModal, onToggleFavorite, songVotes, onOpenGenreSpotlight, onOpenDetailModal, onPlayFromCommunity }) => {
+export const StationList: React.FC<StationListProps> = ({ stations, currentStation, onSelectStation, searchQuery, onSearchChange, onOpenSubmitModal, onToggleFavorite, songVotes, onOpenGenreSpotlight, onOpenDetailModal, onPlayFromCommunity, currentUser }) => {
   const [viewMode, setViewMode] = useState<LayoutMode>('grid');
   const [activeTab, setActiveTab] = useState<'all' | 'favorites' | 'community'>('all');
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
@@ -81,7 +83,9 @@ export const StationList: React.FC<StationListProps> = ({ stations, currentStati
             <input type="text" placeholder="Search by name or genre..." value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} className="w-full bg-gray-800/50 border border-gray-700 rounded-full py-2.5 pl-10 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] transition-all duration-300" aria-label="Search for a station" />
             <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500"><SearchIcon /></div>
         </div>
-        <button onClick={onOpenSubmitModal} className="flex-shrink-0 w-full sm:w-auto flex items-center justify-center bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-200 border border-cyan-500/50 rounded-full py-2.5 px-5 transition-colors duration-300 font-semibold" aria-label="Suggest a new station"><AddIcon />Suggest</button>
+        {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+          <button onClick={onOpenSubmitModal} className="flex-shrink-0 w-full sm:w-auto flex items-center justify-center bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-200 border border-cyan-500/50 rounded-full py-2.5 px-5 transition-colors duration-300 font-semibold" aria-label="Suggest a new station"><AddIcon />Suggest</button>
+        )}
       </div>
 
       <div className="flex justify-between items-center mb-4">

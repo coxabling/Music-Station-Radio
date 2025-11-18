@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { ChatMessage, Station } from '../types';
+import type { ChatMessage, Station, NowPlaying } from '../types';
 
 interface ListeningPartyChatProps {
     station: Station;
     isOpen: boolean;
     onClose: () => void;
+    nowPlaying: NowPlaying | null;
 }
 
 const botMessages = [
@@ -18,21 +19,22 @@ const botMessages = [
 
 const CloseIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>;
 
-// FIX: Add helper function to generate avatar info for chat messages
 const USER_COLORS = ['#34d399', '#fbbf24', '#f87171', '#60a5fa', '#a78bfa', '#f472b6'];
 const getAvatarInfo = (author: string): {initials: string, color: string} => {
     if (author === 'You') return { initials: 'You', color: 'var(--accent-color)' };
-    if (author === 'RadioBot') return { initials: 'Bot', color: '#9ca3af' };
+    if (author === 'RadioBot' || author === 'RoomBot') return { initials: 'Bot', color: '#9ca3af' };
+    if (author === 'DJ') return { initials: 'DJ', color: '#a855f7' }; // purple-500
     const initials = author.replace('Guest', 'G');
     const colorIndex = parseInt(author.replace('Guest', ''), 10) % USER_COLORS.length;
     return { initials, color: USER_COLORS[colorIndex] };
 }
 
 
-export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station, isOpen, onClose }) => {
+export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station, isOpen, onClose, nowPlaying }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const lastAnnouncedSongIdRef = useRef<string | null>(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -40,9 +42,26 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
 
     useEffect(scrollToBottom, [messages]);
 
+    // DJ Auto Announcer
+    useEffect(() => {
+        if (nowPlaying && nowPlaying.songId && nowPlaying.songId !== lastAnnouncedSongIdRef.current && nowPlaying.title !== "Live Stream" && nowPlaying.title !== "Station Data Unavailable") {
+            const djInfo = getAvatarInfo('DJ');
+            const djMessage: ChatMessage = {
+                id: Date.now(),
+                author: 'DJ',
+                text: `🎶 Now Playing: "${nowPlaying.title}" by ${nowPlaying.artist}`,
+                isDJ: true,
+                initials: djInfo.initials,
+                avatarColor: djInfo.color,
+            };
+
+            setMessages(prev => [...prev, djMessage]);
+            lastAnnouncedSongIdRef.current = nowPlaying.songId;
+        }
+    }, [nowPlaying]);
+
     // Bot messages and welcome logic
     useEffect(() => {
-        // FIX: Add missing avatarColor and initials properties to the message object.
         const botInfo = getAvatarInfo('RadioBot');
         setMessages([{
             id: Date.now(),
@@ -52,10 +71,10 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
             avatarColor: botInfo.color,
             initials: botInfo.initials,
         }]);
+        lastAnnouncedSongIdRef.current = null; // Reset announcer on station change
 
         // Simulate other users chatting
         const interval = setInterval(() => {
-            // FIX: Add missing avatarColor and initials properties to the message object.
             const guestName = 'Guest' + Math.floor(Math.random() * 100);
             const guestInfo = getAvatarInfo(guestName);
             setMessages(prev => [...prev, {
@@ -74,7 +93,6 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
     const handleSendMessage = (e: React.FormEvent) => {
         e.preventDefault();
         if (input.trim()) {
-            // FIX: Add missing avatarColor and initials properties to the message object.
             const userInfo = getAvatarInfo('You');
             setMessages(prev => [...prev, {
                 id: Date.now(),
@@ -97,19 +115,28 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
             </header>
             <div className="flex-grow p-2 overflow-y-auto">
                 <ul className="space-y-2">
-                    {messages.map(msg => (
-                        <li key={msg.id} className={`text-sm animate-fade-in ${msg.author === 'You' ? 'text-right' : 'text-left'}`}>
-                            <div className={`inline-block rounded-lg px-2 py-1 ${
-                                msg.author === 'You' ? 'bg-cyan-600/50' :
-                                msg.isBot ? 'bg-gray-700/50' : ''
-                            }`}>
-                                <span className={`block font-bold text-xs ${msg.author === 'You' ? 'text-cyan-200' : 'text-purple-300'}`}>
-                                    {msg.author}
-                                </span>
-                                <span className="text-gray-200">{msg.text}</span>
-                            </div>
-                        </li>
-                    ))}
+                    {messages.map(msg => {
+                        if (msg.isDJ) {
+                            return (
+                                <li key={msg.id} className="text-center text-xs text-purple-300 italic my-2 animate-fade-in">
+                                    <span>{msg.text}</span>
+                                </li>
+                            );
+                        }
+                        return (
+                            <li key={msg.id} className={`text-sm animate-fade-in ${msg.author === 'You' ? 'text-right' : 'text-left'}`}>
+                                <div className={`inline-block rounded-lg px-2 py-1 ${
+                                    msg.author === 'You' ? 'bg-cyan-600/50' :
+                                    msg.isBot ? 'bg-gray-700/50' : ''
+                                }`}>
+                                    <span className={`block font-bold text-xs ${msg.author === 'You' ? 'text-cyan-200' : 'text-purple-300'}`}>
+                                        {msg.author}
+                                    </span>
+                                    <span className="text-gray-200">{msg.text}</span>
+                                </div>
+                            </li>
+                        );
+                    })}
                 </ul>
                 <div ref={messagesEndRef} />
             </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { COMMUNITY_EVENTS } from '../constants';
 import { formatTimeAgo } from '../utils/time';
+import { RoleBadge } from './RoleBadge';
 
 export const CommunityFeed: React.FC = () => {
     return (
@@ -25,7 +26,10 @@ export const CommunityFeed: React.FC = () => {
                             </div>
                             <div className="flex-1">
                                 <p className="text-sm text-gray-300">
-                                    <span className="font-bold text-white">{event.username}</span> {event.action} {event.details && <span className="font-semibold text-cyan-300">"{event.details}"</span>}
+                                    <span className="font-bold text-white inline-flex items-center gap-1.5">
+                                        {event.username}
+                                        {event.role && <RoleBadge role={event.role} />}
+                                    </span> {event.action} {event.details && <span className="font-semibold text-cyan-300">"{event.details}"</span>}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">{formatTimeAgo(event.timestamp)}</p>
                             </div>

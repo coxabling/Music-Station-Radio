@@ -1,6 +1,6 @@
 import React from 'react';
-import type { ActiveView } from '../types';
-import { HomeIcon, ExploreIcon, CommunityIcon, StoreIcon, LeaderboardIconSidebar, ChatBubbleIcon } from '../constants';
+import type { ActiveView, User } from '../types';
+import { HomeIcon, ExploreIcon, CommunityIcon, StoreIcon, LeaderboardIconSidebar, ChatBubbleIcon, AdminIcon, BriefcaseIcon, MusicNoteIcon } from '../constants';
 
 interface SidebarProps {
     activeView: ActiveView;
@@ -9,6 +9,7 @@ interface SidebarProps {
     onOpenSongChart: () => void;
     onOpenEvents: () => void;
     onOpenHistory: () => void;
+    currentUser: User | null;
 }
 
 const NavButton: React.FC<{
@@ -37,10 +38,17 @@ const ChartBarIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns
 const HistoryIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z" /></svg>;
 
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, onOpenAlarm, onOpenSongChart, onOpenEvents, onOpenHistory }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, onOpenAlarm, onOpenSongChart, onOpenEvents, onOpenHistory, currentUser }) => {
+    
+    const handleDashboardClick = () => {
+        setActiveView('dashboard');
+    };
+    
+    const isDashboardActive = activeView === 'dashboard';
+
     return (
         <nav className="w-20 bg-gray-900/50 p-2 flex-shrink-0 flex flex-col items-center gap-2 border-r border-gray-700/50">
-            <NavButton label="Dashboard" icon={<HomeIcon className="w-6 h-6"/>} isActive={activeView === 'dashboard'} onClick={() => setActiveView('dashboard')} />
+            <NavButton label="Dashboard" icon={<HomeIcon className="w-6 h-6"/>} isActive={isDashboardActive} onClick={handleDashboardClick} />
             <NavButton label="Explore" icon={<ExploreIcon className="w-6 h-6"/>} isActive={activeView === 'explore'} onClick={() => setActiveView('explore')} />
             <NavButton label="Community" icon={<CommunityIcon className="w-6 h-6"/>} isActive={activeView === 'community'} onClick={() => setActiveView('community')} />
             <NavButton label="Rooms" icon={<ChatBubbleIcon className="w-6 h-6"/>} isActive={activeView === 'genre_chat'} onClick={() => setActiveView('genre_chat')} />
@@ -49,6 +57,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, onO
 
             <NavButton label="Store" icon={<StoreIcon className="w-6 h-6"/>} isActive={activeView === 'store'} onClick={() => setActiveView('store')} />
             <NavButton label="Top Charts" icon={<LeaderboardIconSidebar className="w-6 h-6"/>} isActive={activeView === 'leaderboard'} onClick={() => setActiveView('leaderboard')} />
+            
+            {currentUser?.role === 'artist' && (
+                <NavButton label="Artist" icon={<MusicNoteIcon className="w-6 h-6"/>} isActive={activeView === 'artist_dashboard'} onClick={() => setActiveView('artist_dashboard')} />
+            )}
+            
+            {currentUser?.role === 'owner' && (
+                <NavButton label="Manager" icon={<BriefcaseIcon className="w-6 h-6"/>} isActive={activeView === 'station_manager_dashboard'} onClick={() => setActiveView('station_manager_dashboard')} />
+            )}
+            
+            {currentUser?.role === 'admin' && (
+                <NavButton label="Admin" icon={<AdminIcon className="w-6 h-6"/>} isActive={activeView === 'admin'} onClick={() => setActiveView('admin')} />
+            )}
+
 
             <div className="w-full h-px bg-gray-700 my-2" />
             

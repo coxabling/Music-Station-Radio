@@ -1,3 +1,5 @@
+
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -20,12 +22,18 @@ import { LeaderboardView } from './components/LeaderboardView';
 import { MapView } from './components/MapView';
 import { SongHistoryModal } from './components/SongHistoryModal';
 import { GenreChatView } from './components/GenreChatView';
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon, UserIcon, MOCK_REVIEWS, ExploreIcon, RocketIcon } from './constants';
-import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, StationReview, ActiveView, UserData } from './types';
+import { AdminDashboardView } from './components/AdminDashboardView';
+import { StationManagerDashboardView } from './components/StationManagerDashboardView';
+import { ArtistDashboardView } from './components/ArtistDashboardView';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon, UserIcon, MOCK_REVIEWS, ExploreIcon, RocketIcon, UploadIcon, ShieldCheckIcon, MUSIC_SUBMISSION_COST } from './constants';
+import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, StationReview, ActiveView, UserData, MusicSubmission } from './types';
 import { slugify } from './utils/slugify';
 import { getDominantColor } from './utils/colorExtractor';
 import { LandingPage } from './components/LandingPage';
-import { getUserData, updateUserData } from './services/apiService';
+import { getUserData, updateUserData, createUserData } from './services/apiService';
+import { EditStationModal } from './components/EditStationModal';
+import { MusicSubmissionModal } from './components/MusicSubmissionModal';
+import { ClaimOwnershipModal } from './components/ClaimOwnershipModal';
 
 const hexToRgb = (hex: string) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -40,6 +48,7 @@ const App: React.FC = () => {
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
 
   const [currentStation, setCurrentStation] = useState<Station | null>(null);
+  const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   
   const [backgrounds, setBackgrounds] = useState<[string | null, string | null]>([null, null]);
@@ -61,6 +70,12 @@ const App: React.FC = () => {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [tippingModalStation, setTippingModalStation] = useState<Station | null>(null);
   const [genreForSpotlight, setGenreForSpotlight] = useState<string | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [stationToEdit, setStationToEdit] = useState<Station | null>(null);
+  const [isMusicSubmissionModalOpen, setIsMusicSubmissionModalOpen] = useState(false);
+  const [stationForSubmission, setStationForSubmission] = useState<Station | null>(null);
+  const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
+  const [stationToClaim, setStationToClaim] = useState<Station | null>(null);
   
   const [favoriteStationUrls, setFavoriteStationUrls] = useState<Set<string>>(new Set());
   const [unlockedThemes, setUnlockedThemes] = useState<Set<ThemeName>>(new Set(['dynamic']));
@@ -93,12 +108,22 @@ const App: React.FC = () => {
     setIsDataLoading(true);
 
     const data = await getUserData(username);
+    if (!data) {
+        console.error("Failed to load user data for", username);
+        setIsDataLoading(false);
+        handleLogout();
+        return;
+    }
     
     const favUrls = new Set(data.favoriteStationUrls);
     const stationsWithFavorites = defaultStations.map(s => ({...s, isFavorite: favUrls.has(s.streamUrl)}));
     const userStationsWithFavorites = data.userStations.map(s => ({...s, isFavorite: favUrls.has(s.streamUrl)}));
+    const allKnownStations = [...stationsWithFavorites, ...userStationsWithFavorites];
     
-    setAllStations([...stationsWithFavorites, ...userStationsWithFavorites]);
+    const user: User = { username, role: data.role };
+    setCurrentUser(user);
+    
+    setAllStations(allKnownStations);
     setUserStations(data.userStations);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
@@ -107,7 +132,13 @@ const App: React.FC = () => {
     setAlarm(data.alarm);
     setSongVotes(data.songVotes);
     setUnlockedAchievements(data.unlockedAchievements);
-    setActiveView(data.activeView || 'dashboard');
+    
+    let defaultView: ActiveView = 'dashboard';
+    if (user.role === 'admin') defaultView = 'admin';
+    else if (user.role === 'owner') defaultView = 'station_manager_dashboard';
+    else if (user.role === 'artist') defaultView = 'artist_dashboard';
+
+    setActiveView(data.activeView || defaultView);
     
     const params = new URLSearchParams(window.location.search);
     const stationSlug = params.get('station');
@@ -126,15 +157,14 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let user: User | null = null;
+    let storedUser: { username: string } | null = null;
     try {
-      const storedUser = localStorage.getItem('currentUser');
-      if (storedUser) user = JSON.parse(storedUser);
+      const storedUserJSON = localStorage.getItem('currentUser');
+      if (storedUserJSON) storedUser = JSON.parse(storedUserJSON);
     } catch (error) { console.error("Failed to load current user:", error); }
 
-    if (user) {
-      setCurrentUser(user);
-      loadUserData(user.username);
+    if (storedUser) {
+      loadUserData(storedUser.username);
     } else {
       setIsDataLoading(false);
     }
@@ -171,10 +201,24 @@ const App: React.FC = () => {
   }, [currentStation]);
 
 
-  const handleLogin = useCallback(async (username: string) => {
-    const user = { username };
-    setCurrentUser(user);
-    localStorage.setItem('currentUser', JSON.stringify(user));
+  const handleLogin = useCallback(async (username: string, role: UserData['role']) => {
+    if (username.toLowerCase() === 'admin') {
+        let userData = await getUserData(username);
+        if (!userData) {
+            await createUserData(username, 'admin');
+        }
+        localStorage.setItem('currentUser', JSON.stringify({ username }));
+        setIsLoginModalOpen(false);
+        await loadUserData(username);
+        return;
+    }
+    
+    let userData = await getUserData(username);
+    if (!userData) {
+        await createUserData(username, role);
+    }
+
+    localStorage.setItem('currentUser', JSON.stringify({ username }));
     setIsLoginModalOpen(false);
     await loadUserData(username);
     setToasts(prev => [...prev, {
@@ -323,33 +367,34 @@ const App: React.FC = () => {
   const handleNextStation = () => { if (!currentStation) return; const currentIndex = filteredStations.findIndex(s => s.streamUrl === currentStation.streamUrl); const nextIndex = (currentIndex + 1) % filteredStations.length; handleSelectStation(filteredStations[nextIndex]); };
   const handlePreviousStation = () => { if (!currentStation) return; const currentIndex = filteredStations.findIndex(s => s.streamUrl === currentStation.streamUrl); const prevIndex = (currentIndex - 1 + filteredStations.length) % filteredStations.length; handleSelectStation(filteredStations[prevIndex]); };
   
-  const handleNowPlayingUpdate = useCallback((nowPlaying: NowPlaying | null) => {
-    const newArt = nowPlaying?.albumArt || null;
+  const handleNowPlayingUpdate = useCallback((nowPlayingUpdate: NowPlaying | null) => {
+    setNowPlaying(nowPlayingUpdate);
+    const newArt = nowPlayingUpdate?.albumArt || null;
     if (newArt) {
       try { getDominantColor(newArt).then(color => setAlbumArtColor(color)).catch(() => setAlbumArtColor('#67e8f9')); } 
       catch (error) { console.warn("Could not extract color from album art, using default.", error); setAlbumArtColor('#67e8f9'); }
     } else { setAlbumArtColor('#67e8f9'); }
     if (newArt !== backgrounds[activeBgIndex]) { const nextIndex = 1 - activeBgIndex; const newBackgrounds = [...backgrounds] as [string | null, string | null]; newBackgrounds[nextIndex] = newArt; setBackgrounds(newBackgrounds); setActiveBgIndex(nextIndex); }
     
-    if (!currentUser || !nowPlaying?.songId) return;
+    if (!currentUser || !nowPlayingUpdate?.songId) return;
 
     let updatesToSave: Partial<UserData> = {};
 
     setSongVotes(prevVotes => {
-      if (prevVotes[nowPlaying.songId!]) return prevVotes;
+      if (prevVotes[nowPlayingUpdate.songId!]) return prevVotes;
       
-      const newEntry: SongVote = { id: nowPlaying.songId!, artist: nowPlaying.artist, title: nowPlaying.title, albumArt: nowPlaying.albumArt || currentStation!.coverArt, likes: Math.floor(Math.random() * 15) + 1, dislikes: Math.floor(Math.random() * 5)};
-      const newVotes = { ...prevVotes, [nowPlaying.songId!]: newEntry };
+      const newEntry: SongVote = { id: nowPlayingUpdate.songId!, artist: nowPlayingUpdate.artist, title: nowPlayingUpdate.title, albumArt: nowPlayingUpdate.albumArt || currentStation!.coverArt, likes: Math.floor(Math.random() * 15) + 1, dislikes: Math.floor(Math.random() * 5)};
+      const newVotes = { ...prevVotes, [nowPlayingUpdate.songId!]: newEntry };
       updatesToSave.songVotes = newVotes;
       return newVotes;
     });
 
-    if (currentStation && nowPlaying.title !== "Live Stream" && nowPlaying.title !== "Station Data Unavailable") {
+    if (currentStation && nowPlayingUpdate.title !== "Live Stream" && nowPlayingUpdate.title !== "Station Data Unavailable") {
       setStats(prevStats => {
         const history = prevStats.songHistory || [];
-        if (history[0]?.songId === nowPlaying.songId) return prevStats;
+        if (history[0]?.songId === nowPlayingUpdate.songId) return prevStats;
         
-        const newHistoryItem = { songId: nowPlaying.songId!, title: nowPlaying.title, artist: nowPlaying.artist, albumArt: nowPlaying.albumArt || currentStation.coverArt, stationName: currentStation.name, playedAt: new Date().toISOString() };
+        const newHistoryItem = { songId: nowPlayingUpdate.songId!, title: nowPlayingUpdate.title, artist: nowPlayingUpdate.artist, albumArt: nowPlayingUpdate.albumArt || currentStation.coverArt, stationName: currentStation.name, playedAt: new Date().toISOString() };
         const updatedHistory = [newHistoryItem, ...history].slice(0, 50);
         const newStats = { ...prevStats, songHistory: updatedHistory };
         updatesToSave.stats = newStats;
@@ -364,13 +409,17 @@ const App: React.FC = () => {
     }
   }, [activeBgIndex, backgrounds, currentStation, currentUser]);
   
-  const handleAddStation = async (newStation: Station) => {
-    if (!currentUser) return;
-    const stationWithFavorite = {...newStation, isFavorite: favoriteStationUrls.has(newStation.streamUrl)};
+  const handleAddStation = async (stationData: Omit<Station, 'owner' | 'isFavorite' | 'rating' | 'ratingsCount' | 'location'>) => {
+    if (!currentUser || (currentUser.role !== 'owner' && currentUser.role !== 'admin')) return;
+    const newStation: Station = {
+      ...stationData,
+      owner: currentUser.username,
+      isFavorite: favoriteStationUrls.has(stationData.streamUrl),
+    };
     
     const newUserStations = [...userStations, newStation];
     setUserStations(newUserStations);
-    setAllStations(prev => [...prev, stationWithFavorite]);
+    setAllStations(prev => [...prev, newStation]);
     
     await updateUserData(currentUser.username, { userStations: newUserStations });
 
@@ -513,12 +562,13 @@ const App: React.FC = () => {
     setIsStationDetailModalOpen(true);
   };
   
-  const handleAddReview = async (stationUrl: string, review: Omit<StationReview, 'createdAt' | 'author'>) => {
+  const handleAddReview = async (stationUrl: string, review: Omit<StationReview, 'createdAt' | 'author' | 'authorRole'>) => {
     if (!currentUser) return;
     
     const newReview: StationReview = {
         ...review,
         author: currentUser.username,
+        authorRole: currentUser.role,
         createdAt: new Date().toISOString(),
     };
 
@@ -571,6 +621,205 @@ const App: React.FC = () => {
     }
   }, [stats.songHistory, allStations, activeView, handleSetActiveView]);
 
+  const handleOpenEditModal = useCallback((station: Station) => {
+    setStationToEdit(station);
+    setIsStationDetailModalOpen(false);
+    setIsEditModalOpen(true);
+  }, []);
+
+  const handleUpdateStation = useCallback(async (updatedStation: Station) => {
+    if (!currentUser || updatedStation.owner !== currentUser.username) return;
+
+    const newAllStations = allStations.map(s => s.streamUrl === updatedStation.streamUrl ? updatedStation : s);
+    setAllStations(newAllStations);
+
+    if (userStations.some(s => s.streamUrl === updatedStation.streamUrl)) {
+        const newUserStations = userStations.map(s => s.streamUrl === updatedStation.streamUrl ? updatedStation : s);
+        setUserStations(newUserStations);
+        await updateUserData(currentUser.username, { userStations: newUserStations });
+    }
+    
+    if (currentStation?.streamUrl === updatedStation.streamUrl) {
+        setCurrentStation(updatedStation);
+    }
+    if (stationForDetail?.streamUrl === updatedStation.streamUrl) {
+        setStationForDetail(updatedStation);
+    }
+
+    setIsEditModalOpen(false);
+    setToasts(prev => [...prev, {
+        id: Date.now(),
+        title: "Station Updated!",
+        message: `${updatedStation.name} has been successfully updated.`,
+        icon: StarIcon,
+        type: 'points',
+    }]);
+  }, [currentUser, allStations, userStations, currentStation, stationForDetail]);
+
+  const handleOpenMusicSubmissionModal = useCallback((station: Station) => {
+    setStationForSubmission(station);
+    setIsStationDetailModalOpen(false);
+    setIsMusicSubmissionModalOpen(true);
+  }, []);
+
+  const handleMusicSubmission = useCallback((stationStreamUrl: string, submission: Omit<MusicSubmission, 'id' | 'submittedAt' | 'status' | 'submittedBy' | 'stationStreamUrl' | 'stationName'>) => {
+    if (!currentUser || currentUser.role !== 'artist' || (stats.points || 0) < MUSIC_SUBMISSION_COST) return;
+
+    const targetStation = allStations.find(s => s.streamUrl === stationStreamUrl);
+    if (!targetStation) return;
+
+    const newSubmission: MusicSubmission = {
+        ...submission,
+        id: `sub_${Date.now()}`,
+        submittedAt: new Date().toISOString(),
+        status: 'pending',
+        submittedBy: currentUser.username,
+        stationStreamUrl: stationStreamUrl,
+        stationName: targetStation.name,
+    };
+
+    setAllStations(prev => prev.map(s => {
+        if (s.streamUrl === stationStreamUrl) {
+            return { ...s, submissions: [...(s.submissions || []), newSubmission] };
+        }
+        return s;
+    }));
+    
+    const newPoints = (stats.points || 0) - MUSIC_SUBMISSION_COST;
+    setStats(prev => ({ ...prev, points: newPoints }));
+    updateUserData(currentUser.username, { stats: { ...stats, points: newPoints } });
+
+    setIsMusicSubmissionModalOpen(false);
+    setToasts(prev => [...prev, {
+        id: Date.now(),
+        title: "Submission Sent!",
+        message: `Your track "${submission.songTitle}" was sent to ${targetStation.name}.`,
+        icon: UploadIcon,
+        type: 'points',
+    }]);
+  }, [currentUser, stats.points, allStations]);
+
+  const handleReviewSubmission = useCallback((stationStreamUrl: string, submissionId: string, status: 'approved' | 'rejected', comment?: string) => {
+      if (!currentUser || currentUser.role !== 'owner') return;
+
+      setAllStations(prev => prev.map(s => {
+          if (s.streamUrl === stationStreamUrl) {
+              const updatedSubmissions = (s.submissions || []).map(sub => {
+                  if (sub.id === submissionId) {
+                      return { ...sub, status, managerComment: comment, reviewedAt: new Date().toISOString() };
+                  }
+                  return sub;
+              });
+              return { ...s, submissions: updatedSubmissions };
+          }
+          return s;
+      }));
+
+       setToasts(prev => [...prev, {
+        id: Date.now(),
+        title: `Submission ${status === 'approved' ? 'Approved' : 'Rejected'}`,
+        message: `Feedback has been recorded.`,
+        icon: status === 'approved' ? StarIcon : UploadIcon,
+        type: 'points',
+    }]);
+  }, [currentUser]);
+
+  const handleOpenClaimModal = useCallback((station: Station) => {
+    setStationToClaim(station);
+    setIsStationDetailModalOpen(false);
+    setIsClaimModalOpen(true);
+  }, []);
+
+  const handleClaimStation = useCallback((station: Station, reason: string) => {
+    if (!currentUser) return;
+    
+    const newClaimRequest = {
+      username: currentUser.username,
+      reason,
+      submittedAt: new Date().toISOString(),
+    };
+
+    const newAllStations = allStations.map(s => s.streamUrl === station.streamUrl ? { ...s, claimRequest: newClaimRequest } : s);
+    setAllStations(newAllStations);
+    
+    if (stationForDetail?.streamUrl === station.streamUrl) {
+        setStationForDetail({ ...station, claimRequest: newClaimRequest });
+    }
+
+    setIsClaimModalOpen(false);
+    setToasts(prev => [...prev, {
+        id: Date.now(),
+        title: "Claim Submitted!",
+        message: `Your claim for ${station.name} is under review.`,
+        icon: ShieldCheckIcon,
+        type: 'points',
+    }]);
+  }, [currentUser, allStations, stationForDetail]);
+  
+  const handleApproveClaim = useCallback(async (station: Station, claimantUsername: string) => {
+    if (currentUser?.role !== 'admin') return;
+
+    const newAllStations = allStations.map(s => {
+      if (s.streamUrl === station.streamUrl) {
+        return { ...s, owner: claimantUsername, claimRequest: undefined };
+      }
+      return s;
+    });
+    setAllStations(newAllStations);
+
+    await updateUserData(claimantUsername, { role: 'owner' });
+
+    setToasts(prev => [...prev, {
+      id: Date.now(),
+      title: "Claim Approved",
+      message: `${claimantUsername} is now the owner of ${station.name}.`,
+      icon: ShieldCheckIcon,
+      type: 'login'
+    }]);
+  }, [currentUser, allStations]);
+  
+  const handleDenyClaim = useCallback((station: Station) => {
+    if (currentUser?.role !== 'admin') return;
+    
+    const newAllStations = allStations.map(s => {
+      if (s.streamUrl === station.streamUrl) {
+        return { ...s, claimRequest: undefined };
+      }
+      return s;
+    });
+    setAllStations(newAllStations);
+    
+    setToasts(prev => [...prev, {
+      id: Date.now(),
+      title: "Claim Denied",
+      message: `The claim for ${station.name} has been denied.`,
+      icon: ShieldCheckIcon,
+      type: 'error'
+    }]);
+  }, [currentUser, allStations]);
+
+  const handleUpdateUserRole = useCallback(async (username: string, role: UserData['role']) => {
+    if (currentUser?.role !== 'admin' || currentUser.username === username) return;
+
+    await updateUserData(username, { role });
+
+    setToasts(prev => [...prev, {
+      id: Date.now(),
+      title: "User Role Updated",
+      message: `${username}'s role has been changed to ${role}.`,
+      icon: ShieldCheckIcon,
+      type: 'login'
+    }]);
+  }, [currentUser]);
+
+  const artistSubmissions = useMemo(() => {
+      if (!currentUser || currentUser.role !== 'artist') return [];
+      return allStations.flatMap(station => station.submissions || [])
+          .filter(sub => sub.submittedBy === currentUser.username)
+          .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+  }, [allStations, currentUser]);
+
+
   if (!hasEnteredApp) {
     return <LandingPage onEnter={() => setHasEnteredApp(true)} />;
   }
@@ -579,6 +828,10 @@ const App: React.FC = () => {
     switch (activeView) {
       case 'dashboard':
         return <DashboardView user={currentUser} stats={stats} favoritesCount={favoriteStationUrls.size} unlockedAchievements={unlockedAchievements} />;
+      case 'artist_dashboard':
+        return <ArtistDashboardView user={currentUser} stats={stats} submissions={artistSubmissions} setActiveView={handleSetActiveView} />;
+      case 'station_manager_dashboard':
+        return <StationManagerDashboardView user={currentUser} allStations={allStations} onReviewSubmission={handleReviewSubmission} onEditStation={handleOpenEditModal} />;
       case 'community':
         return <CommunityFeed />;
       case 'store':
@@ -586,7 +839,9 @@ const App: React.FC = () => {
       case 'leaderboard':
         return <LeaderboardView currentUser={currentUser} userPoints={stats.points || 0} />;
       case 'genre_chat':
-        return <GenreChatView allStations={allStations} onSelectStation={handleSelectStation} currentStation={currentStation} />;
+        return <GenreChatView allStations={allStations} onSelectStation={handleSelectStation} currentStation={currentStation} nowPlaying={nowPlaying} />;
+      case 'admin':
+        return <AdminDashboardView stations={allStations} onApproveClaim={handleApproveClaim} onDenyClaim={handleDenyClaim} currentUser={currentUser} onUpdateUserRole={handleUpdateUserRole} />;
       case 'explore':
       default:
         return (
@@ -602,6 +857,7 @@ const App: React.FC = () => {
             onOpenGenreSpotlight={setGenreForSpotlight}
             onOpenDetailModal={handleOpenStationDetail}
             onPlayFromCommunity={handlePlayFromCommunity}
+            currentUser={currentUser}
           />
         );
     }
@@ -618,7 +874,7 @@ const App: React.FC = () => {
           <Header currentUser={currentUser} onLogout={handleLogout} points={stats.points || 0} />
           
           <div className={`flex flex-grow h-[calc(100vh-68px)] transition-all duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-            {currentUser && <Sidebar activeView={activeView} setActiveView={handleSetActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModalOpen(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} />}
+            {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={handleSetActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModalOpen(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} />}
             
             {isDataLoading ? (
               <main className="flex-grow flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--accent-color)]"></div></main>
@@ -627,7 +883,7 @@ const App: React.FC = () => {
                 <main className={`flex-grow overflow-y-auto transition-all duration-300 ${isChatOpen ? 'md:pr-[356px]' : ''} ${currentStation ? 'pb-24 md:pb-32' : ''}`}>
                   {renderActiveView()}
                 </main>
-                {currentStation && <ListeningPartyChat station={currentStation} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />}
+                {currentStation && <ListeningPartyChat station={currentStation} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} nowPlaying={nowPlaying} />}
               </>
             ) : (
               <main className="flex-grow flex items-center justify-center"><p className="text-gray-400">Please log in to continue.</p></main>
@@ -660,7 +916,15 @@ const App: React.FC = () => {
         }}
         onRateStation={handleRateStation}
         userRating={stats.stationRatings?.[stationForDetail?.streamUrl || ''] || 0}
+        isOwner={!!(currentUser && stationForDetail && stationForDetail.owner === currentUser.username)}
+        onEdit={handleOpenEditModal}
+        currentUser={currentUser}
+        onOpenMusicSubmissionModal={handleOpenMusicSubmissionModal}
+        onOpenClaimModal={handleOpenClaimModal}
       />
+      <EditStationModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} station={stationToEdit} onSubmit={handleUpdateStation} />
+      <MusicSubmissionModal isOpen={isMusicSubmissionModalOpen} onClose={() => setIsMusicSubmissionModalOpen(false)} station={stationForSubmission} onSubmit={handleMusicSubmission} userPoints={stats.points || 0} />
+      <ClaimOwnershipModal isOpen={isClaimModalOpen} onClose={() => setIsClaimModalOpen(false)} station={stationToClaim} onSubmit={handleClaimStation} />
       <EventsModal isOpen={isEventsModalOpen} onClose={() => setIsEventsModalOpen(false)} onSelectStation={(stationName) => {
         const stationToPlay = allStations.find(s => s.name === stationName);
         if (stationToPlay) handleSelectStation(stationToPlay);

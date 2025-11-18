@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import type { Station, ChatMessage } from '../types';
+import type { ChatMessage, Station, NowPlaying } from '../types';
 import { SendIcon } from '../constants';
 
 interface GenreChatViewProps {
     allStations: Station[];
     onSelectStation: (station: Station) => void;
     currentStation: Station | null;
+    nowPlaying: NowPlaying | null;
 }
 
 const botMessages: Record<string, string[]> = {
@@ -25,7 +26,8 @@ const botMessages: Record<string, string[]> = {
 const USER_COLORS = ['#34d399', '#fbbf24', '#f87171', '#60a5fa', '#a78bfa', '#f472b6'];
 const getAvatarInfo = (author: string): {initials: string, color: string} => {
     if (author === 'You') return { initials: 'You', color: 'var(--accent-color)' };
-    if (author === 'RoomBot') return { initials: 'Bot', color: '#9ca3af' };
+    if (author === 'RoomBot' || author === 'RadioBot') return { initials: 'Bot', color: '#9ca3af' };
+    if (author === 'DJ') return { initials: 'DJ', color: '#a855f7' }; // purple-500
     const initials = author.replace('Guest', 'G');
     const colorIndex = parseInt(author.replace('Guest', ''), 10) % USER_COLORS.length;
     return { initials, color: USER_COLORS[colorIndex] };
@@ -45,6 +47,17 @@ const GenreCard: React.FC<{ genre: string; onClick: () => void; coverArt: string
 
 const ChatMessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
     const isYou = message.author === 'You';
+
+    if (message.isDJ) {
+        return (
+            <li className="flex justify-center my-2 animate-fade-in-up">
+                <div className="px-4 py-2 rounded-full bg-purple-500/20 border border-purple-400/50 text-purple-200 text-sm flex items-center gap-2 shadow-lg">
+                    {message.text}
+                </div>
+            </li>
+        );
+    }
+
     return (
         <li className={`flex items-end gap-2 animate-fade-in-up ${isYou ? 'justify-end' : 'justify-start'}`} style={{animationDelay: '50ms'}}>
             {!isYou && (
@@ -59,7 +72,8 @@ const ChatMessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
                 {!isYou && <span className="text-xs text-gray-400 font-semibold px-3">{message.author}</span>}
                 <div 
                     className={`relative px-4 py-2 rounded-2xl max-w-xs md:max-w-sm group ${isYou ? 'bg-[var(--accent-color)] text-black rounded-br-none' : 'bg-gray-700/80 text-white rounded-bl-none'}`}
-                    title={new Date().toLocaleTimeString()}
+                    // FIX: (Line 90) Switched to toLocaleString with options to prevent an arguments error with toLocaleTimeString and provide a consistent format.
+                    title={new Date(message.id).toLocaleString(undefined, { hour: 'numeric', minute: '2-digit' })}
                 >
                     {message.text}
                 </div>
@@ -68,19 +82,37 @@ const ChatMessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
     );
 };
 
-const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStation: (s: Station) => void; onBack: () => void; currentStation: Station | null }> = ({ genre, stations, onSelectStation, onBack, currentStation }) => {
+const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStation: (s: Station) => void; onBack: () => void; currentStation: Station | null, nowPlaying: NowPlaying | null }> = ({ genre, stations, onSelectStation, onBack, currentStation, nowPlaying }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    // FIX: Correctly type the useRef for the interval ID to allow for an undefined initial value.
     const botIntervalRef = useRef<number | undefined>();
+    const lastAnnouncedSongIdRef = useRef<string | null>(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
 
     useEffect(scrollToBottom, [messages, isTyping]);
+    
+    // DJ Auto Announcer
+    useEffect(() => {
+        if (nowPlaying && nowPlaying.songId && nowPlaying.songId !== lastAnnouncedSongIdRef.current && nowPlaying.title !== "Live Stream" && nowPlaying.title !== "Station Data Unavailable") {
+            const djInfo = getAvatarInfo('DJ');
+            const djMessage: ChatMessage = {
+                id: Date.now(),
+                author: 'DJ',
+                text: `🎶 Now Playing: "${nowPlaying.title}" by ${nowPlaying.artist}`,
+                isDJ: true,
+                initials: djInfo.initials,
+                avatarColor: djInfo.color,
+            };
+
+            setMessages(prev => [...prev, djMessage]);
+            lastAnnouncedSongIdRef.current = nowPlaying.songId;
+        }
+    }, [nowPlaying]);
 
     useEffect(() => {
         const botInfo = getAvatarInfo('RoomBot');
@@ -89,10 +121,10 @@ const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStat
             author: 'RoomBot',
             text: `Welcome to the ${genre} room! Feel free to chat and discover new music.`,
             isBot: true,
-            // FIX: Map 'color' to 'avatarColor' and include 'initials'.
             initials: botInfo.initials,
             avatarColor: botInfo.color
         }]);
+        lastAnnouncedSongIdRef.current = null; // Reset on room change
 
         const genreBotMessages = botMessages[genre] || botMessages.default;
 
@@ -107,7 +139,6 @@ const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStat
                     author: guestName,
                     text: genreBotMessages[Math.floor(Math.random() * genreBotMessages.length)],
                     isBot: true,
-                    // FIX: Map 'color' to 'avatarColor' and include 'initials'.
                     initials: guestInfo.initials,
                     avatarColor: guestInfo.color,
                 }]);
@@ -131,7 +162,6 @@ const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStat
                 id: Date.now(),
                 author: 'You',
                 text: input.trim(),
-                // FIX: Map 'color' to 'avatarColor' and include 'initials'.
                 initials: userInfo.initials,
                 avatarColor: userInfo.color
             }]);
@@ -149,7 +179,6 @@ const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStat
                 <div className="flex-grow p-4 overflow-y-auto">
                     <ul className="space-y-4">
                         {messages.map(msg => <ChatMessageBubble key={msg.id} message={msg} />)}
-                        {/* FIX: Move typing indicator inside the UL for correct HTML structure. */}
                         {isTyping && (
                             <li className="flex items-end gap-2 animate-fade-in-up">
                                 <div className="w-8 h-8 rounded-full flex-shrink-0 bg-gray-600 flex items-center justify-center text-white font-bold text-sm">G</div>
@@ -174,9 +203,18 @@ const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStat
                     </form>
                 </div>
             </div>
-            <aside className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50 h-full">
-                <h4 className="font-bold mb-3 text-white">Stations in this room</h4>
-                <ul className="space-y-2 overflow-y-auto max-h-[calc(100%-2rem)]">
+            <aside className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50 h-full flex flex-col">
+                {currentStation && (
+                    <div className="mb-4 p-2 bg-gray-800/50 rounded-lg border border-gray-700 flex-shrink-0">
+                        <p className="text-xs text-[var(--accent-color)] font-semibold">NOW PLAYING</p>
+                        <div className="flex items-center gap-2 mt-1">
+                            <img src={currentStation.coverArt} alt={currentStation.name} className="w-8 h-8 rounded-md" />
+                            <p className="text-sm font-semibold text-white truncate">{currentStation.name}</p>
+                        </div>
+                    </div>
+                )}
+                <h4 className="font-bold mb-3 text-white flex-shrink-0">Stations in this room</h4>
+                <ul className="space-y-2 overflow-y-auto">
                     {stations.map(s => {
                         const isPlaying = currentStation?.streamUrl === s.streamUrl;
                         return (
@@ -197,7 +235,7 @@ const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStat
     );
 }
 
-export const GenreChatView: React.FC<GenreChatViewProps> = ({ allStations, onSelectStation, currentStation }) => {
+export const GenreChatView: React.FC<GenreChatViewProps> = ({ allStations, onSelectStation, currentStation, nowPlaying }) => {
     const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
 
     const genres = useMemo(() => {
@@ -217,14 +255,14 @@ export const GenreChatView: React.FC<GenreChatViewProps> = ({ allStations, onSel
     }, [allStations, selectedGenre]);
 
     if (selectedGenre) {
-        return <div className="p-4 h-full"><ChatInterface genre={selectedGenre} stations={stationsForGenre} onSelectStation={onSelectStation} onBack={() => setSelectedGenre(null)} currentStation={currentStation} /></div>;
+        return <div className="p-4 h-full"><ChatInterface genre={selectedGenre} stations={stationsForGenre} onSelectStation={onSelectStation} onBack={() => setSelectedGenre(null)} currentStation={currentStation} nowPlaying={nowPlaying} /></div>;
     }
 
     return (
         <div className="p-4 md:p-8 animate-fade-in">
             <header className="text-center mb-8">
                 <h1 className="text-3xl font-bold font-orbitron accent-color-text">Genre Chat Rooms</h1>
-                <p className="text-gray-400 mt-2">Join a room to chat with fellow fans and discover music.</p>
+                <p className="text-gray-400 mt-2">Join a room to chat with fellow fans and discover new music.</p>
             </header>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {genres.map((genre, index) => (

@@ -1,4 +1,4 @@
-import type { UserData, ListeningStats, Alarm, SongVote, UnlockedAchievement, Station, ThemeName } from '../types';
+import type { UserData } from '../types';
 
 const SIMULATED_LATENCY = 50; // ms
 
@@ -22,8 +22,8 @@ const setDb = (username: string, data: UserData) => {
     }
 };
 
-// Defines the default data structure for a newly created user
-const createNewUserData = (): UserData => ({
+// Defines the default data structure for a newly created user (without role)
+const createDefaultUserData = (): Omit<UserData, 'role'> => ({
     stats: { totalTime: 0, stationPlays: {}, genresPlayed: [], points: 0, stationRatings: {}, songHistory: [], songUserVotes: {}, stationReviews: {} },
     alarm: null,
     songVotes: {},
@@ -37,24 +37,37 @@ const createNewUserData = (): UserData => ({
 
 
 /**
- * Fetches all data for a given user. If the user doesn't exist in our mock DB,
- * it creates and saves a new default entry for them before returning it.
+ * Fetches all data for a given user.
  * @param username The username to fetch data for.
- * @returns A promise that resolves with the user's complete data.
+ * @returns A promise that resolves with the user's complete data, or null if they don't exist.
  */
-export const getUserData = async (username: string): Promise<UserData> => {
+export const getUserData = async (username: string): Promise<UserData | null> => {
     return new Promise((resolve) => {
         setTimeout(() => {
-            let userData = getDb(username);
-            if (!userData) {
-                console.log(`No data for ${username}, creating new entry.`);
-                userData = createNewUserData();
-                setDb(username, userData);
-            }
-            resolve(userData);
+            resolve(getDb(username));
         }, SIMULATED_LATENCY);
     });
 };
+
+/**
+ * Creates a new user entry in the mock database.
+ * @param username The new user's username.
+ * @param role The role to assign to the new user.
+ * @returns A promise that resolves with the new user's data.
+ */
+export const createUserData = async (username: string, role: UserData['role']): Promise<UserData> => {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            const newUserData: UserData = {
+                ...createDefaultUserData(),
+                role: role,
+            };
+            setDb(username, newUserData);
+            resolve(newUserData);
+        }, SIMULATED_LATENCY);
+    });
+};
+
 
 // --- Robust Update Queue to prevent race conditions ---
 let updateQueue: (() => Promise<void>)[] = [];
@@ -85,8 +98,12 @@ export const updateUserData = (username: string, partialData: Partial<UserData>)
             setTimeout(() => {
                 const currentData = getDb(username);
                 if (currentData) {
-                    const newData = { ...currentData, ...partialData };
-                    setDb(username, newData);
+                    // Special handling for nested objects to merge them correctly
+                    const mergedData = { ...currentData, ...partialData };
+                    if (partialData.stats) {
+                        mergedData.stats = { ...currentData.stats, ...partialData.stats };
+                    }
+                    setDb(username, mergedData);
                 } else {
                     console.error(`Attempted to update data for non-existent user: ${username}`);
                 }
@@ -102,3 +119,31 @@ export const updateUserData = (username: string, partialData: Partial<UserData>)
         processUpdateQueue();
     });
 }
+
+/**
+ * Fetches data for all users in the mock database.
+ * NOTE: This is an inefficient operation for a real DB, but acceptable for localStorage.
+ * @returns A promise that resolves with an array of all users and their data.
+ */
+export const getAllUsersData = async (): Promise<{ username: string, data: UserData }[]> => {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            const allUsers: { username: string, data: UserData }[] = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('user_db_')) {
+                    try {
+                        const username = key.substring('user_db_'.length);
+                        const data = localStorage.getItem(key);
+                        if (data) {
+                            allUsers.push({ username, data: JSON.parse(data) });
+                        }
+                    } catch (e) {
+                        console.error(`Failed to parse user data for key ${key}`, e);
+                    }
+                }
+            }
+            resolve(allUsers);
+        }, SIMULATED_LATENCY);
+    });
+};

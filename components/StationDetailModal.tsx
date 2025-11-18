@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import type { Station, StationReview } from '../types';
+import type { Station, StationReview, User } from '../types';
 import { StarRating } from './StarRating';
 import { formatTimeAgo } from '../utils/time';
+import { UploadIcon, ShieldCheckIcon } from '../constants';
+import { RoleBadge } from './RoleBadge';
 
 interface StationDetailModalProps {
   isOpen: boolean;
@@ -10,15 +12,21 @@ interface StationDetailModalProps {
   allStations: Station[];
   mockReviews: Record<string, StationReview[]>;
   userReviews: StationReview[];
-  onAddReview: (stationUrl: string, review: Omit<StationReview, 'createdAt' | 'author'>) => void;
+  onAddReview: (stationUrl: string, review: Omit<StationReview, 'createdAt' | 'author' | 'authorRole'>) => void;
   onSelectStation: (station: Station) => void;
   onRateStation: (stationUrl: string, rating: number) => void;
   userRating: number;
+  isOwner?: boolean;
+  onEdit?: (station: Station) => void;
+  currentUser: User | null;
+  onOpenMusicSubmissionModal: (station: Station) => void;
+  onOpenClaimModal: (station: Station) => void;
 }
 
 type ActiveTab = 'reviews' | 'similar';
 
 const PlayIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.546l-6.38 8.195A2 2 0 005.46 15H14.54a2 2 0 001.84-3.259L10 3.546z" transform="rotate(90 10 10)" /></svg>;
+const EditIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L16.732 3.732z" /></svg>;
 
 
 const TabButton: React.FC<{label: string; isActive: boolean; onClick: () => void}> = ({ label, isActive, onClick }) => (
@@ -68,7 +76,7 @@ const ReviewForm: React.FC<{ onSubmit: (rating: number, text: string) => void }>
 };
 
 export const StationDetailModal: React.FC<StationDetailModalProps> = (props) => {
-  const { isOpen, onClose, station, allStations, mockReviews, userReviews, onAddReview, onSelectStation, onRateStation, userRating } = props;
+  const { isOpen, onClose, station, allStations, mockReviews, userReviews, onAddReview, onSelectStation, onRateStation, userRating, isOwner, onEdit, currentUser, onOpenMusicSubmissionModal, onOpenClaimModal } = props;
   const [activeTab, setActiveTab] = useState<ActiveTab>('reviews');
 
   const similarStations = useMemo(() => {
@@ -90,6 +98,8 @@ export const StationDetailModal: React.FC<StationDetailModalProps> = (props) => 
   }, [station, mockReviews, userReviews]);
 
   if (!isOpen || !station) return null;
+
+  const claimPendingForCurrentUser = !!(station.claimRequest && currentUser && station.claimRequest.username === currentUser.username);
 
   return (
     <div 
@@ -122,10 +132,36 @@ export const StationDetailModal: React.FC<StationDetailModalProps> = (props) => 
                 <p className="text-xs text-gray-400 mb-1">Your Rating</p>
                 <StarRating rating={userRating} onRate={(r) => onRateStation(station.streamUrl, r)} starClassName="h-6 w-6"/>
             </div>
-            <button onClick={() => onSelectStation(station)} className="flex items-center gap-2 bg-[var(--accent-color)] hover:opacity-80 text-black font-bold py-2.5 px-6 rounded-md transition-opacity">
-                <PlayIcon className="h-5 w-5"/>
-                Tune In
-            </button>
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+                {currentUser && !station.owner && !station.claimRequest && (
+                    <button onClick={() => onOpenClaimModal(station)} className="flex items-center gap-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 font-bold py-2.5 px-4 rounded-md transition-colors text-sm">
+                        <ShieldCheckIcon className="h-5 w-5"/>
+                        <span>Claim</span>
+                    </button>
+                )}
+                 {claimPendingForCurrentUser && (
+                    <button disabled className="flex items-center gap-2 bg-gray-600 text-gray-400 font-bold py-2.5 px-4 rounded-md cursor-not-allowed text-sm">
+                        <ShieldCheckIcon className="h-5 w-5"/>
+                        <span>Claim Pending</span>
+                    </button>
+                )}
+                {station.acceptsSubmissions && currentUser?.role === 'artist' && (
+                    <button onClick={() => onOpenMusicSubmissionModal(station)} className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2.5 px-4 rounded-md transition-colors text-sm">
+                        <UploadIcon className="h-5 w-5"/>
+                        <span>Submit</span>
+                    </button>
+                )}
+                {isOwner && onEdit && (
+                    <button onClick={() => onEdit(station)} className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2.5 px-4 rounded-md transition-colors text-sm">
+                        <EditIcon className="h-5 w-5"/>
+                        <span>Edit</span>
+                    </button>
+                )}
+                <button onClick={() => onSelectStation(station)} className="flex items-center gap-2 bg-[var(--accent-color)] hover:opacity-80 text-black font-bold py-2.5 px-6 rounded-md transition-opacity text-sm">
+                    <PlayIcon className="h-5 w-5"/>
+                    Tune In
+                </button>
+            </div>
         </div>
         
         <div className="border-b border-gray-700/50 px-4 mt-4">
@@ -142,8 +178,11 @@ export const StationDetailModal: React.FC<StationDetailModalProps> = (props) => 
                 <div className="space-y-3">
                     {allReviewsForStation.map((review, index) => (
                         <div key={index} className="p-3 bg-gray-700/30 rounded-lg">
-                            <div className="flex justify-between items-center mb-1">
-                                <span className="font-semibold text-sm text-white">{review.author}</span>
+                            <div className="flex justify-between items-start mb-1">
+                                <span className="font-semibold text-sm text-white flex items-center gap-1.5">
+                                    {review.author}
+                                    {review.authorRole && <RoleBadge role={review.authorRole} />}
+                                </span>
                                 <StarRating rating={review.rating} readOnly starClassName="h-4 w-4" />
                             </div>
                             <p className="text-sm text-gray-300">{review.text}</p>
