@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import type { NowPlaying } from '../types';
 import { getSongInfo, fetchLyrics, translateLyrics } from '../services/geminiService';

@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -896,8 +897,29 @@ const App: React.FC = () => {
 
           {currentStation && <ListeningPartyChat station={currentStation} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} nowPlaying={nowPlaying} />}
 
-          {currentStation && isPlayerVisible && (
-            <RadioPlayer station={currentStation} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(prev => !prev)} songVotes={songVotes} onVote={handleVote} onRateStation={handleRateStation} userRating={stats.stationRatings?.[currentStation.streamUrl] || 0} onOpenTippingModal={() => setTippingModalStation(currentStation)} allStations={allStations} userSongVotes={stats.songUserVotes} onSelectStation={handleSelectStation} onToggleChat={() => setIsChatOpen(p => !p)} onStartRaid={handleStartRaid} raidStatus={raidStatus} raidTarget={raidTarget} onHidePlayer={() => setIsPlayerVisible(false)} />
+          {currentStation && (
+            <RadioPlayer
+              station={currentStation}
+              onNowPlayingUpdate={handleNowPlayingUpdate}
+              onNextStation={handleNextStation}
+              onPreviousStation={handlePreviousStation}
+              isImmersive={isImmersiveMode}
+              onToggleImmersive={() => setIsImmersiveMode(prev => !prev)}
+              songVotes={songVotes}
+              onVote={handleVote}
+              onRateStation={handleRateStation}
+              userRating={stats.stationRatings?.[currentStation.streamUrl] || 0}
+              onOpenTippingModal={() => setTippingModalStation(currentStation)}
+              allStations={allStations}
+              userSongVotes={stats.songUserVotes}
+              onSelectStation={handleSelectStation}
+              onToggleChat={() => setIsChatOpen(p => !p)}
+              onStartRaid={handleStartRaid}
+              raidStatus={raidStatus}
+              raidTarget={raidTarget}
+              onHidePlayer={() => setIsPlayerVisible(false)}
+              isVisible={isPlayerVisible}
+            />
           )}
         </div>
       </div>

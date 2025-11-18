@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { Station, NowPlaying, EQSettings, SongVote } from '../types';
 import { fetchNowPlaying } from '../services/geminiService';
@@ -51,10 +52,11 @@ interface RadioPlayerProps {
   raidStatus: 'idle' | 'voting';
   raidTarget: Station | null;
   onHidePlayer: () => void;
+  isVisible: boolean;
 }
 
 export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
-  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer } = props;
+  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible } = props;
 
   const [isPlaying, setIsPlaying] = useState(true);
   const [volume, setVolume] = useState(0.75);
@@ -182,7 +184,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
   const renderContent = () => (
     <>
     <div 
-      className={`fixed inset-0 bg-gray-900 z-50 flex flex-col p-4 transition-transform duration-500 ease-in-out ${isExpanded ? 'translate-y-0' : 'translate-y-full'}`}
+      className={`fixed inset-0 bg-gray-900 z-50 flex flex-col p-4 transition-transform duration-500 ease-in-out ${isExpanded && isVisible ? 'translate-y-0' : 'translate-y-full'}`}
       style={{
         backgroundImage: 'radial-gradient(ellipse at bottom, var(--accent-color-rgb, 103, 232, 249) 0.1%, transparent 40%)'
       }}
@@ -261,7 +263,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
         </div>
       </div>
     </div>
-    <div className={`fixed bottom-0 left-0 right-0 z-40 bg-gray-800/60 backdrop-blur-xl border-t border-white/10 transition-transform duration-500 ease-in-out animate-slide-up ${isExpanded ? 'translate-y-full' : 'translate-y-0'}`} onClick={() => setIsExpanded(true)}>
+    <div className={`fixed bottom-0 left-0 right-0 z-40 bg-gray-800/60 backdrop-blur-xl border-t border-white/10 transition-transform duration-500 ease-in-out ${isExpanded || !isVisible ? 'translate-y-full' : 'translate-y-0'}`} onClick={() => setIsExpanded(true)}>
         <div className="container mx-auto px-4 flex items-center h-20">
             <div className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
                 <img src={nowPlaying?.albumArt || station.coverArt} alt={nowPlaying?.title || station.name} className="w-12 h-12 rounded-lg shadow-lg object-cover" onError={handleImageError} />
