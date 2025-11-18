@@ -297,7 +297,8 @@ const App: React.FC = () => {
           if (lastDate === yesterdayStr) currentStreak += 1;
           else currentStreak = 1;
         }
-        const genresPlayed = new Set(prevStats.genresPlayed || []);
+        // FIX: Explicitly type the Set to avoid 'unknown[]' error.
+        const genresPlayed = new Set<string>(prevStats.genresPlayed || []);
         genresPlayed.add(currentStation.genre.split('/')[0].trim());
         const newStats: ListeningStats = { ...prevStats, lastListenDate: today, currentStreak: currentStreak, maxStreak: Math.max(prevStats.maxStreak || 0, currentStreak), genresPlayed: Array.from(genresPlayed) };
         updateUserData(currentUser.username, { stats: newStats });
@@ -871,7 +872,7 @@ const App: React.FC = () => {
         ))}
         <div className="absolute inset-0 bg-black/70 backdrop-blur-2xl"></div>
 
-        <div className="relative text-gray-200 flex flex-col h-full">
+        <div className="relative text-gray-200 flex flex-col h-full pt-16">
           <Header currentUser={currentUser} onLogout={handleLogout} points={stats.points || 0} />
           
           <div className={`flex flex-1 overflow-hidden transition-opacity duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>

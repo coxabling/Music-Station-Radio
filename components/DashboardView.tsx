@@ -56,9 +56,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ user, stats, favor
     const recentHistory = useMemo(() => stats.songHistory.slice(0, 5), [stats.songHistory]);
     const recentAchievements = useMemo(() => 
         Object.values(unlockedAchievements)
-            .sort((a, b) => new Date(b.unlockedAt).getTime() - new Date(a.unlockedAt).getTime())
+            // FIX: Explicitly type callback parameters to resolve 'unknown' type error.
+            .sort((a: UnlockedAchievement, b: UnlockedAchievement) => new Date(b.unlockedAt).getTime() - new Date(a.unlockedAt).getTime())
             .slice(0, 4)
-            .map(ua => ACHIEVEMENTS[ua.id]), 
+            // FIX: Explicitly type callback parameter to resolve 'unknown' type error.
+            .map((ua: UnlockedAchievement) => ACHIEVEMENTS[ua.id]), 
         [unlockedAchievements]
     );
 
