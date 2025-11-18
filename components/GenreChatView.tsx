@@ -72,7 +72,8 @@ const ChatMessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
                 {!isYou && <span className="text-xs text-gray-400 font-semibold px-3">{message.author}</span>}
                 <div 
                     className={`relative px-4 py-2 rounded-2xl max-w-xs md:max-w-sm group ${isYou ? 'bg-[var(--accent-color)] text-black rounded-br-none' : 'bg-gray-700/80 text-white rounded-bl-none'}`}
-                    title={new Date(message.id).toLocaleString(undefined, { hour: 'numeric', minute: '2-digit' })}
+                    // Fix: Use an empty array for the locales argument in toLocaleString to ensure default locale is used, resolving potential compatibility issues.
+                    title={new Date(message.id).toLocaleString([], { hour: 'numeric', minute: '2-digit' })}
                 >
                     {message.text}
                 </div>
@@ -90,7 +91,6 @@ const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStat
     const lastAnnouncedSongIdRef = useRef<string | null>(null);
 
     const scrollToBottom = () => {
-        // FIX: Pass options object to scrollIntoView for smooth scrolling.
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
 

@@ -106,7 +106,7 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
     };
 
     return (
-        <div className={`fixed top-20 right-4 w-[90%] max-w-xs h-[calc(100vh-160px)] bg-gray-900/70 backdrop-blur-md rounded-lg shadow-2xl flex flex-col z-30 transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-[calc(100%+2rem)]'}`}>
+        <div className={`fixed top-16 bottom-24 right-0 w-full max-w-sm h-auto bg-gray-900/70 backdrop-blur-md rounded-l-lg shadow-2xl flex flex-col z-30 transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
             <header className="p-2 border-b border-gray-700/50 flex items-center justify-between flex-shrink-0">
                 <h3 className="text-sm font-semibold text-center text-cyan-300 pl-2">Listening Party</h3>
                 <button onClick={onClose} className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-gray-700 transition-colors" aria-label="Close chat">

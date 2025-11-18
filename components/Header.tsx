@@ -14,8 +14,8 @@ const LogoutIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 
 
 export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, points }) => {
   return (
-    <header className="bg-black/40 backdrop-blur-lg p-3 border-b border-gray-700/50 flex-shrink-0 h-[68px] z-20 relative">
-      <div className="container mx-auto flex items-center justify-between">
+    <header className="bg-gray-950/60 backdrop-blur-xl px-4 border-b border-white/10 flex-shrink-0 h-16 z-20 relative">
+      <div className="container mx-auto flex items-center justify-between h-full">
         <div className="flex items-center gap-4 flex-1">
            {currentUser && (
             <div className="flex items-center gap-4 text-gray-300 bg-gray-800/50 border border-gray-700/50 rounded-full pr-4 transition-all hover:border-gray-600">

@@ -23,7 +23,7 @@ const NavButton: React.FC<{
         className={`w-full flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200 ${
             isActive
             ? 'bg-[var(--accent-color)] text-black shadow-lg shadow-[var(--accent-color)]/30'
-            : 'text-gray-400 hover:bg-gray-700/50 hover:text-white'
+            : 'text-gray-400 hover:bg-gray-800 hover:text-cyan-300'
         }`}
         aria-current={isActive ? 'page' : undefined}
     >
@@ -41,14 +41,18 @@ const HistoryIcon: React.FC<{ className?: string }> = ({ className }) => <svg xm
 export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, onOpenAlarm, onOpenSongChart, onOpenEvents, onOpenHistory, currentUser }) => {
     
     const handleDashboardClick = () => {
-        setActiveView('dashboard');
+        let targetView: ActiveView = 'dashboard';
+        if (currentUser?.role === 'artist') targetView = 'artist_dashboard';
+        if (currentUser?.role === 'owner') targetView = 'station_manager_dashboard';
+        if (currentUser?.role === 'admin') targetView = 'admin';
+        setActiveView(targetView);
     };
     
-    const isDashboardActive = activeView === 'dashboard';
+    const isDashboardActive = ['dashboard', 'artist_dashboard', 'station_manager_dashboard', 'admin'].includes(activeView);
 
     return (
-        <nav className="w-20 bg-gray-900/50 p-2 flex-shrink-0 flex flex-col items-center gap-2 border-r border-gray-700/50">
-            <NavButton label="Dashboard" icon={<HomeIcon className="w-6 h-6"/>} isActive={isDashboardActive} onClick={handleDashboardClick} />
+        <nav className="hidden md:flex w-20 bg-gray-950/30 p-2 flex-shrink-0 flex-col items-center gap-3 border-r border-white/10">
+            <NavButton label="Home" icon={<HomeIcon className="w-6 h-6"/>} isActive={isDashboardActive} onClick={handleDashboardClick} />
             <NavButton label="Explore" icon={<ExploreIcon className="w-6 h-6"/>} isActive={activeView === 'explore'} onClick={() => setActiveView('explore')} />
             <NavButton label="Community" icon={<CommunityIcon className="w-6 h-6"/>} isActive={activeView === 'community'} onClick={() => setActiveView('community')} />
             <NavButton label="Rooms" icon={<ChatBubbleIcon className="w-6 h-6"/>} isActive={activeView === 'genre_chat'} onClick={() => setActiveView('genre_chat')} />
@@ -58,19 +62,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, onO
             <NavButton label="Store" icon={<StoreIcon className="w-6 h-6"/>} isActive={activeView === 'store'} onClick={() => setActiveView('store')} />
             <NavButton label="Top Charts" icon={<LeaderboardIconSidebar className="w-6 h-6"/>} isActive={activeView === 'leaderboard'} onClick={() => setActiveView('leaderboard')} />
             
-            {currentUser?.role === 'artist' && (
-                <NavButton label="Artist" icon={<MusicNoteIcon className="w-6 h-6"/>} isActive={activeView === 'artist_dashboard'} onClick={() => setActiveView('artist_dashboard')} />
-            )}
-            
-            {currentUser?.role === 'owner' && (
-                <NavButton label="Manager" icon={<BriefcaseIcon className="w-6 h-6"/>} isActive={activeView === 'station_manager_dashboard'} onClick={() => setActiveView('station_manager_dashboard')} />
-            )}
-            
-            {currentUser?.role === 'admin' && (
-                <NavButton label="Admin" icon={<AdminIcon className="w-6 h-6"/>} isActive={activeView === 'admin'} onClick={() => setActiveView('admin')} />
-            )}
-
-
             <div className="w-full h-px bg-gray-700 my-2" />
             
             <NavButton label="Song Chart" icon={<ChartBarIcon className="w-6 h-6"/>} isActive={false} onClick={onOpenSongChart} />

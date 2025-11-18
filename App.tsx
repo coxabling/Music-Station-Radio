@@ -871,30 +871,31 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900" style={{ '--accent-color': accentColor, '--accent-color-rgb': accentColorRgb } as React.CSSProperties}>
-      <div className="relative min-h-screen overflow-hidden">
+      <div className="relative h-screen w-screen overflow-hidden">
         {backgrounds.map((bg, index) => (
           <div key={index} className={`absolute inset-0 bg-cover bg-center transition-all duration-[2000ms] ease-in-out ${activeBgIndex === index ? 'opacity-100 scale-100' : 'opacity-0 scale-110'}`} style={{ backgroundImage: bg ? `url(${bg})` : 'none', animation: bg ? `${index === 0 ? 'kenburns-a' : 'kenburns-b'} 60s ease-in-out infinite` : 'none' }} />
         ))}
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-xl"></div>
-        <div className="relative min-h-screen bg-gradient-to-br from-gray-900/80 via-black/70 to-gray-800/80 text-gray-200 flex flex-col">
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-2xl"></div>
+
+        <div className="relative text-gray-200 flex flex-col h-full">
           <Header currentUser={currentUser} onLogout={handleLogout} points={stats.points || 0} />
           
-          <div className={`flex flex-grow h-[calc(100vh-68px)] transition-all duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+          <div className={`flex flex-1 overflow-hidden transition-opacity duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
             {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={handleSetActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModalOpen(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} />}
             
             {isDataLoading ? (
-              <main className="flex-grow flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--accent-color)]"></div></main>
+              <main className="flex-1 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--accent-color)]"></div></main>
             ) : currentUser ? (
-              <>
-                <main className={`flex-grow overflow-y-auto transition-all duration-300 ${isChatOpen ? 'md:pr-[356px]' : ''} ${currentStation ? 'pb-24 md:pb-32' : ''}`}>
-                  {renderActiveView()}
-                </main>
-                {currentStation && <ListeningPartyChat station={currentStation} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} nowPlaying={nowPlaying} />}
-              </>
+              <main id="main-content" className="flex-1 overflow-y-auto pb-24">
+                {renderActiveView()}
+              </main>
             ) : (
-              <main className="flex-grow flex items-center justify-center"><p className="text-gray-400">Please log in to continue.</p></main>
+              <main className="flex-1 flex items-center justify-center"><p className="text-gray-400">Please log in to continue.</p></main>
             )}
           </div>
+
+          {currentStation && <ListeningPartyChat station={currentStation} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} nowPlaying={nowPlaying} />}
+
           {currentStation && isPlayerVisible && (
             <RadioPlayer station={currentStation} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(prev => !prev)} songVotes={songVotes} onVote={handleVote} onRateStation={handleRateStation} userRating={stats.stationRatings?.[currentStation.streamUrl] || 0} onOpenTippingModal={() => setTippingModalStation(currentStation)} allStations={allStations} userSongVotes={stats.songUserVotes} onSelectStation={handleSelectStation} onToggleChat={() => setIsChatOpen(p => !p)} onStartRaid={handleStartRaid} raidStatus={raidStatus} raidTarget={raidTarget} onHidePlayer={() => setIsPlayerVisible(false)} />
           )}
@@ -956,6 +957,16 @@ const App: React.FC = () => {
         .accent-color-ring:focus-visible { --tw-ring-color: var(--accent-color); }
         .accent-color-shadow { box-shadow: 0 0 15px 0 var(--accent-color); }
         .accent-color-shadow-hover:hover { box-shadow: 0 0 15px 0 var(--accent-color); }
+        
+        #main-content {
+          -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 1rem, black calc(100% - 1rem), transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0, black 1rem, black calc(100% - 1rem), transparent 100%);
+        }
+        #main-content::-webkit-scrollbar { width: 8px; }
+        #main-content::-webkit-scrollbar-track { background: transparent; }
+        #main-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+        #main-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+
         @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .animate-slide-up { animation: slide-up 0.5s ease-out; }
         @keyframes fade-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
