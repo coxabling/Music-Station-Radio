@@ -591,8 +591,8 @@ const App: React.FC = () => {
         newUnlocked.add(theme.name);
         setUnlockedThemes(newUnlocked);
         
-        // FIX: Replaced Array.from with spread syntax to fix type inference issue.
-        await updateUserData(currentUser.username, { stats: newStats, unlockedThemes: [...newUnlocked] });
+        // FIX: Replaced spread syntax with Array.from to fix type inference issue.
+        await updateUserData(currentUser.username, { stats: newStats, unlockedThemes: Array.from(newUnlocked) });
 
         setToasts(prev => [...prev, {id: Date.now(), title: "Theme Unlocked!", message: `You can now use the ${theme.displayName} theme.`, icon: StarIcon, type: 'theme_unlocked'}]);
     }
