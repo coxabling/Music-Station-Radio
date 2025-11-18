@@ -7,6 +7,7 @@ interface GenreChatViewProps {
     onSelectStation: (station: Station) => void;
     currentStation: Station | null;
     nowPlaying: NowPlaying | null;
+    isPanel?: boolean;
 }
 
 const botMessages: Record<string, string[]> = {
@@ -72,8 +73,8 @@ const ChatMessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
                 {!isYou && <span className="text-xs text-gray-400 font-semibold px-3">{message.author}</span>}
                 <div 
                     className={`relative px-4 py-2 rounded-2xl max-w-xs md:max-w-sm group ${isYou ? 'bg-[var(--accent-color)] text-black rounded-br-none' : 'bg-gray-700/80 text-white rounded-bl-none'}`}
-                    // FIX: Added arguments to toLocaleString to specify the time format and resolve the error.
-                    title={new Date(message.id).toLocaleString(undefined, { hour: 'numeric', minute: '2-digit' })}
+                    // FIX: Changed toLocaleString to toLocaleTimeString and removed undefined locale.
+                    title={new Date(message.id).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                 >
                     {message.text}
                 </div>
@@ -82,7 +83,8 @@ const ChatMessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
     );
 };
 
-const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStation: (s: Station) => void; onBack: () => void; currentStation: Station | null, nowPlaying: NowPlaying | null }> = ({ genre, stations, onSelectStation, onBack, currentStation, nowPlaying }) => {
+const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStation: (s: Station) => void; onBack?: () => void; currentStation: Station | null, nowPlaying: NowPlaying | null, isPanel?: boolean }> = (props) => {
+    const { genre, stations, onSelectStation, onBack, currentStation, nowPlaying, isPanel } = props;
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -170,10 +172,10 @@ const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStat
     };
 
     return (
-        <div className="h-full grid grid-cols-1 md:grid-cols-[1fr_280px] gap-6 animate-fade-in">
+        <div className={`h-full grid grid-cols-1 ${isPanel ? '' : 'md:grid-cols-[1fr_280px] gap-6'} animate-fade-in`}>
             <div className="flex-1 flex flex-col bg-gray-900/50 rounded-lg overflow-hidden border border-gray-700/50">
                 <header className="p-3 border-b border-gray-700/50 flex items-center gap-4 flex-shrink-0">
-                    <button onClick={onBack} className="text-sm bg-gray-700/50 hover:bg-gray-700 text-gray-300 font-semibold py-1 px-3 rounded-md transition-colors">&larr; Back</button>
+                    {onBack && <button onClick={onBack} className="text-sm bg-gray-700/50 hover:bg-gray-700 text-gray-300 font-semibold py-1 px-3 rounded-md transition-colors">&larr; Back</button>}
                     <h3 className="text-lg font-semibold text-cyan-300 font-orbitron">{genre} Room</h3>
                 </header>
                 <div className="flex-1 p-4 overflow-y-auto">
@@ -203,39 +205,41 @@ const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStat
                     </form>
                 </div>
             </div>
-            <aside className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50 h-full flex flex-col">
-                {currentStation && (
-                    <div className="mb-4 p-2 bg-gray-800/50 rounded-lg border border-gray-700 flex-shrink-0">
-                        <p className="text-xs text-[var(--accent-color)] font-semibold">NOW PLAYING</p>
-                        <div className="flex items-center gap-2 mt-1">
-                            <img src={currentStation.coverArt} alt={currentStation.name} className="w-8 h-8 rounded-md" />
-                            <p className="text-sm font-semibold text-white truncate">{currentStation.name}</p>
+            {!isPanel && (
+                <aside className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50 h-full flex flex-col">
+                    {currentStation && (
+                        <div className="mb-4 p-2 bg-gray-800/50 rounded-lg border border-gray-700 flex-shrink-0">
+                            <p className="text-xs text-[var(--accent-color)] font-semibold">NOW PLAYING</p>
+                            <div className="flex items-center gap-2 mt-1">
+                                <img src={currentStation.coverArt} alt={currentStation.name} className="w-8 h-8 rounded-md" />
+                                <p className="text-sm font-semibold text-white truncate">{currentStation.name}</p>
+                            </div>
                         </div>
-                    </div>
-                )}
-                <h4 className="font-bold mb-3 text-white flex-shrink-0">Stations in this room</h4>
-                <ul className="space-y-2 overflow-y-auto">
-                    {stations.map(s => {
-                        const isPlaying = currentStation?.streamUrl === s.streamUrl;
-                        return (
-                            <li key={s.streamUrl}>
-                                <button onClick={() => onSelectStation(s)} className={`w-full flex items-center gap-2 p-1.5 rounded-md transition-colors ${isPlaying ? 'bg-cyan-500/20' : 'hover:bg-gray-700/50'}`}>
-                                    <div className="relative flex-shrink-0">
-                                        <img src={s.coverArt} alt={s.name} className="w-10 h-10 rounded-md" />
-                                        {isPlaying && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div></div>}
-                                    </div>
-                                    <span className={`text-sm text-left truncate ${isPlaying ? 'text-cyan-300 font-semibold' : 'text-gray-300'}`}>{s.name}</span>
-                                </button>
-                            </li>
-                        )
-                    })}
-                </ul>
-            </aside>
+                    )}
+                    <h4 className="font-bold mb-3 text-white flex-shrink-0">Stations in this room</h4>
+                    <ul className="space-y-2 overflow-y-auto">
+                        {stations.map(s => {
+                            const isPlaying = currentStation?.streamUrl === s.streamUrl;
+                            return (
+                                <li key={s.streamUrl}>
+                                    <button onClick={() => onSelectStation(s)} className={`w-full flex items-center gap-2 p-1.5 rounded-md transition-colors ${isPlaying ? 'bg-cyan-500/20' : 'hover:bg-gray-700/50'}`}>
+                                        <div className="relative flex-shrink-0">
+                                            <img src={s.coverArt} alt={s.name} className="w-10 h-10 rounded-md" />
+                                            {isPlaying && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div></div>}
+                                        </div>
+                                        <span className={`text-sm text-left truncate ${isPlaying ? 'text-cyan-300 font-semibold' : 'text-gray-300'}`}>{s.name}</span>
+                                    </button>
+                                </li>
+                            )
+                        })}
+                    </ul>
+                </aside>
+            )}
         </div>
     );
 }
 
-export const GenreChatView: React.FC<GenreChatViewProps> = ({ allStations, onSelectStation, currentStation, nowPlaying }) => {
+export const GenreChatView: React.FC<GenreChatViewProps> = ({ allStations, onSelectStation, currentStation, nowPlaying, isPanel }) => {
     const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
 
     const genres = useMemo(() => {
@@ -253,6 +257,19 @@ export const GenreChatView: React.FC<GenreChatViewProps> = ({ allStations, onSel
         if (!selectedGenre) return [];
         return allStations.filter(s => s.genre.toLowerCase().includes(selectedGenre.toLowerCase()));
     }, [allStations, selectedGenre]);
+    
+    if (isPanel) {
+        if (!currentStation) {
+            return (
+                <div className="h-full flex items-center justify-center text-center p-4">
+                    <p className="text-gray-400">Select a station to join its genre chat room.</p>
+                </div>
+            );
+        }
+        const genre = currentStation.genre.split('/')[0].trim();
+        const stations = allStations.filter(s => s.genre.toLowerCase().includes(genre.toLowerCase()));
+        return <ChatInterface genre={genre} stations={stations} onSelectStation={onSelectStation} currentStation={currentStation} nowPlaying={nowPlaying} isPanel />;
+    }
 
     if (selectedGenre) {
         return <div className="p-4 h-full"><ChatInterface genre={selectedGenre} stations={stationsForGenre} onSelectStation={onSelectStation} onBack={() => setSelectedGenre(null)} currentStation={currentStation} nowPlaying={nowPlaying} /></div>;

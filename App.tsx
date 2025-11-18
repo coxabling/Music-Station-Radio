@@ -12,10 +12,8 @@ import { LoginModal } from './components/LoginModal';
 import { TippingModal } from './components/TippingModal';
 import { GenreSpotlightModal } from './components/GenreSpotlightModal';
 import { SongChartModal } from './components/SongChartModal';
-import { StationDetailModal } from './components/StationDetailModal';
 import { EventsModal } from './components/EventsModal';
 import { Sidebar } from './components/Sidebar';
-import { DashboardView } from './components/DashboardView';
 import { CommunityFeed } from './components/CommunityFeed';
 import { StoreView } from './components/StoreView';
 import { LeaderboardView } from './components/LeaderboardView';
@@ -25,7 +23,8 @@ import { GenreChatView } from './components/GenreChatView';
 import { AdminDashboardView } from './components/AdminDashboardView';
 import { StationManagerDashboardView } from './components/StationManagerDashboardView';
 import { ArtistDashboardView } from './components/ArtistDashboardView';
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon, UserIcon, MOCK_REVIEWS, ExploreIcon, RocketIcon, UploadIcon, ShieldCheckIcon, MUSIC_SUBMISSION_COST } from './constants';
+import { RightPanel } from './components/RightPanel';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon, UserIcon, ExploreIcon, RocketIcon, UploadIcon, ShieldCheckIcon, MUSIC_SUBMISSION_COST } from './constants';
 import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, StationReview, ActiveView, UserData, MusicSubmission } from './types';
 import { slugify } from './utils/slugify';
 import { getDominantColor } from './utils/colorExtractor';
@@ -45,9 +44,10 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
-  const [activeView, setActiveView] = useState<ActiveView>('dashboard');
+  const [activeView, setActiveView] = useState<ActiveView>('explore');
 
   const [currentStation, setCurrentStation] = useState<Station | null>(null);
+  const [stationForDetail, setStationForDetail] = useState<Station | null>(null);
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -64,8 +64,6 @@ const App: React.FC = () => {
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isAlarmModalOpen, setIsAlarmModalOpen] = useState(false);
   const [isSongChartModalOpen, setIsSongChartModalOpen] = useState(false);
-  const [isStationDetailModalOpen, setIsStationDetailModalOpen] = useState(false);
-  const [stationForDetail, setStationForDetail] = useState<Station | null>(null);
   const [isEventsModalOpen, setIsEventsModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [tippingModalStation, setTippingModalStation] = useState<Station | null>(null);
@@ -134,7 +132,7 @@ const App: React.FC = () => {
     setSongVotes(data.songVotes);
     setUnlockedAchievements(data.unlockedAchievements);
     
-    let defaultView: ActiveView = 'dashboard';
+    let defaultView: ActiveView = 'explore';
     if (user.role === 'admin') defaultView = 'admin';
     else if (user.role === 'owner') defaultView = 'station_manager_dashboard';
     else if (user.role === 'artist') defaultView = 'artist_dashboard';
@@ -147,7 +145,10 @@ const App: React.FC = () => {
       setTimeout(() => {
         setAllStations(currentStations => {
           const stationToPlay = currentStations.find(s => slugify(s.name) === stationSlug);
-          if (stationToPlay) setCurrentStation(stationToPlay);
+          if (stationToPlay) {
+            setCurrentStation(stationToPlay);
+            setStationForDetail(stationToPlay);
+          }
           return currentStations;
         });
       }, 0);
@@ -233,6 +234,7 @@ const App: React.FC = () => {
   
   const handleLogout = useCallback(() => {
     setCurrentStation(null);
+    setStationForDetail(null);
     setCurrentUser(null);
     localStorage.removeItem('currentUser');
     
@@ -245,7 +247,7 @@ const App: React.FC = () => {
     setUnlockedAchievements({});
     setActiveTheme('dynamic');
     setUnlockedThemes(new Set(['dynamic']));
-    setActiveView('dashboard');
+    setActiveView('explore');
     
     setIsLoginModalOpen(true);
   }, []);
@@ -283,6 +285,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (currentStation && currentUser) {
+      setStationForDetail(currentStation);
       setStats(prevStats => {
         const today = new Date().toISOString().split('T')[0];
         const lastDate = prevStats.lastListenDate;
@@ -368,6 +371,7 @@ const App: React.FC = () => {
     if (currentStation?.streamUrl !== station.streamUrl) {
       setCurrentStation(station); 
     }
+    setStationForDetail(station);
     setIsPlayerVisible(true);
   };
   const handleNextStation = () => { if (!currentStation) return; const currentIndex = filteredStations.findIndex(s => s.streamUrl === currentStation.streamUrl); const nextIndex = (currentIndex + 1) % filteredStations.length; handleSelectStation(filteredStations[nextIndex]); };
@@ -563,11 +567,6 @@ const App: React.FC = () => {
 
   const favoriteStations = useMemo(() => allStations.filter(s => s.isFavorite), [allStations]);
   
-  const handleOpenStationDetail = (station: Station) => {
-    setStationForDetail(station);
-    setIsStationDetailModalOpen(true);
-  };
-  
   const handleAddReview = async (stationUrl: string, review: Omit<StationReview, 'createdAt' | 'author' | 'authorRole'>) => {
     if (!currentUser) return;
     
@@ -629,7 +628,6 @@ const App: React.FC = () => {
 
   const handleOpenEditModal = useCallback((station: Station) => {
     setStationToEdit(station);
-    setIsStationDetailModalOpen(false);
     setIsEditModalOpen(true);
   }, []);
 
@@ -664,7 +662,6 @@ const App: React.FC = () => {
 
   const handleOpenMusicSubmissionModal = useCallback((station: Station) => {
     setStationForSubmission(station);
-    setIsStationDetailModalOpen(false);
     setIsMusicSubmissionModalOpen(true);
   }, []);
 
@@ -732,7 +729,6 @@ const App: React.FC = () => {
 
   const handleOpenClaimModal = useCallback((station: Station) => {
     setStationToClaim(station);
-    setIsStationDetailModalOpen(false);
     setIsClaimModalOpen(true);
   }, []);
 
@@ -830,25 +826,22 @@ const App: React.FC = () => {
     return <LandingPage onEnter={() => setHasEnteredApp(true)} />;
   }
   
+  const showRightPanel = ['explore', 'genre_chat'].includes(activeView);
+
   const renderActiveView = () => {
     switch (activeView) {
-      case 'dashboard':
-        return <DashboardView user={currentUser} stats={stats} favoritesCount={favoriteStationUrls.size} unlockedAchievements={unlockedAchievements} />;
       case 'artist_dashboard':
         return <ArtistDashboardView user={currentUser} stats={stats} submissions={artistSubmissions} setActiveView={handleSetActiveView} />;
       case 'station_manager_dashboard':
         return <StationManagerDashboardView user={currentUser} allStations={allStations} onReviewSubmission={handleReviewSubmission} onEditStation={handleOpenEditModal} />;
-      case 'community':
-        return <CommunityFeed />;
       case 'store':
         return <StoreView activeTheme={activeTheme} onSetTheme={handleSetTheme} onUnlockTheme={handleUnlockTheme} unlockedThemes={unlockedThemes} currentPoints={stats.points || 0}/>;
       case 'leaderboard':
         return <LeaderboardView currentUser={currentUser} userPoints={stats.points || 0} />;
-      case 'genre_chat':
-        return <GenreChatView allStations={allStations} onSelectStation={handleSelectStation} currentStation={currentStation} nowPlaying={nowPlaying} />;
       case 'admin':
         return <AdminDashboardView stations={allStations} onApproveClaim={handleApproveClaim} onDenyClaim={handleDenyClaim} currentUser={currentUser} onUpdateUserRole={handleUpdateUserRole} />;
       case 'explore':
+      case 'genre_chat':
       default:
         return (
           <StationList 
@@ -862,7 +855,7 @@ const App: React.FC = () => {
             onToggleFavorite={toggleFavorite} 
             songVotes={songVotes} 
             onOpenGenreSpotlight={setGenreForSpotlight}
-            onOpenDetailModal={handleOpenStationDetail}
+            onShowDetails={setStationForDetail}
             onPlayFromCommunity={handlePlayFromCommunity}
             currentUser={currentUser}
           />
@@ -887,9 +880,27 @@ const App: React.FC = () => {
             {isDataLoading ? (
               <main className="flex-1 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--accent-color)]"></div></main>
             ) : currentUser ? (
-              <main id="main-content" className="flex-1 overflow-y-auto pb-24">
-                {renderActiveView()}
-              </main>
+              <>
+                <main id="main-content" className="flex-1 overflow-y-auto pb-24">
+                  {renderActiveView()}
+                </main>
+                {showRightPanel && (
+                  <RightPanel 
+                    station={stationForDetail} 
+                    currentStation={currentStation}
+                    allStations={allStations}
+                    currentUser={currentUser}
+                    stats={stats}
+                    onAddReview={handleAddReview}
+                    onSelectStation={handleSelectStation}
+                    onRateStation={handleRateStation}
+                    onEdit={handleOpenEditModal}
+                    onOpenMusicSubmissionModal={handleOpenMusicSubmissionModal}
+                    onOpenClaimModal={handleOpenClaimModal}
+                    nowPlaying={nowPlaying}
+                  />
+                )}
+              </>
             ) : (
               <main className="flex-1 flex items-center justify-center"><p className="text-gray-400">Please log in to continue.</p></main>
             )}
@@ -942,26 +953,6 @@ const App: React.FC = () => {
       <TippingModal isOpen={!!tippingModalStation} onClose={() => setTippingModalStation(null)} station={tippingModalStation} />
       <GenreSpotlightModal isOpen={!!genreForSpotlight} onClose={() => setGenreForSpotlight(null)} genre={genreForSpotlight} />
       <SongChartModal isOpen={isSongChartModalOpen} onClose={() => setIsSongChartModalOpen(false)} songVotes={songVotes} />
-      <StationDetailModal 
-        isOpen={isStationDetailModalOpen}
-        onClose={() => setIsStationDetailModalOpen(false)}
-        station={stationForDetail}
-        allStations={allStations}
-        mockReviews={MOCK_REVIEWS}
-        userReviews={stats.stationReviews?.[stationForDetail?.streamUrl || ''] || []}
-        onAddReview={handleAddReview}
-        onSelectStation={(s) => {
-            handleSelectStation(s);
-            setIsStationDetailModalOpen(false);
-        }}
-        onRateStation={handleRateStation}
-        userRating={stats.stationRatings?.[stationForDetail?.streamUrl || ''] || 0}
-        isOwner={!!(currentUser && stationForDetail && stationForDetail.owner === currentUser.username)}
-        onEdit={handleOpenEditModal}
-        currentUser={currentUser}
-        onOpenMusicSubmissionModal={handleOpenMusicSubmissionModal}
-        onOpenClaimModal={handleOpenClaimModal}
-      />
       <EditStationModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} station={stationToEdit} onSubmit={handleUpdateStation} />
       <MusicSubmissionModal isOpen={isMusicSubmissionModalOpen} onClose={() => setIsMusicSubmissionModalOpen(false)} station={stationForSubmission} onSubmit={handleMusicSubmission} userPoints={stats.points || 0} />
       <ClaimOwnershipModal isOpen={isClaimModalOpen} onClose={() => setIsClaimModalOpen(false)} station={stationToClaim} onSubmit={handleClaimStation} />
@@ -980,14 +971,14 @@ const App: React.FC = () => {
         .accent-color-shadow { box-shadow: 0 0 15px 0 var(--accent-color); }
         .accent-color-shadow-hover:hover { box-shadow: 0 0 15px 0 var(--accent-color); }
         
-        #main-content {
+        #main-content, #right-panel-content {
           -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 1rem, black calc(100% - 1rem), transparent 100%);
           mask-image: linear-gradient(to bottom, transparent 0, black 1rem, black calc(100% - 1rem), transparent 100%);
         }
-        #main-content::-webkit-scrollbar { width: 8px; }
-        #main-content::-webkit-scrollbar-track { background: transparent; }
-        #main-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
-        #main-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+        #main-content::-webkit-scrollbar, #right-panel-content::-webkit-scrollbar { width: 8px; }
+        #main-content::-webkit-scrollbar-track, #right-panel-content::-webkit-scrollbar-track { background: transparent; }
+        #main-content::-webkit-scrollbar-thumb, #right-panel-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+        #main-content::-webkit-scrollbar-thumb:hover, #right-panel-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
 
         @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .animate-slide-up { animation: slide-up 0.5s ease-out; }

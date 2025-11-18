@@ -41,20 +41,28 @@ const HistoryIcon: React.FC<{ className?: string }> = ({ className }) => <svg xm
 export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, onOpenAlarm, onOpenSongChart, onOpenEvents, onOpenHistory, currentUser }) => {
     
     const handleDashboardClick = () => {
-        let targetView: ActiveView = 'dashboard';
+        let targetView: ActiveView = 'explore';
         if (currentUser?.role === 'artist') targetView = 'artist_dashboard';
         if (currentUser?.role === 'owner') targetView = 'station_manager_dashboard';
         if (currentUser?.role === 'admin') targetView = 'admin';
         setActiveView(targetView);
     };
     
-    const isDashboardActive = ['dashboard', 'artist_dashboard', 'station_manager_dashboard', 'admin'].includes(activeView);
+    const isDashboardActive = ['explore', 'artist_dashboard', 'station_manager_dashboard', 'admin'].includes(activeView);
+
+    const getHomeIcon = () => {
+      switch (currentUser?.role) {
+        case 'artist': return <MusicNoteIcon className="w-6 h-6"/>;
+        case 'owner': return <BriefcaseIcon className="w-6 h-6"/>;
+        case 'admin': return <AdminIcon className="w-6 h-6"/>;
+        default: return <HomeIcon className="w-6 h-6"/>;
+      }
+    }
 
     return (
         <nav className="hidden md:flex w-20 bg-gray-950/30 p-2 flex-shrink-0 flex-col items-center gap-3 border-r border-white/10">
-            <NavButton label="Home" icon={<HomeIcon className="w-6 h-6"/>} isActive={isDashboardActive} onClick={handleDashboardClick} />
+            <NavButton label="Home" icon={getHomeIcon()} isActive={isDashboardActive} onClick={handleDashboardClick} />
             <NavButton label="Explore" icon={<ExploreIcon className="w-6 h-6"/>} isActive={activeView === 'explore'} onClick={() => setActiveView('explore')} />
-            <NavButton label="Community" icon={<CommunityIcon className="w-6 h-6"/>} isActive={activeView === 'community'} onClick={() => setActiveView('community')} />
             <NavButton label="Rooms" icon={<ChatBubbleIcon className="w-6 h-6"/>} isActive={activeView === 'genre_chat'} onClick={() => setActiveView('genre_chat')} />
             
             <div className="w-full h-px bg-gray-700 my-2" />
