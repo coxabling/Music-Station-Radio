@@ -309,7 +309,8 @@ const App: React.FC = () => {
         }
         const genresPlayed = new Set<string>(prevStats.genresPlayed || []);
         genresPlayed.add(currentStation.genre.split('/')[0].trim());
-        const newStats: ListeningStats = { ...prevStats, lastListenDate: today, currentStreak: currentStreak, maxStreak: Math.max(prevStats.maxStreak || 0, currentStreak), genresPlayed: [...genresPlayed] };
+        // FIX: Using Array.from() to prevent potential type inference issues with the spread operator on Sets in some TypeScript configurations.
+        const newStats: ListeningStats = { ...prevStats, lastListenDate: today, currentStreak: currentStreak, maxStreak: Math.max(prevStats.maxStreak || 0, currentStreak), genresPlayed: Array.from(genresPlayed) };
         updateUserData(currentUser.username, { stats: newStats });
         return newStats;
       });
@@ -597,7 +598,7 @@ const App: React.FC = () => {
         newUnlocked.add(theme.name);
         setUnlockedThemes(newUnlocked);
         
-        // FIX: Changed spread operator to Array.from() to resolve a type inference issue where `[...newUnlocked]` was being inferred as unknown[].
+        // FIX: The spread operator on a Set can be inferred as `unknown[]` in some TypeScript configurations. Using `Array.from()` ensures the correct type.
         await updateUserData(currentUser.username, { stats: newStats, unlockedThemes: Array.from(newUnlocked) });
 
         setToasts(prev => [...prev, {id: Date.now(), title: "Theme Unlocked!", message: `You can now use the ${theme.displayName} theme.`, icon: StarIcon, type: 'theme_unlocked'}]);

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef, useLayoutEffect } from 'react';
 import type { ChatMessage, Station, NowPlaying } from '../types';
 import { SendIcon } from '../constants';
@@ -171,8 +172,8 @@ const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStat
     };
 
     return (
-        <div className={`h-full grid grid-cols-1 ${isPanel ? '' : 'md:grid-cols-[1fr_280px] gap-6'} animate-fade-in`}>
-            <div className="flex-1 flex flex-col bg-gray-900/50 rounded-lg overflow-hidden border border-gray-700/50">
+        <div className={`animate-fade-in ${isPanel ? 'h-full flex flex-col p-4' : 'h-full grid grid-cols-1 md:grid-cols-[1fr_280px] gap-6'}`}>
+            <div className={`${isPanel ? 'flex-1' : ''} flex flex-col bg-gray-900/50 rounded-lg overflow-hidden border border-gray-700/50 min-h-0`}>
                 <header className="p-3 border-b border-gray-700/50 flex items-center gap-4 flex-shrink-0">
                     {onBack && <button onClick={onBack} className="text-sm bg-gray-700/50 hover:bg-gray-700 text-gray-300 font-semibold py-1 px-3 rounded-md transition-colors">&larr; Back</button>}
                     <h3 className="text-lg font-semibold text-cyan-300 font-orbitron">{genre} Room</h3>
