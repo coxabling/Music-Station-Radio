@@ -20,7 +20,11 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, points, o
       <div className="container mx-auto flex items-center justify-between h-full">
         <div className="flex items-center gap-4 flex-1">
            {currentUser && (
-            <div className="flex items-center gap-4 text-gray-300 bg-gray-800/50 border border-gray-700/50 rounded-full pr-4 transition-all hover:border-gray-600">
+            <button
+              onClick={onGoToHome}
+              className="flex items-center gap-4 text-gray-300 bg-gray-800/50 border border-gray-700/50 rounded-full pr-4 transition-all hover:border-[var(--accent-color)]/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-color)]"
+              aria-label="Go to home dashboard"
+            >
                 <div className="flex items-center gap-2 bg-gray-700/50 rounded-full p-1.5 pr-3">
                     <div className="w-8 h-8 rounded-full bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center">
                         <UserIcon className="h-5 w-5 text-cyan-300" />
@@ -32,7 +36,7 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, points, o
                     <StarIcon className="h-4 w-4" />
                     <span>{points.toLocaleString()}</span>
                 </div>
-            </div>
+            </button>
           )}
         </div>
         <button 

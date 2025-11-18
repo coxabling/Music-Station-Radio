@@ -289,9 +289,11 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                 <button onClick={(e) => { e.stopPropagation(); onOpenBuyNow(); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} text-gray-400 hover:text-white`} aria-label="Buy song">
                     <ShoppingCartIcon className="w-6 h-6"/>
                 </button>
-                 <div className="hidden md:flex items-center gap-2 group">
-                    {volume > 0 ? <VolumeUpIcon /> : <VolumeOffIcon />}
-                    <input type="range" min="0" max="1" step="0.05" value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))} className="w-24 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-[var(--accent-color)] opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()} />
+                 <div className="hidden md:flex items-center gap-2">
+                    <button onClick={(e) => { e.stopPropagation(); setVolume(volume > 0 ? 0 : 0.75); }} className="text-gray-400 hover:text-white" aria-label={volume > 0 ? "Mute" : "Unmute"}>
+                        {volume > 0 ? <VolumeUpIcon /> : <VolumeOffIcon />}
+                    </button>
+                    <input type="range" min="0" max="1" step="0.05" value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))} className="w-24 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-[var(--accent-color)]" onClick={e => e.stopPropagation()} />
                 </div>
                 <button onClick={(e) => { e.stopPropagation(); togglePlayPause(); }} className="w-12 h-12 flex items-center justify-center text-white hover:text-[var(--accent-color)] transition-colors" aria-label={isPlaying ? 'Pause' : 'Play'}>
                   <div className="w-8 h-8">{isPlaying ? <PauseIcon/> : <PlayIcon/>}</div>

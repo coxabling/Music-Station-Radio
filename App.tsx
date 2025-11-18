@@ -303,7 +303,7 @@ const App: React.FC = () => {
         }
         const genresPlayed = new Set<string>(prevStats.genresPlayed || []);
         genresPlayed.add(currentStation.genre.split('/')[0].trim());
-        const newStats: ListeningStats = { ...prevStats, lastListenDate: today, currentStreak: currentStreak, maxStreak: Math.max(prevStats.maxStreak || 0, currentStreak), genresPlayed: Array.from(genresPlayed) };
+        const newStats: ListeningStats = { ...prevStats, lastListenDate: today, currentStreak: currentStreak, maxStreak: Math.max(prevStats.maxStreak || 0, currentStreak), genresPlayed: [...genresPlayed] };
         updateUserData(currentUser.username, { stats: newStats });
         return newStats;
       });
@@ -474,7 +474,7 @@ const App: React.FC = () => {
     else newFavoriteUrls.add(stationToToggle.streamUrl);
     setFavoriteStationUrls(newFavoriteUrls);
     setAllStations(prevStations => prevStations.map(s => s.streamUrl === stationToToggle.streamUrl ? { ...s, isFavorite: !s.isFavorite } : s));
-    updateUserData(currentUser.username, { favoriteStationUrls: Array.from(newFavoriteUrls) });
+    updateUserData(currentUser.username, { favoriteStationUrls: [...newFavoriteUrls] });
   };
 
   const handleSetTheme = (themeName: ThemeName) => {
@@ -591,7 +591,8 @@ const App: React.FC = () => {
         newUnlocked.add(theme.name);
         setUnlockedThemes(newUnlocked);
         
-        await updateUserData(currentUser.username, { stats: newStats, unlockedThemes: Array.from(newUnlocked) });
+        // FIX: Replaced Array.from with spread syntax to fix type inference issue.
+        await updateUserData(currentUser.username, { stats: newStats, unlockedThemes: [...newUnlocked] });
 
         setToasts(prev => [...prev, {id: Date.now(), title: "Theme Unlocked!", message: `You can now use the ${theme.displayName} theme.`, icon: StarIcon, type: 'theme_unlocked'}]);
     }
