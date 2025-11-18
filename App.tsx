@@ -1,6 +1,5 @@
 
 
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -853,7 +852,8 @@ const App: React.FC = () => {
       default:
         return (
           <StationList 
-            stations={filteredStations} 
+            stations={filteredStations}
+            allStations={allStations}
             currentStation={currentStation} 
             onSelectStation={handleSelectStation} 
             searchQuery={searchQuery} 

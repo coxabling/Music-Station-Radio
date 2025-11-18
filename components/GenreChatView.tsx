@@ -72,7 +72,7 @@ const ChatMessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
                 {!isYou && <span className="text-xs text-gray-400 font-semibold px-3">{message.author}</span>}
                 <div 
                     className={`relative px-4 py-2 rounded-2xl max-w-xs md:max-w-sm group ${isYou ? 'bg-[var(--accent-color)] text-black rounded-br-none' : 'bg-gray-700/80 text-white rounded-bl-none'}`}
-                    // Fix: Added arguments to toLocaleString to specify the time format and resolve the error.
+                    // FIX: Added arguments to toLocaleString to specify the time format and resolve the error.
                     title={new Date(message.id).toLocaleString(undefined, { hour: 'numeric', minute: '2-digit' })}
                 >
                     {message.text}

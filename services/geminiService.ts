@@ -1,5 +1,6 @@
 
-import { GoogleGenAI } from "@google/genai";
+
+import { GoogleGenAI, Type } from "@google/genai";
 import type { NowPlaying, Station, SongVote } from '../types';
 import { slugify } from "../utils/slugify";
 
@@ -136,5 +137,63 @@ const getCommunityHitsSummary = async (songs: SongVote[]): Promise<string> => {
   }
 };
 
+const findStationsByVibe = async (prompt: string, stations: Station[]): Promise<string[]> => {
+  if (!prompt.trim()) {
+    return [];
+  }
+  
+  try {
+    const ai = getAi();
+    // Slim down station data to only what's necessary for the prompt
+    const stationDataForPrompt = stations.map(s => ({
+        name: s.name,
+        genre: s.genre,
+        description: s.description,
+        streamUrl: s.streamUrl
+    }));
 
-export { fetchNowPlaying, getSongInfo, fetchLyrics, getGenreInfo, translateLyrics, getCommunityHitsSummary };
+    const fullPrompt = `Based on the user's request, find the best matching radio stations from the provided list.
+User Request: "${prompt}"
+
+Analyze the station's name, genre, and description to find the best matches. Return a JSON object containing a single key "urls" which is an array of stream URLs for the top 5 best-matching stations, ordered from the best match to the worst.
+
+Station List:
+${JSON.stringify(stationDataForPrompt, null, 2)}
+`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: fullPrompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            urls: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.STRING,
+                description: 'The streamUrl of a matching station.'
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const jsonString = response.text.trim();
+    const result = JSON.parse(jsonString);
+
+    if (result && Array.isArray(result.urls)) {
+      return result.urls;
+    }
+
+    return [];
+  } catch (error) {
+    console.error("Error finding stations with Gemini:", error);
+    throw error;
+  }
+};
+
+
+export { fetchNowPlaying, getSongInfo, fetchLyrics, getGenreInfo, translateLyrics, getCommunityHitsSummary, findStationsByVibe };
