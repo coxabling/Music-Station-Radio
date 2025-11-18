@@ -1,10 +1,3 @@
-
-
-
-
-
-
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -29,11 +22,8 @@ import { AdminDashboardView } from './components/AdminDashboardView';
 import { StationManagerDashboardView } from './components/StationManagerDashboardView';
 import { ArtistDashboardView } from './components/ArtistDashboardView';
 import { RightPanel } from './components/RightPanel';
-import { ShopView } from './components/ShopView';
-import { QuestLog } from './components/QuestLog';
-import { BattleOfTheBands } from './components/BattleOfTheBands';
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon, UserIcon, ExploreIcon, RocketIcon, UploadIcon, ShieldCheckIcon, MUSIC_SUBMISSION_COST, QUEST_TEMPLATES, CoinIcon, BattleIcon, ShopIcon, QuestIcon, LISTENING_EVENTS, BOOST_COST, BOOST_DURATION_MS, MegaphoneIcon, TicketIcon } from './constants';
-import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, StationReview, ActiveView, UserData, MusicSubmission, ShopItem, Quest, KingOfTheHillEntry, ListeningEvent } from './types';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, StarIcon, TrophyIcon, UserIcon, ExploreIcon, RocketIcon, UploadIcon, ShieldCheckIcon, MUSIC_SUBMISSION_COST } from './constants';
+import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, StationReview, ActiveView, UserData, MusicSubmission } from './types';
 import { slugify } from './utils/slugify';
 import { getDominantColor } from './utils/colorExtractor';
 import { LandingPage } from './components/LandingPage';
@@ -93,7 +83,7 @@ const App: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isImmersiveMode, setIsImmersiveMode] = useState(false);
 
-  const [stats, setStats] = useState<ListeningStats>({ totalTime: 0, stationPlays: {}, points: 0, songHistory: [], dailyStationTime: {} });
+  const [stats, setStats] = useState<ListeningStats>({ totalTime: 0, stationPlays: {}, points: 0, songHistory: [] });
   const [alarm, setAlarm] = useState<Alarm | null>(null);
   const [songVotes, setSongVotes] = useState<Record<string, SongVote>>({});
   const [unlockedAchievements, setUnlockedAchievements] = useState<Record<string, UnlockedAchievement>>({});
@@ -102,15 +92,6 @@ const App: React.FC = () => {
   const [raidTarget, setRaidTarget] = useState<Station | null>(null);
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
-  
-  // Gamification & Monetization State
-  const [inventory, setInventory] = useState<string[]>([]);
-  const [equippedItems, setEquippedItems] = useState<UserData['equippedItems']>({});
-  const [activeQuests, setActiveQuests] = useState<Quest[]>([]);
-  const [battleVotes, setBattleVotes] = useState<Record<string, number>>({ 'b1': 120, 'b2': 115 }); 
-  const [userBattleVote, setUserBattleVote] = useState<string | undefined>();
-  const [purchasedTickets, setPurchasedTickets] = useState<Set<string>>(new Set());
-  const [events, setEvents] = useState<ListeningEvent[]>(LISTENING_EVENTS);
 
   const statsUpdateInterval = useRef<number | null>(null);
   const alarmTimeout = useRef<number | null>(null);
@@ -141,7 +122,7 @@ const App: React.FC = () => {
         return;
     }
     
-    const favUrls = new Set((data.favoriteStationUrls as string[]) || []);
+    const favUrls = new Set(data.favoriteStationUrls);
     const stationsWithFavorites = defaultStations.map(s => ({...s, isFavorite: favUrls.has(s.streamUrl)}));
     const userStationsWithFavorites = data.userStations.map(s => ({...s, isFavorite: favUrls.has(s.streamUrl)}));
     const allKnownStations = [...stationsWithFavorites, ...userStationsWithFavorites];
@@ -153,30 +134,11 @@ const App: React.FC = () => {
     setUserStations(data.userStations);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
-    setUnlockedThemes(new Set((data.unlockedThemes as ThemeName[]) || ['dynamic']));
+    setUnlockedThemes(new Set(data.unlockedThemes));
     setStats(data.stats);
     setAlarm(data.alarm);
     setSongVotes(data.songVotes);
     setUnlockedAchievements(data.unlockedAchievements);
-    
-    // Gamification Load
-    setInventory((data.inventory as string[]) || []);
-    setEquippedItems(data.equippedItems || {});
-    setUserBattleVote(Object.keys(data.battleVotes || {}).length > 0 ? Object.keys(data.battleVotes || {})[0] : undefined);
-    setPurchasedTickets(new Set((data.purchasedTickets as string[]) || []));
-
-    // Quest Initialization/Refresh logic
-    let loadedQuests = data.activeQuests || [];
-    const today = new Date().toISOString().split('T')[0];
-    
-    if (!data.lastQuestRefresh || data.lastQuestRefresh !== today || loadedQuests.length === 0) {
-        const newDaily = QUEST_TEMPLATES.daily.map((t, i) => ({ ...t, id: `dq_${today}_${i}`, progress: 0, completed: false, claimed: false }));
-        const newWeekly = QUEST_TEMPLATES.weekly.map((t, i) => ({ ...t, id: `wq_${today}_${i}`, progress: 0, completed: false, claimed: false }));
-        loadedQuests = [...newDaily, ...newWeekly];
-        updateUserData(username, { activeQuests: loadedQuests, lastQuestRefresh: today });
-    }
-    setActiveQuests(loadedQuests);
-    
     
     let defaultView: ActiveView = 'dashboard';
     if (user.role === 'admin') defaultView = 'admin';
@@ -224,38 +186,29 @@ const App: React.FC = () => {
     }
   }, [hasEnteredApp, currentUser, isDataLoading]);
 
-  // Update quest progress helper
-  const updateQuestProgress = useCallback((metric: Quest['metric'], amount: number = 1) => {
-      if (!currentUser) return;
-      
-      setActiveQuests(currentQuests => {
-          let updated = false;
-          const newQuests = currentQuests.map(q => {
-              if (q.metric === metric && !q.completed) {
-                  const newProgress = q.progress + amount;
-                  if (newProgress >= q.target) {
-                      updated = true;
-                      setToasts(prev => [...prev, {
-                          id: Date.now(),
-                          title: "Quest Completed!",
-                          message: q.title,
-                          icon: QuestIcon,
-                          type: 'quest_complete'
-                      }]);
-                      return { ...q, progress: newProgress, completed: true };
-                  }
-                  updated = true;
-                  return { ...q, progress: newProgress };
-              }
-              return q;
-          });
+  useEffect(() => {
+    const defaultTitle = "Music Station Radio | Stream Your Favorite Genres";
+    const defaultDescription = "Tune in to a world of music. Discover thousands of live radio stations, from Afropop to Reggae, with our modern, AI-enhanced web player. Your next favorite song is playing now.";
 
-          if (updated) {
-              updateUserData(currentUser.username, { activeQuests: newQuests });
-          }
-          return updated ? newQuests : currentQuests;
-      });
-  }, [currentUser]);
+    if (currentStation) {
+      const newTitle = `${currentStation.name} | Music Station Radio`;
+      const newDescription = `Listening to ${currentStation.name} on Music Station Radio. ${currentStation.description}`;
+      
+      document.title = newTitle;
+      document.querySelector('meta[name="description"]')?.setAttribute('content', newDescription);
+      document.querySelector('meta[property="og:title"]')?.setAttribute('content', newTitle);
+      document.querySelector('meta[property="og:description"]')?.setAttribute('content', newDescription);
+      document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', newTitle);
+      document.querySelector('meta[name="twitter:description"]')?.setAttribute('content', newDescription);
+    } else {
+      document.title = defaultTitle;
+      document.querySelector('meta[name="description"]')?.setAttribute('content', defaultDescription);
+      document.querySelector('meta[property="og:title"]')?.setAttribute('content', defaultTitle);
+      document.querySelector('meta[property="og:description"]')?.setAttribute('content', defaultDescription);
+      document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', defaultTitle);
+      document.querySelector('meta[name="twitter:description"]')?.setAttribute('content', defaultDescription);
+    }
+  }, [currentStation]);
 
 
   const handleLogin = useCallback(async (username: string, role: UserData['role']) => {
@@ -303,7 +256,6 @@ const App: React.FC = () => {
     setActiveTheme('dynamic');
     setUnlockedThemes(new Set(['dynamic']));
     setActiveView('explore');
-    setPurchasedTickets(new Set());
     
     setIsLoginModalOpen(true);
   }, []);
@@ -354,21 +306,14 @@ const App: React.FC = () => {
           else currentStreak = 1;
         }
         const genresPlayed = new Set<string>(prevStats.genresPlayed || []);
-        const oldSize = genresPlayed.size;
         genresPlayed.add(currentStation.genre.split('/')[0].trim());
-        
-        if (genresPlayed.size > oldSize) {
-            updateQuestProgress('genres_played', 1);
-        }
-        
-        updateQuestProgress('stations_played', 1);
-        
-        const newStats: ListeningStats = { ...prevStats, lastListenDate: today, currentStreak: currentStreak, maxStreak: Math.max(prevStats.maxStreak || 0, currentStreak), genresPlayed: Array.from(genresPlayed) };
+        // FIX: Using Array.from() to prevent potential type inference issues with the spread operator on Sets in some TypeScript configurations.
+        const newStats: ListeningStats = { ...prevStats, lastListenDate: today, currentStreak: currentStreak, maxStreak: Math.max(prevStats.maxStreak || 0, currentStreak), genresPlayed: Array.from(genresPlayed) as string[] };
         updateUserData(currentUser.username, { stats: newStats });
         return newStats;
       });
     }
-  }, [currentStation, currentUser, updateQuestProgress]);
+  }, [currentStation, currentUser]);
   
   useEffect(() => {
     if (statsUpdateInterval.current) clearInterval(statsUpdateInterval.current);
@@ -380,14 +325,9 @@ const App: React.FC = () => {
           const newStationPlays = { ...prevStats.stationPlays, [stationKey]: { ...currentStationPlayData, time: currentStationPlayData.time + 1 } };
           const newTotalTime = prevStats.totalTime + 1;
           
-          // Daily listening time for King of the Hill
-          const dailyTime = (prevStats.dailyStationTime?.[stationKey] || 0) + 1;
-          const newDailyStationTime = { ...(prevStats.dailyStationTime || {}), [stationKey]: dailyTime };
-
           let newPoints = prevStats.points || 0;
           if (newTotalTime % 60 === 0) {
               newPoints += 1;
-              updateQuestProgress('minutes_listened', 1);
               if (newPoints % 10 === 0) {
                   setToasts(prev => [...prev, {id: Date.now(), title: `Milestone! ${newPoints} Points!`, message: "You're a dedicated listener!", icon: TrophyIcon, type: 'milestone'}]);
                   pointsToastTimer.current = 0;
@@ -401,7 +341,7 @@ const App: React.FC = () => {
               pointsToastTimer.current = 0;
           }
           
-          const newStats: ListeningStats = { ...prevStats, totalTime: newTotalTime, points: newPoints, stationPlays: newStationPlays, dailyStationTime: newDailyStationTime };
+          const newStats: ListeningStats = { ...prevStats, totalTime: newTotalTime, points: newPoints, stationPlays: newStationPlays };
           updateUserData(currentUser.username, { stats: newStats });
           return newStats;
         });
@@ -412,7 +352,7 @@ const App: React.FC = () => {
       }, 1000);
     }
     return () => { if (statsUpdateInterval.current) clearInterval(statsUpdateInterval.current); };
-  }, [currentStation, currentUser, unlockAchievement, updateQuestProgress]);
+  }, [currentStation, currentUser, unlockAchievement]);
 
   useEffect(() => {
     if (alarmTimeout.current) clearTimeout(alarmTimeout.current);
@@ -504,10 +444,12 @@ const App: React.FC = () => {
         const newStats = { ...prevStats, songHistory: updatedHistory };
         updatesToSave.stats = newStats;
 
+        // Since this setState runs after setSongVotes, we can combine updates.
         updateUserData(currentUser.username, updatesToSave);
         return newStats;
       });
     } else if (Object.keys(updatesToSave).length > 0) {
+      // If only songVotes was updated
       updateUserData(currentUser.username, updatesToSave);
     }
   }, [activeBgIndex, backgrounds, currentStation, currentUser]);
@@ -532,12 +474,12 @@ const App: React.FC = () => {
   
   const toggleFavorite = (stationToToggle: Station) => {
     if (!currentUser) return;
-    const newFavoriteUrls = new Set<string>(favoriteStationUrls);
+    const newFavoriteUrls = new Set(favoriteStationUrls);
     if (newFavoriteUrls.has(stationToToggle.streamUrl)) newFavoriteUrls.delete(stationToToggle.streamUrl);
     else newFavoriteUrls.add(stationToToggle.streamUrl);
     setFavoriteStationUrls(newFavoriteUrls);
     setAllStations(prevStations => prevStations.map(s => s.streamUrl === stationToToggle.streamUrl ? { ...s, isFavorite: !s.isFavorite } : s));
-    
+    // FIX: Using Array.from() to convert the Set to an array. Spreading a Set (`...newFavoriteUrls`) can lead to type inference issues in some TypeScript configurations.
     updateUserData(currentUser.username, { favoriteStationUrls: Array.from(newFavoriteUrls) });
   };
 
@@ -589,8 +531,6 @@ const App: React.FC = () => {
         if (previousVote === voteType) {
             return prevStats; // No change
         }
-        
-        if (voteType === 'like') updateQuestProgress('votes_cast', 1);
 
         const newUserVotes = { ...(prevStats.songUserVotes || {}), [songId]: voteType };
         const newPoints = previousVote ? (prevStats.points || 0) : (prevStats.points || 0) + 1;
@@ -618,7 +558,7 @@ const App: React.FC = () => {
 
         return newStats;
     });
-}, [currentUser, updateQuestProgress]);
+}, [currentUser]);
 
   const handleRateStation = useCallback((stationUrl: string, rating: number) => {
     if (!currentUser) return;
@@ -657,6 +597,7 @@ const App: React.FC = () => {
         newUnlocked.add(theme.name);
         setUnlockedThemes(newUnlocked);
         
+        // Fix: Changed spread operator to Array.from() to prevent type inference issues when converting a Set to an array.
         await updateUserData(currentUser.username, { stats: newStats, unlockedThemes: Array.from(newUnlocked) });
 
         setToasts(prev => [...prev, {id: Date.now(), title: "Theme Unlocked!", message: `You can now use the ${theme.displayName} theme.`, icon: StarIcon, type: 'theme_unlocked'}]);
@@ -932,146 +873,6 @@ const App: React.FC = () => {
       type: 'login'
     }]);
   }, [currentUser]);
-  
-  // --- Gamification Handlers ---
-  const handleBuyItem = useCallback((item: ShopItem) => {
-      if (!currentUser) return;
-      if ((stats.points || 0) < item.cost) {
-           setToasts(prev => [...prev, { id: Date.now(), title: "Not Enough Points", message: `You need ${item.cost - (stats.points || 0)} more points.`, icon: CoinIcon, type: 'error' }]);
-           return;
-      }
-      
-      const newPoints = (stats.points || 0) - item.cost;
-      const newInventory = [...inventory, item.id];
-      
-      setStats(prev => ({...prev, points: newPoints}));
-      setInventory(newInventory);
-      
-      updateUserData(currentUser.username, { stats: {...stats, points: newPoints}, inventory: newInventory });
-       setToasts(prev => [...prev, { id: Date.now(), title: "Item Purchased!", message: `You bought ${item.name}.`, icon: ShopIcon, type: 'purchase' }]);
-
-  }, [currentUser, stats, inventory]);
-
-  const handleEquipItem = useCallback((item: ShopItem) => {
-       if (!currentUser) return;
-       const newEquipped = { ...equippedItems, [item.type]: item.id };
-       setEquippedItems(newEquipped);
-       updateUserData(currentUser.username, { equippedItems: newEquipped });
-  }, [currentUser, equippedItems]);
-
-  const handleUnequipItem = useCallback((type: ShopItem['type']) => {
-      if (!currentUser) return;
-      const newEquipped = { ...equippedItems };
-      delete newEquipped[type];
-      setEquippedItems(newEquipped);
-      updateUserData(currentUser.username, { equippedItems: newEquipped });
-  }, [currentUser, equippedItems]);
-
-  const handleClaimQuest = useCallback((questId: string) => {
-      if (!currentUser) return;
-      const quest = activeQuests.find(q => q.id === questId);
-      if (quest && quest.completed && !quest.claimed) {
-          const newPoints = (stats.points || 0) + quest.reward;
-          const newQuests = activeQuests.map(q => q.id === questId ? { ...q, claimed: true } : q);
-          
-          setStats(prev => ({...prev, points: newPoints}));
-          setActiveQuests(newQuests);
-          updateUserData(currentUser.username, { stats: {...stats, points: newPoints}, activeQuests: newQuests });
-          
-          setToasts(prev => [...prev, { id: Date.now(), title: "Reward Claimed!", message: `+${quest.reward} Points`, icon: CoinIcon, type: 'points' }]);
-      }
-  }, [currentUser, activeQuests, stats]);
-
-  const handleBattleVote = useCallback((contestantId: string) => {
-      if (!currentUser || userBattleVote) return;
-      const cost = 10;
-      if ((stats.points || 0) < cost) {
-          setToasts(prev => [...prev, { id: Date.now(), title: "Not Enough Points", message: `Voting costs ${cost} points.`, icon: CoinIcon, type: 'error' }]);
-          return;
-      }
-      
-      const newPoints = (stats.points || 0) - cost;
-      setStats(prev => ({...prev, points: newPoints}));
-      setUserBattleVote(contestantId);
-      
-      setBattleVotes(prev => ({...prev, [contestantId]: (prev[contestantId] || 0) + 1}));
-      
-      // Persist (mock)
-      const newBattleVotes = { [contestantId]: 'true' }; 
-      updateUserData(currentUser.username, { stats: {...stats, points: newPoints}, battleVotes: newBattleVotes });
-      
-       setToasts(prev => [...prev, { id: Date.now(), title: "Vote Cast!", message: `You voted in the Battle of the Bands.`, icon: BattleIcon, type: 'points' }]);
-      
-  }, [currentUser, stats, userBattleVote]);
-  
-  // --- Monetization Handlers ---
-  const handleBoostStation = useCallback((stationToBoost: Station) => {
-      if (!currentUser) return;
-      const cost = BOOST_COST;
-      if ((stats.points || 0) < cost) {
-          setToasts(prev => [...prev, { id: Date.now(), title: "Not Enough Points", message: `Boost costs ${cost} points.`, icon: MegaphoneIcon, type: 'error' }]);
-          return;
-      }
-      
-      const newPoints = (stats.points || 0) - cost;
-      const boostExpiry = new Date(Date.now() + BOOST_DURATION_MS).toISOString();
-      
-      setStats(prev => ({...prev, points: newPoints}));
-      updateUserData(currentUser.username, { stats: {...stats, points: newPoints} });
-
-      // Update station list
-      setAllStations(prev => prev.map(s => 
-          s.streamUrl === stationToBoost.streamUrl ? { ...s, boostExpiresAt: boostExpiry } : s
-      ));
-      
-      // Update current detail view if needed
-      if (stationForDetail?.streamUrl === stationToBoost.streamUrl) {
-          setStationForDetail(prev => prev ? ({ ...prev, boostExpiresAt: boostExpiry }) : null);
-      }
-
-      setToasts(prev => [...prev, { id: Date.now(), title: "Station Boosted!", message: `${stationToBoost.name} is now boosted for 1 hour.`, icon: MegaphoneIcon, type: 'boost' }]);
-  }, [currentUser, stats, stationForDetail]);
-
-  const handlePurchaseTicket = useCallback((event: ListeningEvent) => {
-      if (!currentUser) return;
-      const cost = event.ticketCost || 0;
-      
-      if (purchasedTickets.has(event.id)) return; // Already owned
-
-      if ((stats.points || 0) < cost) {
-          setToasts(prev => [...prev, { id: Date.now(), title: "Not Enough Points", message: `Ticket costs ${cost} points.`, icon: TicketIcon, type: 'error' }]);
-          return;
-      }
-      
-      const newPoints = (stats.points || 0) - cost;
-      setStats(prev => ({...prev, points: newPoints}));
-      
-      const newTickets = new Set(purchasedTickets);
-      newTickets.add(event.id);
-      setPurchasedTickets(newTickets);
-      
-      updateUserData(currentUser.username, { stats: {...stats, points: newPoints}, purchasedTickets: Array.from(newTickets) });
-      
-      setToasts(prev => [...prev, { id: Date.now(), title: "Ticket Purchased!", message: `You're in for ${event.title}!`, icon: TicketIcon, type: 'purchase' }]);
-
-  }, [currentUser, stats, purchasedTickets]);
-
-  const handleCreateEvent = useCallback((newEvent: Omit<ListeningEvent, 'id' | 'createdBy'>) => {
-      if (!currentUser || currentUser.role !== 'owner') return;
-      
-      const event: ListeningEvent = {
-          ...newEvent,
-          id: `evt_${Date.now()}`,
-          createdBy: currentUser.username
-      };
-      
-      setEvents(prev => [...prev, event]);
-      // In a real app, this would persist to backend. Here we just update local state for session.
-      
-      setToasts(prev => [...prev, { id: Date.now(), title: "Event Scheduled!", message: `${event.title} created.`, icon: StarIcon, type: 'success' }]);
-      setIsEventsModalOpen(false); // Close modal if open or handle navigation
-  }, [currentUser]);
-
 
   const artistSubmissions = useMemo(() => {
       if (!currentUser || currentUser.role !== 'artist') return [];
@@ -1080,25 +881,6 @@ const App: React.FC = () => {
           .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
   }, [allStations, currentUser]);
 
-  // Generate pseudo-leaderboard for King of the Hill for the *current station*
-  const kingOfTheHillLeaderboard = useMemo(() => {
-      if (!stationForDetail) return [];
-      // Add current user entry
-      const userEntry: KingOfTheHillEntry = {
-          username: currentUser?.username || 'You',
-          timeListened: stats.dailyStationTime?.[stationForDetail.streamUrl] || 0,
-      };
-      
-      const mockEntry: KingOfTheHillEntry = {
-          username: "RadioBot",
-          timeListened: 3600, 
-          avatar: "https://i.pravatar.cc/150?u=bot",
-      };
-      
-      return [userEntry, mockEntry].sort((a, b) => b.timeListened - a.timeListened);
-  }, [stationForDetail, stats.dailyStationTime, currentUser]);
-  
-  const currentUserKingEntry = kingOfTheHillLeaderboard.find(e => e.username === currentUser?.username);
 
   if (!hasEnteredApp) {
     return <LandingPage onEnter={() => setHasEnteredApp(true)} />;
@@ -1111,14 +893,7 @@ const App: React.FC = () => {
       case 'artist_dashboard':
         return <ArtistDashboardView user={currentUser} stats={stats} submissions={artistSubmissions} setActiveView={handleSetActiveView} />;
       case 'station_manager_dashboard':
-        return <StationManagerDashboardView 
-            user={currentUser} 
-            allStations={allStations} 
-            onReviewSubmission={handleReviewSubmission} 
-            onEditStation={handleOpenEditModal} 
-            onCreateEvent={handleCreateEvent} 
-            onUpdateStation={handleUpdateStation}
-        />;
+        return <StationManagerDashboardView user={currentUser} allStations={allStations} onReviewSubmission={handleReviewSubmission} onEditStation={handleOpenEditModal} />;
       case 'store':
         return <StoreView activeTheme={activeTheme} onSetTheme={handleSetTheme} onUnlockTheme={handleUnlockTheme} unlockedThemes={unlockedThemes} currentPoints={stats.points || 0}/>;
       case 'leaderboard':
@@ -1127,12 +902,6 @@ const App: React.FC = () => {
         return <AdminDashboardView stations={allStations} onApproveClaim={handleApproveClaim} onDenyClaim={handleDenyClaim} currentUser={currentUser} onUpdateUserRole={handleUpdateUserRole} />;
       case 'dashboard':
         return <DashboardView user={currentUser} stats={stats} favoritesCount={favoriteStationUrls.size} unlockedAchievements={unlockedAchievements} />;
-      case 'shop':
-        return <ShopView userPoints={stats.points || 0} inventory={inventory} equippedItems={equippedItems} onBuyItem={handleBuyItem} onEquipItem={handleEquipItem} onUnequipItem={handleUnequipItem} />;
-      case 'quests':
-        return <QuestLog quests={activeQuests} onClaimReward={handleClaimQuest} />;
-      case 'battle':
-        return <BattleOfTheBands userPoints={stats.points || 0} onVote={handleBattleVote} votes={battleVotes} userVotedFor={userBattleVote} />;
       case 'explore':
       case 'genre_chat':
       default:
@@ -1151,7 +920,6 @@ const App: React.FC = () => {
             onShowDetails={setStationForDetail}
             onPlayFromCommunity={handlePlayFromCommunity}
             currentUser={currentUser}
-            stats={stats}
           />
         );
     }
@@ -1175,7 +943,7 @@ const App: React.FC = () => {
               <main className="flex-1 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--accent-color)]"></div></main>
             ) : currentUser ? (
               <>
-                <main id="main-content" className="flex-1 overflow-y-auto pb-24 scrollbar-hide">
+                <main id="main-content" className="flex-1 overflow-y-auto pb-24">
                   {renderActiveView()}
                 </main>
                 {showRightPanel && (
@@ -1192,7 +960,6 @@ const App: React.FC = () => {
                     onOpenMusicSubmissionModal={handleOpenMusicSubmissionModal}
                     onOpenClaimModal={handleOpenClaimModal}
                     nowPlaying={nowPlaying}
-                    onBoostStation={handleBoostStation}
                   />
                 )}
               </>
@@ -1201,7 +968,7 @@ const App: React.FC = () => {
             )}
           </div>
 
-          {currentStation && <ListeningPartyChat station={currentStation} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} nowPlaying={nowPlaying} equippedItems={equippedItems} />}
+          {currentStation && <ListeningPartyChat station={currentStation} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} nowPlaying={nowPlaying} />}
 
           {currentStation && (
             <RadioPlayer
@@ -1265,18 +1032,11 @@ const App: React.FC = () => {
       <EditStationModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} station={stationToEdit} onSubmit={handleUpdateStation} />
       <MusicSubmissionModal isOpen={isMusicSubmissionModalOpen} onClose={() => setIsMusicSubmissionModalOpen(false)} station={stationForSubmission} onSubmit={handleMusicSubmission} userPoints={stats.points || 0} />
       <ClaimOwnershipModal isOpen={isClaimModalOpen} onClose={() => setIsClaimModalOpen(false)} station={stationToClaim} onSubmit={handleClaimStation} />
-      <EventsModal 
-        isOpen={isEventsModalOpen} 
-        onClose={() => setIsEventsModalOpen(false)} 
-        onSelectStation={(stationName) => {
-            const stationToPlay = allStations.find(s => s.name === stationName);
-            if (stationToPlay) handleSelectStation(stationToPlay);
-            setIsEventsModalOpen(false);
-        }}
-        events={events}
-        purchasedTickets={purchasedTickets}
-        onPurchaseTicket={handlePurchaseTicket}
-      />
+      <EventsModal isOpen={isEventsModalOpen} onClose={() => setIsEventsModalOpen(false)} onSelectStation={(stationName) => {
+        const stationToPlay = allStations.find(s => s.name === stationName);
+        if (stationToPlay) handleSelectStation(stationToPlay);
+        setIsEventsModalOpen(false);
+      }} />
       <SongHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} history={stats.songHistory || []} />
 
       <style>{`
@@ -1291,12 +1051,10 @@ const App: React.FC = () => {
           -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 1rem, black calc(100% - 1rem), transparent 100%);
           mask-image: linear-gradient(to bottom, transparent 0, black 1rem, black calc(100% - 1rem), transparent 100%);
         }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        #right-panel-content::-webkit-scrollbar { width: 8px; }
-        #right-panel-content::-webkit-scrollbar-track { background: transparent; }
-        #right-panel-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
-        #right-panel-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+        #main-content::-webkit-scrollbar, #right-panel-content::-webkit-scrollbar { width: 8px; }
+        #main-content::-webkit-scrollbar-track, #right-panel-content::-webkit-scrollbar-track { background: transparent; }
+        #main-content::-webkit-scrollbar-thumb, #right-panel-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+        #main-content::-webkit-scrollbar-thumb:hover, #right-panel-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
 
         @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .animate-slide-up { animation: slide-up 0.5s ease-out; }

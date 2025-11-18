@@ -1,14 +1,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import type { ChatMessage, Station, NowPlaying, UserData } from '../types';
-import { SHOP_ITEMS } from '../constants';
+import type { ChatMessage, Station, NowPlaying } from '../types';
 
 interface ListeningPartyChatProps {
     station: Station;
     isOpen: boolean;
     onClose: () => void;
     nowPlaying: NowPlaying | null;
-    equippedItems?: UserData['equippedItems'];
 }
 
 const botMessages = [
@@ -33,7 +31,7 @@ const getAvatarInfo = (author: string): {initials: string, color: string} => {
 }
 
 
-export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station, isOpen, onClose, nowPlaying, equippedItems }) => {
+export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station, isOpen, onClose, nowPlaying }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -97,19 +95,12 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
         e.preventDefault();
         if (input.trim()) {
             const userInfo = getAvatarInfo('You');
-            
-            // Get shop item values
-            const nameColorItem = equippedItems?.name_color ? SHOP_ITEMS.find(i => i.id === equippedItems.name_color) : null;
-            const frameItem = equippedItems?.frame ? SHOP_ITEMS.find(i => i.id === equippedItems.frame) : null;
-
             setMessages(prev => [...prev, {
                 id: Date.now(),
                 author: 'You',
                 text: input.trim(),
                 avatarColor: userInfo.color,
                 initials: userInfo.initials,
-                nameColor: nameColorItem?.value,
-                frame: frameItem?.value
             }]);
             setInput('');
         }
@@ -133,34 +124,13 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
                                 </li>
                             );
                         }
-                        const isYou = msg.author === 'You';
                         return (
-                            <li key={msg.id} className={`text-sm animate-fade-in flex gap-2 ${isYou ? 'justify-end' : 'justify-start'}`}>
-                                {!isYou && (
-                                     <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-xs" style={{ backgroundColor: msg.avatarColor }}>
-                                        {msg.initials}
-                                    </div>
-                                )}
-                                
-                                {isYou && msg.frame && (
-                                     <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-xs bg-[var(--accent-color)]/20 order-2 ${msg.frame}`}>
-                                        {msg.initials}
-                                    </div>
-                                )}
-                                {isYou && !msg.frame && (
-                                     <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-xs bg-cyan-600/50 order-2">
-                                        {msg.initials}
-                                    </div>
-                                )}
-
-                                <div className={`inline-block rounded-lg px-2 py-1 max-w-[80%] ${
-                                    isYou ? 'bg-gray-700/80' :
+                            <li key={msg.id} className={`text-sm animate-fade-in ${msg.author === 'You' ? 'text-right' : 'text-left'}`}>
+                                <div className={`inline-block rounded-lg px-2 py-1 ${
+                                    msg.author === 'You' ? 'bg-cyan-600/50' :
                                     msg.isBot ? 'bg-gray-700/50' : ''
                                 }`}>
-                                    <span 
-                                        className={`block font-bold text-xs mb-0.5 ${!msg.nameColor && (isYou ? 'text-cyan-200' : 'text-purple-300')}`}
-                                        style={msg.nameColor ? { color: msg.nameColor } : {}}
-                                    >
+                                    <span className={`block font-bold text-xs ${msg.author === 'You' ? 'text-cyan-200' : 'text-purple-300'}`}>
                                         {msg.author}
                                     </span>
                                     <span className="text-gray-200">{msg.text}</span>

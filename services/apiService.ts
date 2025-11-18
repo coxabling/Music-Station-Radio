@@ -1,6 +1,3 @@
-
-
-
 import type { UserData } from '../types';
 
 const SIMULATED_LATENCY = 50; // ms
@@ -27,7 +24,7 @@ const setDb = (username: string, data: UserData) => {
 
 // Defines the default data structure for a newly created user (without role)
 const createDefaultUserData = (): Omit<UserData, 'role'> => ({
-    stats: { totalTime: 0, stationPlays: {}, genresPlayed: [], points: 0, stationRatings: {}, songHistory: [], songUserVotes: {}, stationReviews: {}, dailyStationTime: {} },
+    stats: { totalTime: 0, stationPlays: {}, genresPlayed: [], points: 0, stationRatings: {}, songHistory: [], songUserVotes: {}, stationReviews: {} },
     alarm: null,
     songVotes: {},
     unlockedAchievements: {},
@@ -36,15 +33,6 @@ const createDefaultUserData = (): Omit<UserData, 'role'> => ({
     activeTheme: 'dynamic',
     unlockedThemes: ['dynamic'],
     activeView: 'dashboard',
-    
-    // Gamification defaults
-    inventory: [],
-    equippedItems: {},
-    activeQuests: [], // Will be populated by the app logic on first load
-    battleVotes: {},
-    
-    // Monetization
-    purchasedTickets: [],
 });
 
 
@@ -114,9 +102,6 @@ export const updateUserData = (username: string, partialData: Partial<UserData>)
                     const mergedData = { ...currentData, ...partialData };
                     if (partialData.stats) {
                         mergedData.stats = { ...currentData.stats, ...partialData.stats };
-                    }
-                    if (partialData.equippedItems) {
-                        mergedData.equippedItems = { ...currentData.equippedItems, ...partialData.equippedItems };
                     }
                     setDb(username, mergedData);
                 } else {

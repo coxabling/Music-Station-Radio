@@ -1,15 +1,22 @@
-import React, { useState } from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
 import type { UserData } from '../types';
-import { UserIcon, MusicNoteIcon, ShieldCheckIcon } from '../constants';
+import { UserIcon, MusicNoteIcon, ShieldCheckIcon, BriefcaseIcon, CheckCircleIcon } from '../constants';
+import { getUserData } from '../services/apiService';
+import { RoleBadge } from './RoleBadge';
 
 interface LoginModalProps {
   isOpen: boolean;
   onLogin: (username: string, role: UserData['role']) => void;
 }
 
-const RadioTowerIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-5.25-4.25-9.5-9.5-9.5S.5 6.75.5 12s4.25 9.5 9.5 9.5 9.5-4.25 9.5-9.5z" /><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v-2.25m0 16.5V21.5m-6.364-2.136L4.222 17.95m13.414 0l-1.414-1.414M4.222 6.05l1.414 1.414m13.414 0l-1.414-1.414" /></svg>;
-const KeyIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" /></svg>;
+const LoadingSpinner = () => (
+    <div className="flex justify-center">
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white"></div>
+    </div>
+);
 
+const BackIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" /></svg>;
 
 const RoleCard: React.FC<{
     icon: React.ReactNode;
@@ -21,108 +28,241 @@ const RoleCard: React.FC<{
     <button
         type="button"
         onClick={onClick}
-        className={`w-full p-4 rounded-lg border-2 text-left transition-all duration-200 ${
+        className={`w-full p-4 rounded-xl border text-left transition-all duration-200 group relative overflow-hidden ${
             isSelected
-                ? 'bg-[var(--accent-color)]/20 border-[var(--accent-color)] shadow-lg shadow-[var(--accent-color)]/20'
-                : 'bg-gray-700/50 border-gray-600 hover:border-gray-500'
+                ? 'bg-[var(--accent-color)]/10 border-[var(--accent-color)] ring-1 ring-[var(--accent-color)]'
+                : 'bg-gray-800/40 border-gray-700 hover:border-gray-500 hover:bg-gray-800/60'
         }`}
     >
-        <div className="flex items-center gap-3">
-            <div className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full ${isSelected ? 'bg-[var(--accent-color)] text-black' : 'bg-gray-600 text-gray-300'}`}>
+        <div className="flex items-start gap-4 relative z-10">
+            <div className={`flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${isSelected ? 'bg-[var(--accent-color)] text-black' : 'bg-gray-700/50 text-gray-400 group-hover:text-white'}`}>
                 {icon}
             </div>
-            <div>
-                <h4 className="font-bold text-white">{title}</h4>
-                <p className="text-xs text-gray-400">{description}</p>
+            <div className="flex-1">
+                <h4 className={`font-bold text-base ${isSelected ? 'text-[var(--accent-color)]' : 'text-white'}`}>{title}</h4>
+                <p className="text-xs text-gray-400 mt-1 leading-relaxed">{description}</p>
             </div>
+            {isSelected && (
+                <div className="absolute top-4 right-4 text-[var(--accent-color)] animate-fade-in">
+                    <CheckCircleIcon className="w-5 h-5" />
+                </div>
+            )}
         </div>
     </button>
 );
 
-
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLogin }) => {
+  const [step, setStep] = useState<'input' | 'returning' | 'signup'>('input');
   const [username, setUsername] = useState('');
+  const [existingUser, setExistingUser] = useState<UserData | null>(null);
   const [selectedRole, setSelectedRole] = useState<UserData['role']>('user');
   const [error, setError] = useState('');
-  
-  const isAdminLogin = username.toLowerCase() === 'admin';
+  const [isLoading, setIsLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (isOpen && step === 'input') {
+        // Focus input on open
+        setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [isOpen, step]);
+
+  const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
     if (username.trim().length < 3) {
-      setError('Username must be at least 3 characters long.');
+      setError('Username must be at least 3 characters.');
       return;
     }
     if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
-      setError('Username can only contain letters, numbers, and underscores.');
+      setError('Letters, numbers, and underscores only.');
       return;
     }
+    
     setError('');
-    onLogin(username.trim(), isAdminLogin ? 'admin' : selectedRole);
+    setIsLoading(true);
+
+    try {
+        // Check if user exists (admin always considered existing logic-wise for role bypass)
+        if (username.toLowerCase() === 'admin') {
+             // Specific admin handling
+             onLogin(username.trim(), 'admin');
+             return; 
+        }
+
+        const userData = await getUserData(username.trim());
+        
+        if (userData) {
+            setExistingUser(userData);
+            setStep('returning');
+        } else {
+            setExistingUser(null);
+            setStep('signup');
+        }
+    } catch (err) {
+        console.error(err);
+        setError("Something went wrong. Please try again.");
+    } finally {
+        setIsLoading(false);
+    }
   };
+
+  const handleFinalLogin = () => {
+      if (step === 'returning' && existingUser) {
+          onLogin(username.trim(), existingUser.role);
+      } else if (step === 'signup') {
+          onLogin(username.trim(), selectedRole);
+      }
+  };
+  
+  const reset = () => {
+      setStep('input');
+      setError('');
+      setExistingUser(null);
+      setSelectedRole('user');
+  }
 
   if (!isOpen) return null;
 
   return (
     <div 
-      className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in-fast"
+      className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="login-modal-title"
     >
-      <div 
-        className="bg-gray-800/80 backdrop-blur-lg border accent-color-border/30 rounded-xl shadow-2xl shadow-black/50 w-full max-w-md flex flex-col animate-slide-up-fast"
-      >
-        <>
-            <header className="p-4 border-b border-gray-700/50">
-            <h2 id="login-modal-title" className="text-lg font-bold accent-color-text font-orbitron text-center">
-                Sign In or Sign Up
-            </h2>
-            </header>
+      <div className="w-full max-w-md relative perspective-1000">
+        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden relative">
             
-            <form onSubmit={handleLogin} className="p-6 space-y-4">
-            <p className="text-sm text-gray-400 text-center">Enter a username to begin. If it's your first time, choose a role!</p>
-            <div>
-                <label htmlFor="username" className="sr-only">Username</label>
-                <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-gray-900/50 border border-gray-600 rounded-md py-2.5 px-3 text-white placeholder-gray-400 text-center text-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] transition-all"
-                placeholder="Enter your username"
-                required
-                autoFocus
-                />
-            </div>
+            {/* Background Elements */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500"></div>
+            <div className="absolute -top-20 -right-20 w-40 h-40 bg-[var(--accent-color)]/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-            {!isAdminLogin && (
-                <div className="space-y-3">
-                    <RoleCard icon={<UserIcon className="w-5 h-5"/>} title="Listener" description="Explore stations and enjoy the music." isSelected={selectedRole === 'user'} onClick={() => setSelectedRole('user')} />
-                    <RoleCard icon={<MusicNoteIcon className="w-5 h-5"/>} title="Artist" description="Submit your music to stations." isSelected={selectedRole === 'artist'} onClick={() => setSelectedRole('artist')} />
-                    <RoleCard icon={<RadioTowerIcon className="w-5 h-5"/>} title="Station Manager" description="Add and manage your own radio stations." isSelected={selectedRole === 'owner'} onClick={() => setSelectedRole('owner')} />
-                </div>
-            )}
-            
-            {error && <p className="text-sm text-red-400 text-center">{error}</p>}
-            
-            <div className="pt-2 flex justify-center">
-                <button
-                type="submit"
-                className="w-full bg-[var(--accent-color)] hover:opacity-80 text-black font-bold py-3 px-4 rounded-md transition-opacity duration-300 text-lg"
-                >
-                {isAdminLogin ? 'Login as Admin' : 'Enter Radio'}
-                </button>
+            {/* Header */}
+            <header className="p-6 text-center pb-0">
+                <h2 className="text-2xl font-bold font-orbitron tracking-wide text-white mb-1">
+                    {step === 'input' ? 'Welcome' : step === 'returning' ? 'Welcome Back' : 'Create Account'}
+                </h2>
+                <p className="text-sm text-gray-400">
+                    {step === 'input' ? 'Enter your username to start listening.' : 
+                     step === 'returning' ? 'Good to see you again!' : 
+                     'Choose your persona.'}
+                </p>
+            </header>
+
+            {/* Content */}
+            <div className="p-6">
+                {step === 'input' && (
+                    <form onSubmit={handleContinue} className="space-y-6 animate-fade-in-right">
+                        <div className="relative group">
+                            <input
+                                ref={inputRef}
+                                id="username"
+                                type="text"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                className="w-full bg-gray-800/50 border border-gray-700 rounded-xl py-4 px-4 text-center text-xl font-bold text-white placeholder-gray-600 focus:outline-none focus:border-[var(--accent-color)] focus:ring-1 focus:ring-[var(--accent-color)] transition-all"
+                                placeholder="Username"
+                                autoComplete="username"
+                            />
+                            <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-transparent via-gray-600 to-transparent group-focus-within:via-[var(--accent-color)] transition-all"></div>
+                        </div>
+                        
+                        {error && <p className="text-sm text-red-400 text-center bg-red-900/20 py-2 rounded-lg border border-red-500/20">{error}</p>}
+                        
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full bg-gradient-to-r from-[var(--accent-color)] to-cyan-600 hover:from-cyan-300 hover:to-cyan-500 text-black font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-cyan-900/20 transform transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
+                            {isLoading ? <LoadingSpinner /> : 'Continue'}
+                        </button>
+                    </form>
+                )}
+
+                {step === 'returning' && existingUser && (
+                     <div className="space-y-6 animate-fade-in-right text-center">
+                        <div className="flex flex-col items-center gap-3 py-4">
+                            <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-gray-800 to-gray-700 p-1 border-2 border-[var(--accent-color)] shadow-[0_0_20px_rgba(103,232,249,0.3)]">
+                                <div className="w-full h-full rounded-full bg-gray-900 flex items-center justify-center">
+                                     <UserIcon className="w-10 h-10 text-gray-300"/>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-white">{username}</h3>
+                                <div className="flex items-center justify-center gap-2 mt-1">
+                                    <RoleBadge role={existingUser.role} className="w-4 h-4" />
+                                    <span className="text-sm text-gray-400 capitalize">{existingUser.role}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={handleFinalLogin}
+                            className="w-full bg-gradient-to-r from-[var(--accent-color)] to-cyan-600 hover:from-cyan-300 hover:to-cyan-500 text-black font-bold py-3.5 px-4 rounded-xl shadow-lg transform transition-all hover:scale-[1.02]"
+                        >
+                            Start Listening
+                        </button>
+                        
+                        <button onClick={reset} className="text-sm text-gray-500 hover:text-white transition-colors flex items-center justify-center gap-1 w-full">
+                           <BackIcon /> Switch Account
+                        </button>
+                    </div>
+                )}
+
+                {step === 'signup' && (
+                    <div className="space-y-4 animate-fade-in-right">
+                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                             <RoleCard 
+                                icon={<UserIcon className="w-6 h-6"/>} 
+                                title="Listener" 
+                                description="Discover new music, create playlists, and join the community chat." 
+                                isSelected={selectedRole === 'user'} 
+                                onClick={() => setSelectedRole('user')} 
+                            />
+                            <RoleCard 
+                                icon={<MusicNoteIcon className="w-6 h-6"/>} 
+                                title="Artist" 
+                                description="Submit your tracks to stations, get feedback, and grow your fanbase." 
+                                isSelected={selectedRole === 'artist'} 
+                                onClick={() => setSelectedRole('artist')} 
+                            />
+                            <RoleCard 
+                                icon={<BriefcaseIcon className="w-6 h-6"/>} 
+                                title="Station Manager" 
+                                description="Own and manage radio stations, review submissions, and curate content." 
+                                isSelected={selectedRole === 'owner'} 
+                                onClick={() => setSelectedRole('owner')} 
+                            />
+                        </div>
+
+                        <div className="pt-2">
+                            <button
+                                onClick={handleFinalLogin}
+                                className="w-full bg-gradient-to-r from-[var(--accent-color)] to-cyan-600 hover:from-cyan-300 hover:to-cyan-500 text-black font-bold py-3.5 px-4 rounded-xl shadow-lg transform transition-all hover:scale-[1.02]"
+                            >
+                                Create Account & Enter
+                            </button>
+                             <button onClick={reset} className="mt-3 text-sm text-gray-500 hover:text-white transition-colors w-full text-center">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
-            </form>
-        </>
+        </div>
       </div>
-       <style>{`
-        @keyframes fade-in-fast { from { opacity: 0; } to { opacity: 1; } }
-        .animate-fade-in-fast { animation: fade-in-fast 0.3s ease-out; }
-        @keyframes slide-up-fast { from { transform: translateY(20px) scale(0.98); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
-        .animate-slide-up-fast { animation: slide-up-fast 0.3s ease-out; }
+      <style>{`
+        .perspective-1000 { perspective: 1000px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+        @keyframes fade-in-right {
+            from { opacity: 0; transform: translateX(10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .animate-fade-in-right { animation: fade-in-right 0.3s ease-out forwards; }
       `}</style>
     </div>
   );
 };
+    

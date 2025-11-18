@@ -58,7 +58,7 @@ const getSongInfo = async (artist: string, title: string): Promise<string> => {
       contents: prompt,
     });
 
-    return response.text || "Could not generate song info.";
+    return response.text;
   } catch (error) {
     console.error("Error getting song info from Gemini:", error);
     throw error;
@@ -74,7 +74,7 @@ const fetchLyrics = async (artist: string, title: string): Promise<string> => {
       contents: prompt,
     });
 
-    return response.text || "LYRICS_NOT_FOUND";
+    return response.text;
   } catch (error) {
     console.error("Error getting lyrics from Gemini:", error);
     throw error;
@@ -90,7 +90,7 @@ const getGenreInfo = async (genre: string): Promise<string> => {
       contents: prompt,
     });
 
-    return response.text || "Could not generate genre info.";
+    return response.text;
   } catch (error) {
     console.error("Error getting genre info from Gemini:", error);
     throw error;
@@ -106,7 +106,7 @@ const translateLyrics = async (lyrics: string, language: string): Promise<string
       contents: prompt,
     });
 
-    return response.text || "TRANSLATION_FAILED";
+    return response.text;
   } catch (error) {
     console.error(`Error translating lyrics to ${language} from Gemini:`, error);
     throw error;
@@ -131,7 +131,7 @@ const getCommunityHitsSummary = async (songs: SongVote[]): Promise<string> => {
       contents: prompt,
     });
 
-    return response.text || "Could not generate summary.";
+    return response.text;
   } catch (error) {
     console.error("Error getting community hits summary from Gemini:", error);
     throw error;
@@ -182,13 +182,11 @@ ${JSON.stringify(stationDataForPrompt, null, 2)}
       }
     });
 
-    const jsonString = response.text ? response.text.trim() : '';
-    if (!jsonString) return [];
-    
+    const jsonString = response.text.trim();
     const result = JSON.parse(jsonString);
 
     if (result && Array.isArray(result.urls)) {
-      return result.urls as unknown as string[];
+      return result.urls;
     }
 
     return [];
@@ -198,77 +196,5 @@ ${JSON.stringify(stationDataForPrompt, null, 2)}
   }
 };
 
-const getSmartRecommendations = async (
-    genresPlayed: string[],
-    timeOfDay: string,
-    weather: string,
-    stations: Station[]
-): Promise<{ streamUrl: string; reason: string }[]> => {
-    try {
-        const ai = getAi();
-        const stationData = stations.map(s => ({
-            name: s.name,
-            genre: s.genre,
-            description: s.description,
-            streamUrl: s.streamUrl
-        }));
 
-        const prompt = `
-        You are an intelligent radio DJ AI.
-        Context:
-        - Time of day: ${timeOfDay}
-        - Current Weather: ${weather}
-        - User's recently played genres: ${genresPlayed.length > 0 ? genresPlayed.join(', ') : 'None (New User)'}
-
-        Task:
-        Select exactly 3 distinct radio stations from the provided list that best fit the current context and the user's taste.
-        Provide a short, catchy, 1-sentence reason for each recommendation (e.g., "Perfect for a sunny morning", "Matches your love for Afropop").
-
-        Available Stations:
-        ${JSON.stringify(stationData)}
-
-        Output Format (JSON):
-        {
-            "recommendations": [
-                { "streamUrl": "...", "reason": "..." },
-                ...
-            ]
-        }
-        `;
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        recommendations: {
-                            type: Type.ARRAY,
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    streamUrl: { type: Type.STRING },
-                                    reason: { type: Type.STRING }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
-        
-        const jsonString = response.text ? response.text.trim() : '';
-        if(!jsonString) return [];
-        const result = JSON.parse(jsonString);
-        return (result.recommendations || []) as { streamUrl: string; reason: string }[];
-
-    } catch (error) {
-        console.error("Error getting smart recommendations:", error);
-        return [];
-    }
-};
-
-
-export { fetchNowPlaying, getSongInfo, fetchLyrics, getGenreInfo, translateLyrics, getCommunityHitsSummary, findStationsByVibe, getSmartRecommendations };
+export { fetchNowPlaying, getSongInfo, fetchLyrics, getGenreInfo, translateLyrics, getCommunityHitsSummary, findStationsByVibe };

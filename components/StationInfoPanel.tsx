@@ -1,17 +1,9 @@
-
-
-
-
-
 import React, { useState } from 'react';
-import type { Station, StationReview, User, KingOfTheHillEntry } from '../types';
+import type { Station, StationReview, User } from '../types';
 import { StarRating } from './StarRating';
 import { formatTimeAgo } from '../utils/time';
-import { UploadIcon, ShieldCheckIcon, MegaphoneIcon, StarIcon, CalendarDaysIcon } from '../constants';
+import { UploadIcon, ShieldCheckIcon } from '../constants';
 import { RoleBadge } from './RoleBadge';
-import { KingOfTheHill } from './KingOfTheHill';
-import { BOOST_COST } from '../constants';
-import { StationSchedule } from './StationSchedule';
 
 interface StationInfoPanelProps {
   station: Station | null;
@@ -27,11 +19,6 @@ interface StationInfoPanelProps {
   currentUser: User | null;
   onOpenMusicSubmissionModal: (station: Station) => void;
   onOpenClaimModal: (station: Station) => void;
-  // King of the Hill props
-  kingOfTheHillLeaderboard?: KingOfTheHillEntry[];
-  currentUserKingEntry?: KingOfTheHillEntry;
-  // Boost prop
-  onBoostStation?: (station: Station) => void;
 }
 
 const PlayIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.546l-6.38 8.195A2 2 0 005.46 15H14.54a2 2 0 001.84-3.259L10 3.546z" transform="rotate(90 10 10)" /></svg>;
@@ -80,8 +67,7 @@ const ReviewForm: React.FC<{ onSubmit: (rating: number, text: string) => void }>
 };
 
 export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
-  const { station, mockReviews, userReviews, onAddReview, onSelectStation, onRateStation, userRating, isOwner, onEdit, currentUser, onOpenMusicSubmissionModal, onOpenClaimModal, kingOfTheHillLeaderboard, currentUserKingEntry, onBoostStation } = props;
-  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const { station, mockReviews, userReviews, onAddReview, onSelectStation, onRateStation, userRating, isOwner, onEdit, currentUser, onOpenMusicSubmissionModal, onOpenClaimModal } = props;
 
   const allReviewsForStation = React.useMemo(() => {
     if (!station) return [];
@@ -102,19 +88,11 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
   }
 
   const claimPendingForCurrentUser = !!(station.claimRequest && currentUser && station.claimRequest.username === currentUser.username);
-  const isBoosted = station.boostExpiresAt && new Date(station.boostExpiresAt) > new Date();
 
   return (
     <div className="animate-fade-in">
         <header className="p-4 flex flex-col items-center text-center">
-            <div className="relative">
-                <img src={station.coverArt} alt={station.name} className={`w-24 h-24 rounded-lg object-cover shadow-lg mb-4 ${isBoosted ? 'ring-4 ring-orange-500' : ''}`} />
-                {isBoosted && (
-                    <div className="absolute -top-2 -right-2 bg-orange-500 text-black p-1.5 rounded-full shadow-lg animate-bounce">
-                        <MegaphoneIcon className="w-4 h-4"/>
-                    </div>
-                )}
-            </div>
+            <img src={station.coverArt} alt={station.name} className="w-24 h-24 rounded-lg object-cover shadow-lg mb-4" />
             <div>
                 <h2 id="detail-modal-title" className="text-xl font-bold accent-color-text font-orbitron">{station.name}</h2>
                 <p className="text-sm text-gray-300">{station.genre}</p>
@@ -128,12 +106,6 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
                 <StarRating rating={userRating} onRate={(r) => onRateStation(station.streamUrl, r)} starClassName="h-6 w-6"/>
             </div>
             <div className="flex items-center gap-2 flex-wrap justify-center">
-                 {/* Schedule Button */}
-                 <button onClick={() => setIsScheduleOpen(true)} className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-3 rounded-md transition-colors text-sm">
-                    <CalendarDaysIcon className="h-4 w-4"/>
-                    <span>Schedule</span>
-                </button>
-
                 {currentUser && !station.owner && !station.claimRequest && (
                     <button onClick={() => onOpenClaimModal(station)} className="flex items-center gap-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 font-bold py-2 px-3 rounded-md transition-colors text-sm">
                         <ShieldCheckIcon className="h-4 w-4"/>
@@ -158,35 +130,11 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
                         <span>Edit</span>
                     </button>
                 )}
-                
-                {currentUser && !isBoosted && onBoostStation && (
-                    <button onClick={() => onBoostStation(station)} className="flex items-center gap-1 bg-orange-600/20 hover:bg-orange-600/40 text-orange-400 font-bold py-2 px-3 rounded-md transition-colors text-sm border border-orange-500/30">
-                        <MegaphoneIcon className="h-4 w-4"/>
-                        <span>Boost ({BOOST_COST} <StarIcon className="w-3 h-3 inline mb-0.5"/>)</span>
-                    </button>
-                )}
-                 {isBoosted && (
-                    <div className="flex items-center gap-1 bg-orange-500/20 text-orange-400 font-bold py-2 px-3 rounded-md text-sm border border-orange-500/50">
-                        <MegaphoneIcon className="h-4 w-4"/>
-                        <span>Boost Active</span>
-                    </div>
-                )}
-
             </div>
              <button onClick={() => onSelectStation(station)} className="w-full flex items-center justify-center gap-2 bg-[var(--accent-color)] hover:opacity-80 text-black font-bold py-2.5 px-6 rounded-md transition-opacity text-sm">
                 <PlayIcon className="h-5 w-5"/>
                 Tune In
             </button>
-        </div>
-        
-        <div className="px-4">
-            {kingOfTheHillLeaderboard && (
-                <KingOfTheHill 
-                    station={station} 
-                    leaderboard={kingOfTheHillLeaderboard} 
-                    currentUserEntry={currentUserKingEntry}
-                />
-            )}
         </div>
         
         <div className="p-4 overflow-y-auto flex-grow">
@@ -210,18 +158,6 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
                 </div>
             </div>
         </div>
-
-        {/* Schedule Modal */}
-        {isScheduleOpen && (
-             <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in-fast" onClick={() => setIsScheduleOpen(false)}>
-                 <div className="bg-gray-800/90 backdrop-blur-lg border accent-color-border/30 rounded-xl shadow-2xl shadow-black/50 w-full max-w-md p-1 animate-slide-up-fast" onClick={(e) => e.stopPropagation()}>
-                     <div className="flex justify-end p-2">
-                        <button onClick={() => setIsScheduleOpen(false)} className="text-gray-400 hover:text-white">Close</button>
-                     </div>
-                    <StationSchedule station={station} />
-                 </div>
-             </div>
-        )}
     </div>
   );
 };

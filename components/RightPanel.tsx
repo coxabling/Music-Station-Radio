@@ -1,12 +1,9 @@
-
-
-
 import React, { useState } from 'react';
-import type { Station, User, ListeningStats, StationReview, NowPlaying, UserData } from '../types';
+import type { Station, User, ListeningStats, StationReview, NowPlaying } from '../types';
 import { StationInfoPanel } from './StationInfoPanel';
 import { CommunityFeed } from './CommunityFeed';
 import { GenreChatView } from './GenreChatView';
-import { MOCK_REVIEWS } from '../constants'; 
+import { MOCK_REVIEWS } from '../constants'; // MOCK_REVIEWS needed for StationInfoPanel
 
 const InfoIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>;
 const CommunityIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m-7.5-2.969A3 3 0 006 10.729v8.54a3 3 0 001.258 2.548m-4.01-15.045A3 3 0 004.01 4.5v8.54a3 3 0 001.258 2.548M12 15a3 3 0 100-6 3 3 0 000 6z" /></svg>;
@@ -25,7 +22,6 @@ interface RightPanelProps {
     onOpenMusicSubmissionModal: (station: Station) => void;
     onOpenClaimModal: (station: Station) => void;
     nowPlaying: NowPlaying | null;
-    onBoostStation?: (station: Station) => void;
 }
 
 type ActiveTab = 'details' | 'community' | 'chat';
@@ -46,28 +42,6 @@ const TabButton: React.FC<{ icon: React.ReactNode; isActive: boolean; onClick: (
 export const RightPanel: React.FC<RightPanelProps> = (props) => {
     const [activeTab, setActiveTab] = useState<ActiveTab>('details');
 
-    // Calculate King of the Hill Data locally for now since it's mocked/simulated in App.tsx
-    // In a real app, this would come from props.
-    const getKingOfTheHillData = () => {
-         if (!props.station) return { leaderboard: [], currentUserEntry: undefined };
-         
-          const userEntry = {
-            username: props.currentUser?.username || 'You',
-            timeListened: props.stats.dailyStationTime?.[props.station.streamUrl] || 0,
-        };
-        
-        const mockEntry = {
-            username: "RadioBot",
-            timeListened: 3600, 
-            avatar: "https://i.pravatar.cc/150?u=bot",
-        };
-        
-        const leaderboard = [userEntry, mockEntry].sort((a, b) => b.timeListened - a.timeListened);
-        return { leaderboard, currentUserEntry: userEntry };
-    }
-
-    const { leaderboard, currentUserEntry } = getKingOfTheHillData();
-
     const renderContent = () => {
         switch (activeTab) {
             case 'community':
@@ -83,9 +57,6 @@ export const RightPanel: React.FC<RightPanelProps> = (props) => {
                         userReviews={props.stats.stationReviews?.[props.station?.streamUrl || ''] || []}
                         isOwner={!!(props.currentUser && props.station && props.station.owner === props.currentUser.username)}
                         mockReviews={MOCK_REVIEWS}
-                        kingOfTheHillLeaderboard={leaderboard}
-                        currentUserKingEntry={currentUserEntry}
-                        onBoostStation={props.onBoostStation}
                         {...props}
                     />
                 );

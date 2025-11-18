@@ -1,8 +1,6 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import type { User, ListeningStats, MusicSubmission, ActiveView } from '../types';
-import { StarIcon, ExploreIcon, CheckCircleIcon, XCircleIcon, ClockIcon, UserCircleIcon, ChartPieIcon, MusicNoteIcon } from '../constants';
-import { ArtistAnalyticsView } from './ArtistAnalyticsView';
+import { StarIcon, ExploreIcon, CheckCircleIcon, XCircleIcon, ClockIcon, UserCircleIcon } from '../constants';
 
 interface ArtistDashboardViewProps {
     user: User | null;
@@ -57,8 +55,6 @@ const SubmissionItem: React.FC<{ submission: MusicSubmission }> = ({ submission 
 
 
 export const ArtistDashboardView: React.FC<ArtistDashboardViewProps> = ({ user, stats, submissions, setActiveView }) => {
-    const [activeTab, setActiveTab] = useState<'submissions' | 'analytics'>('submissions');
-
     if (!user) return null;
     
     const pending = submissions.filter(s => s.status === 'pending');
@@ -91,55 +87,36 @@ export const ArtistDashboardView: React.FC<ArtistDashboardViewProps> = ({ user, 
                     </div>
                 </div>
 
-                <div className="flex justify-center border-b border-gray-700/50 mb-6">
-                    <button
-                        onClick={() => setActiveTab('submissions')}
-                        className={`px-6 py-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === 'submissions' ? 'border-[var(--accent-color)] text-white' : 'border-transparent text-gray-400 hover:text-white'}`}
-                    >
-                        <MusicNoteIcon className="w-4 h-4"/> Submissions
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('analytics')}
-                        className={`px-6 py-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === 'analytics' ? 'border-[var(--accent-color)] text-white' : 'border-transparent text-gray-400 hover:text-white'}`}
-                    >
-                        <ChartPieIcon className="w-4 h-4"/> Analytics
-                    </button>
-                </div>
-
-                {activeTab === 'analytics' ? (
-                    <ArtistAnalyticsView />
-                ) : (
-                    <section>
-                        <h2 className="text-2xl font-bold text-gray-200 mb-4 font-orbitron">My Submissions</h2>
-                        
-                        {submissions.length === 0 ? (
-                            <div className="text-center py-12 bg-gray-900/50 rounded-lg border border-gray-700/50">
-                                <p className="text-gray-400">You haven't submitted any tracks yet.</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-6">
-                                <div>
-                                    <h3 className="text-lg font-semibold text-yellow-400 mb-3">Pending ({pending.length})</h3>
-                                    <div className="space-y-3">
-                                        {pending.length > 0 ? pending.map(s => <SubmissionItem key={s.id} submission={s} />) : <p className="text-sm text-gray-500">No pending submissions.</p>}
-                                    </div>
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-semibold text-green-400 mb-3">Approved ({approved.length})</h3>
-                                    <div className="space-y-3">
-                                        {approved.length > 0 ? approved.map(s => <SubmissionItem key={s.id} submission={s} />) : <p className="text-sm text-gray-500">No approved submissions yet.</p>}
-                                    </div>
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-semibold text-red-400 mb-3">Rejected ({rejected.length})</h3>
-                                    <div className="space-y-3">
-                                        {rejected.length > 0 ? rejected.map(s => <SubmissionItem key={s.id} submission={s} />) : <p className="text-sm text-gray-500">No rejected submissions.</p>}
-                                    </div>
+                <section>
+                    <h2 className="text-2xl font-bold text-gray-200 mb-4 font-orbitron">My Submissions</h2>
+                    
+                    {submissions.length === 0 ? (
+                        <div className="text-center py-12 bg-gray-900/50 rounded-lg border border-gray-700/50">
+                            <p className="text-gray-400">You haven't submitted any tracks yet.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            <div>
+                                <h3 className="text-lg font-semibold text-yellow-400 mb-3">Pending ({pending.length})</h3>
+                                <div className="space-y-3">
+                                    {pending.length > 0 ? pending.map(s => <SubmissionItem key={s.id} submission={s} />) : <p className="text-sm text-gray-500">No pending submissions.</p>}
                                 </div>
                             </div>
-                        )}
-                    </section>
-                )}
+                            <div>
+                                <h3 className="text-lg font-semibold text-green-400 mb-3">Approved ({approved.length})</h3>
+                                <div className="space-y-3">
+                                     {approved.length > 0 ? approved.map(s => <SubmissionItem key={s.id} submission={s} />) : <p className="text-sm text-gray-500">No approved submissions yet.</p>}
+                                </div>
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-semibold text-red-400 mb-3">Rejected ({rejected.length})</h3>
+                                <div className="space-y-3">
+                                    {rejected.length > 0 ? rejected.map(s => <SubmissionItem key={s.id} submission={s} />) : <p className="text-sm text-gray-500">No rejected submissions.</p>}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </section>
             </div>
         </div>
     );

@@ -1,17 +1,8 @@
-
 import type * as React from 'react';
 
 export interface User {
   username: string;
   role: 'user' | 'artist' | 'owner' | 'admin';
-}
-
-export interface StationScheduleItem {
-    id: string;
-    day: 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
-    startTime: string; // HH:mm
-    endTime: string; // HH:mm
-    title: string;
 }
 
 export interface Station {
@@ -33,8 +24,6 @@ export interface Station {
     submittedAt: string;
   };
   submissions?: MusicSubmission[];
-  boostExpiresAt?: string; // ISO date string if boosted
-  schedule?: StationScheduleItem[];
 }
 
 export interface NowPlaying {
@@ -52,8 +41,6 @@ export interface ChatMessage {
   isDJ?: boolean;
   avatarColor: string;
   initials: string;
-  nameColor?: string; // For shop items
-  frame?: string; // For shop items
 }
 
 // Types for Visualizer Customization
@@ -109,7 +96,6 @@ export interface ListeningStats {
   genresPlayed?: string[];
   songHistory: SongHistoryItem[];
   stationReviews?: Record<string, StationReview[]>; // { [stationUrl]: reviews[] }
-  dailyStationTime?: Record<string, number>; // { [stationUrl]: seconds_today } for King of the Hill
 }
 
 // Type for Alarm Clock
@@ -166,7 +152,7 @@ export interface ToastData {
   title: string;
   message?: string;
   icon: React.FC<{className?: string}>;
-  type?: 'achievement' | 'points' | 'milestone' | 'theme_unlocked' | 'login' | 'error' | 'raid' | 'quest_complete' | 'purchase' | 'boost';
+  type?: 'achievement' | 'points' | 'milestone' | 'theme_unlocked' | 'login' | 'error' | 'raid';
 }
 
 // Type for Leaderboard
@@ -198,57 +184,13 @@ export interface ListeningEvent {
     title: string;
     description: string;
     stationName: string;
-    stationStreamUrl: string; // Needed to link to station
     genre: string;
     startTime: string; // ISO date string
     endTime: string; // ISO date string
-    isPremium?: boolean;
-    ticketCost?: number;
-    createdBy?: string; // username of station manager
-}
-
-// --- Gamification Types ---
-
-export type ShopItemType = 'frame' | 'name_color' | 'avatar_effect';
-
-export interface ShopItem {
-    id: string;
-    name: string;
-    type: ShopItemType;
-    cost: number;
-    value: string; // CSS color or class or URL
-    description?: string;
-}
-
-export interface Quest {
-    id: string;
-    title: string;
-    description: string;
-    target: number; // e.g., 3 (stations), 60 (minutes)
-    progress: number;
-    reward: number; // points
-    type: 'daily' | 'weekly';
-    metric: 'minutes_listened' | 'stations_played' | 'genres_played' | 'votes_cast';
-    completed: boolean;
-    claimed: boolean;
-}
-
-export interface BattleContestant {
-    id: string;
-    artist: string;
-    song: string;
-    coverArt: string;
-    previewUrl: string; // mock audio url
-}
-
-export interface KingOfTheHillEntry {
-    username: string;
-    timeListened: number; // seconds today
-    avatar?: string; // fallback to initials/color
 }
 
 // For unified sidebar navigation
-export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard' | 'shop' | 'quests' | 'battle';
+export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard';
 
 // Represents the complete data structure for a single user, to be stored in the database.
 export interface UserData {
@@ -262,20 +204,6 @@ export interface UserData {
     activeTheme: ThemeName;
     unlockedThemes: ThemeName[];
     activeView?: ActiveView;
-    
-    // Gamification
-    inventory: string[]; // Array of ShopItem IDs
-    equippedItems: {
-        frame?: string; // ShopItem ID
-        name_color?: string; // ShopItem ID
-        avatar_effect?: string; // ShopItem ID
-    };
-    activeQuests: Quest[];
-    lastQuestRefresh?: string; // Date string
-    battleVotes?: { [battleId: string]: string }; // user's vote for current battle
-    
-    // Monetization
-    purchasedTickets: string[]; // Array of Event IDs
 }
 
 // For community feed
@@ -302,14 +230,4 @@ export interface MusicSubmission {
     status: 'pending' | 'approved' | 'rejected';
     managerComment?: string;
     reviewedAt?: string; // ISO date string
-}
-
-// --- Artist Analytics ---
-export interface TrackAnalytics {
-    songId: string;
-    title: string;
-    playCount: number;
-    skipRate: number; // Percentage 0-100
-    listeners: number;
-    geographicData: { country: string; count: number }[];
 }
