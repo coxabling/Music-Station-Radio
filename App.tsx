@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -480,6 +479,7 @@ const App: React.FC = () => {
     const newAllStations = allStations.filter(s => s.streamUrl !== stationToDelete.streamUrl);
     setAllStations(newAllStations);
 
+    // If it's a user submitted station, we might want to remove it from their userStations in DB
     if (stationToDelete.owner) {
         const ownerData = await getUserData(stationToDelete.owner);
         if (ownerData) {
@@ -487,7 +487,7 @@ const App: React.FC = () => {
              await updateUserData(stationToDelete.owner, { userStations: updatedOwnerStations });
         }
     }
-
+    
     // If the current user owns it (e.g. admin is testing), update local state
     if (stationToDelete.owner === currentUser.username) {
          setUserStations(prev => prev.filter(s => s.streamUrl !== stationToDelete.streamUrl));
