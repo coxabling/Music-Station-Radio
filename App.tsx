@@ -33,6 +33,7 @@ import { getUserData, updateUserData, createUserData } from './services/apiServi
 import { EditStationModal } from './components/EditStationModal';
 import { MusicSubmissionModal } from './components/MusicSubmissionModal';
 import { ClaimOwnershipModal } from './components/ClaimOwnershipModal';
+import { BuyNowModal } from './components/BuyNowModal';
 
 const hexToRgb = (hex: string) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -74,6 +75,7 @@ const App: React.FC = () => {
   const [stationForSubmission, setStationForSubmission] = useState<Station | null>(null);
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
   const [stationToClaim, setStationToClaim] = useState<Station | null>(null);
+  const [isBuyNowModalOpen, setIsBuyNowModalOpen] = useState(false);
   
   const [favoriteStationUrls, setFavoriteStationUrls] = useState<Set<string>>(new Set());
   const [unlockedThemes, setUnlockedThemes] = useState<Set<ThemeName>>(new Set(['dynamic']));
@@ -89,10 +91,12 @@ const App: React.FC = () => {
   const [raidStatus, setRaidStatus] = useState<'idle' | 'voting'>('idle');
   const [raidTarget, setRaidTarget] = useState<Station | null>(null);
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
+  const [showScrollToTop, setShowScrollToTop] = useState(false);
 
   const statsUpdateInterval = useRef<number | null>(null);
   const alarmTimeout = useRef<number | null>(null);
   const pointsToastTimer = useRef<number>(0);
+  const mainContentRef = useRef<HTMLElement | null>(null);
   
   const accentColor = useMemo(() => {
     if (activeTheme === 'dynamic') {
@@ -297,8 +301,6 @@ const App: React.FC = () => {
           if (lastDate === yesterdayStr) currentStreak += 1;
           else currentStreak = 1;
         }
-        // FIX: When initializing a Set with a potentially empty array, TypeScript infers its type as `unknown`.
-        // Explicitly setting the type to `Set<string>` ensures that `Array.from` returns `string[]` as expected.
         const genresPlayed = new Set<string>(prevStats.genresPlayed || []);
         genresPlayed.add(currentStation.genre.split('/')[0].trim());
         const newStats: ListeningStats = { ...prevStats, lastListenDate: today, currentStreak: currentStreak, maxStreak: Math.max(prevStats.maxStreak || 0, currentStreak), genresPlayed: Array.from(genresPlayed) };
@@ -366,6 +368,32 @@ const App: React.FC = () => {
     }
     return () => { if (alarmTimeout.current) clearTimeout(alarmTimeout.current); };
   }, [alarm, allStations, currentUser]);
+
+  useEffect(() => {
+    const mainContentEl = document.getElementById('main-content');
+    if (mainContentEl) {
+        mainContentRef.current = mainContentEl;
+
+        const handleScroll = () => {
+            if (mainContentRef.current) {
+                setShowScrollToTop(mainContentRef.current.scrollTop > 300);
+            }
+        };
+        
+        mainContentEl.addEventListener('scroll', handleScroll);
+
+        return () => {
+            mainContentEl.removeEventListener('scroll', handleScroll);
+        };
+    }
+  }, [currentUser, activeView]);
+
+  const handleScrollToTop = () => {
+      mainContentRef.current?.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+      });
+  };
   
   const filteredStations = useMemo(() => allStations.filter(station => station.name.toLowerCase().includes(searchQuery.toLowerCase()) || station.genre.toLowerCase().includes(searchQuery.toLowerCase())), [searchQuery, allStations]);
 
@@ -489,7 +517,6 @@ const App: React.FC = () => {
     updateUserData(currentUser.username, { alarm: newAlarm });
   }
   
-  // FIX: Refactored to use state updater functions correctly and avoid race conditions.
   const handleVote = useCallback((songId: string, voteType: 'like' | 'dislike') => {
     if (!currentUser) return;
 
@@ -956,6 +983,7 @@ const App: React.FC = () => {
               raidTarget={raidTarget}
               onHidePlayer={() => setIsPlayerVisible(false)}
               isVisible={isPlayerVisible}
+              onOpenBuyNow={() => setIsBuyNowModalOpen(true)}
             />
           )}
         </div>
@@ -972,6 +1000,16 @@ const App: React.FC = () => {
         </button>
       )}
 
+      {showScrollToTop && (
+        <button
+            onClick={handleScrollToTop}
+            className="fixed bottom-20 right-4 z-50 bg-gray-800/80 backdrop-blur-md p-3 rounded-full shadow-lg text-white hover:bg-[var(--accent-color)] hover:text-black transition-all animate-fade-in"
+            aria-label="Scroll to top"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+        </button>
+      )}
+
       <ToastContainer toasts={toasts} setToasts={setToasts} />
       <LoginModal isOpen={isLoginModalOpen} onLogin={handleLogin} />
       <SubmitStationModal isOpen={isSubmitModalOpen} onClose={() => setIsSubmitModalOpen(false)} onSubmit={handleAddStation} />
@@ -979,6 +1017,7 @@ const App: React.FC = () => {
       <TippingModal isOpen={!!tippingModalStation} onClose={() => setTippingModalStation(null)} station={tippingModalStation} />
       <GenreSpotlightModal isOpen={!!genreForSpotlight} onClose={() => setGenreForSpotlight(null)} genre={genreForSpotlight} />
       <SongChartModal isOpen={isSongChartModalOpen} onClose={() => setIsSongChartModalOpen(false)} songVotes={songVotes} />
+      <BuyNowModal isOpen={isBuyNowModalOpen} onClose={() => setIsBuyNowModalOpen(false)} nowPlaying={nowPlaying} />
       <EditStationModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} station={stationToEdit} onSubmit={handleUpdateStation} />
       <MusicSubmissionModal isOpen={isMusicSubmissionModalOpen} onClose={() => setIsMusicSubmissionModalOpen(false)} station={stationForSubmission} onSubmit={handleMusicSubmission} userPoints={stats.points || 0} />
       <ClaimOwnershipModal isOpen={isClaimModalOpen} onClose={() => setIsClaimModalOpen(false)} station={stationToClaim} onSubmit={handleClaimStation} />

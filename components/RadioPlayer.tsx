@@ -11,7 +11,6 @@ import { SimilarStations } from './SimilarStations';
 import { Marquee } from './Marquee';
 import { RaidModal } from './RaidModal';
 import { EQ_BANDS, EQ_PRESETS, RocketIcon } from '../constants';
-import { BuyNowModal } from './BuyNowModal';
 
 // --- Icon Components ---
 const PlayIcon = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full"><path d="M8 5v14l11-7z"></path></svg>;
@@ -53,10 +52,11 @@ interface RadioPlayerProps {
   raidTarget: Station | null;
   onHidePlayer: () => void;
   isVisible: boolean;
+  onOpenBuyNow: () => void;
 }
 
 export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
-  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible } = props;
+  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible, onOpenBuyNow } = props;
 
   const [isPlaying, setIsPlaying] = useState(true);
   const [volume, setVolume] = useState(0.75);
@@ -67,7 +67,6 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
   const [isRaidModalOpen, setIsRaidModalOpen] = useState(false);
   const [isSimilarStationsOpen, setIsSimilarStationsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isBuyNowModalOpen, setIsBuyNowModalOpen] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -233,6 +232,14 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                 <ThumbUpIcon className="w-7 h-7" />
             </button>
             <button
+                onClick={() => onOpenBuyNow()}
+                disabled={!isSong}
+                className={`p-3 rounded-full transition-all duration-200 active:scale-95 ${isSong ? 'hover:bg-white/10' : 'opacity-30 cursor-not-allowed'} text-gray-400 hover:text-white`}
+                aria-label="Buy this song"
+            >
+                <ShoppingCartIcon className="w-7 h-7" />
+            </button>
+            <button
                 onClick={() => isSong && onVote(nowPlaying.songId, 'dislike')}
                 disabled={!isSong}
                 className={`p-2 rounded-full transition-all duration-200 active:scale-95 ${isSong ? 'hover:bg-white/10' : 'opacity-30 cursor-not-allowed'} ${userVote === 'dislike' ? 'text-red-400 scale-110 shadow-lg shadow-red-400/50' : 'text-gray-400 hover:text-white'}`}
@@ -279,7 +286,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                  <button onClick={(e) => { e.stopPropagation(); if(isSong) onVote(nowPlaying.songId, 'dislike'); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} ${userVote === 'dislike' ? 'text-red-400 drop-shadow-[0_0_4px_rgba(248,113,113,0.8)]' : 'text-gray-400 hover:text-white'}`} aria-label="Dislike song">
                     <ThumbDownIcon className="w-6 h-6"/>
                 </button>
-                <button onClick={(e) => { e.stopPropagation(); setIsBuyNowModalOpen(true); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} text-gray-400 hover:text-white`} aria-label="Buy song">
+                <button onClick={(e) => { e.stopPropagation(); onOpenBuyNow(); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} text-gray-400 hover:text-white`} aria-label="Buy song">
                     <ShoppingCartIcon className="w-6 h-6"/>
                 </button>
                  <div className="hidden md:flex items-center gap-2 group">
@@ -317,7 +324,6 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
       <SongInfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} nowPlaying={nowPlaying} />
       <EqualizerModal isOpen={isEqModalOpen} onClose={() => setIsEqModalOpen(false)} settings={eqSettings} onSettingsChange={setEqSettings} />
       <ShareModal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} nowPlaying={nowPlaying} station={station} />
-      <BuyNowModal isOpen={isBuyNowModalOpen} onClose={() => setIsBuyNowModalOpen(false)} nowPlaying={nowPlaying} />
       <RaidModal isOpen={isRaidModalOpen} onClose={() => setIsRaidModalOpen(false)} allStations={allStations} currentStation={station} onStartRaid={onStartRaid} />
     </>
   );
