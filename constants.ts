@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { Station, EQBand, EQPreset, Theme, Achievement, AchievementID, LeaderboardEntry, TranslationLanguage, ListeningEvent, StationReview, CommunityEvent, MusicSubmission } from './types';
 
@@ -33,7 +34,7 @@ export const StoreIcon: React.FC<{className?: string}> = ({className = ''}) => R
 export const LeaderboardIconSidebar: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"}));
 export const ChatBubbleIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.76 9.76 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"}));
 export const SendIcon: React.FC<{className?: string}> = ({className}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {d: "M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"}));
-export const AdminIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, fill:"none", viewBox:"0 0 24 24", strokeWidth:1.5, stroke:"currentColor"}, React.createElement('path', {strokeLinecap:"round", strokeLinejoin:"round", d: "M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.39.44 1.052.12 1.45l-.527.737c-.25.35-.272.806-.108 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.11v1.093c0 .55-.398 1.02-.94 1.11l-.893.149c-.425.07-.764.383-.93.78-.164.398-.142.854.108 1.204l.527.738c.32.397.27.96-.12 1.45l-.773.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.93l-.149.894c-.09.542-.56.94-1.11.94h-1.093c-.55 0-1.02-.398-1.11-.94l-.149-.894a1.725 1.725 0 0 1-.93-.78c-.398-.164-.854-.142-1.204.108l-.738.527a1.125 1.125 0 0 1-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.272-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.11v-1.093c0 .55.398-1.02.94-1.11l.894-.149a1.725 1.725 0 0 1 .93-.78c.398-.164.854-.142 1.204.108l.738-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.39 1.052.44 1.45.12l.527-.737c.25-.35.272-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.11V3.94Z"}));
+export const AdminIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, fill:"none", viewBox:"0 0 24 24", strokeWidth:1.5, stroke:"currentColor"}, React.createElement('path', {strokeLinecap:"round", strokeLinejoin:"round", d: "M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.39.44 1.052.12 1.45l-.527.737c-.25.35-.272.806-.108 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.11v1.093c0 .55-.398 1.02-.94 1.11l-.893.149c-.425.07-.764.383-.93.78-.164.398-.142.854.108 1.204l.527.738c.32.397.27.96-.12 1.45l-.773.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.93l-.149.894c-.09.542-.56.94-1.11.94h-1.093c-.55 0-1.02-.398-1.11-.94l-.149-.894a1.725 1.725 0 0 1-.93-.78c-.398-.164-.854-.142-1.204.108l-.738.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.39 1.052.44 1.45.12l.527-.737c.25-.35.272-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.11V3.94Z"}));
 
 
 export const ACHIEVEMENTS: Record<AchievementID, Achievement> = {
@@ -172,11 +173,85 @@ export const EQ_PRESETS: EQPreset[] = [
 
 // Constants for UI Themes
 export const THEMES: Theme[] = [
-  { name: 'dynamic', displayName: 'Dynamic (Default)', color: '#67e8f9' },
-  { name: 'kente', displayName: 'Kente Cloth', color: '#FBBF24', cost: 100 }, // amber-400
-  { name: 'sahara', displayName: 'Sahara Sunset', color: '#F97316', cost: 100 }, // orange-600
-  { name: 'naija', displayName: 'Naija Pop', color: '#22C55E', cost: 150 }, // green-500
-  { name: 'galaxy', displayName: 'Galaxy', color: '#8b5cf6', cost: 300 }, // violet-500
+  { 
+    name: 'dynamic', 
+    displayName: 'Dynamic (Default)', 
+    color: '#67e8f9', 
+    gradient: 'linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%)',
+    description: 'Adapts to the album art of the current track.'
+  },
+  { 
+    name: 'kente', 
+    displayName: 'Kente Cloth', 
+    color: '#FBBF24', 
+    cost: 100,
+    gradient: 'linear-gradient(135deg, #F59E0B 0%, #D97706 50%, #B45309 100%)',
+    description: 'Warm golds and earth tones inspired by woven patterns.'
+  },
+  { 
+    name: 'sahara', 
+    displayName: 'Sahara Sunset', 
+    color: '#F97316', 
+    cost: 100,
+    gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #c2410c 100%)',
+    description: 'Burning orange hues of the desert sun.'
+  },
+  { 
+    name: 'naija', 
+    displayName: 'Naija Pop', 
+    color: '#22C55E', 
+    cost: 150,
+    gradient: 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)',
+    description: 'Vibrant greens reflecting growth and energy.'
+  },
+  { 
+    name: 'galaxy', 
+    displayName: 'Galaxy', 
+    color: '#8b5cf6', 
+    cost: 300,
+    gradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%)',
+    description: 'Deep cosmic purples and stardust.'
+  },
+  {
+      name: 'cyberpunk',
+      displayName: 'Cyberpunk',
+      color: '#e879f9',
+      cost: 500,
+      gradient: 'linear-gradient(135deg, #22d3ee 0%, #e879f9 100%)',
+      description: 'Neon lights and digital dreams.'
+  },
+  {
+      name: 'midnight',
+      displayName: 'Midnight City',
+      color: '#3b82f6',
+      cost: 250,
+      gradient: 'linear-gradient(135deg, #1e1b4b 0%, #3b82f6 100%)',
+      description: 'Sleek, dark blues for the night owl.'
+  },
+  {
+      name: 'forest',
+      displayName: 'Rainforest',
+      color: '#10b981',
+      cost: 200,
+      gradient: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)',
+      description: 'Lush greens and calming nature vibes.'
+  },
+  {
+      name: 'royal',
+      displayName: 'Royalty',
+      color: '#eab308',
+      cost: 400,
+      gradient: 'linear-gradient(135deg, #4c1d95 0%, #eab308 100%)',
+      description: 'Luxurious purple and gold.'
+  },
+  {
+      name: 'retro',
+      displayName: 'Synthwave',
+      color: '#f43f5e',
+      cost: 350,
+      gradient: 'linear-gradient(135deg, #f43f5e 0%, #facc15 100%)',
+      description: '80s sunset aesthetics.'
+  }
 ];
 
 // Cost for submitting a music track

@@ -1,3 +1,4 @@
+
 import type * as React from 'react';
 
 export interface User {
@@ -107,12 +108,14 @@ export interface Alarm {
 }
 
 // Type for UI Themes
-export type ThemeName = 'dynamic' | 'kente' | 'sahara' | 'naija' | 'galaxy';
+export type ThemeName = 'dynamic' | 'kente' | 'sahara' | 'naija' | 'galaxy' | 'cyberpunk' | 'midnight' | 'forest' | 'royal' | 'retro';
 
 export interface Theme {
   name: ThemeName;
   displayName: string;
   color: string;
+  gradient?: string;
+  description?: string;
   cost?: number;
 }
 
