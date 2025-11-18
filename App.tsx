@@ -34,6 +34,7 @@ import { EditStationModal } from './components/EditStationModal';
 import { MusicSubmissionModal } from './components/MusicSubmissionModal';
 import { ClaimOwnershipModal } from './components/ClaimOwnershipModal';
 import { BuyNowModal } from './components/BuyNowModal';
+import { DashboardView } from './components/DashboardView';
 
 const hexToRgb = (hex: string) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -141,7 +142,7 @@ const App: React.FC = () => {
     setSongVotes(data.songVotes);
     setUnlockedAchievements(data.unlockedAchievements);
     
-    let defaultView: ActiveView = 'explore';
+    let defaultView: ActiveView = 'dashboard';
     if (user.role === 'admin') defaultView = 'admin';
     else if (user.role === 'owner') defaultView = 'station_manager_dashboard';
     else if (user.role === 'artist') defaultView = 'artist_dashboard';
@@ -495,7 +496,7 @@ const App: React.FC = () => {
   }, [currentUser]);
 
   const handleGoToHome = useCallback(() => {
-    let targetView: ActiveView = 'explore';
+    let targetView: ActiveView = 'dashboard';
     if (currentUser) {
         switch (currentUser.role) {
             case 'artist':
@@ -509,7 +510,7 @@ const App: React.FC = () => {
                 break;
             case 'user':
             default:
-                targetView = 'explore';
+                targetView = 'dashboard';
                 break;
         }
     }
@@ -596,8 +597,8 @@ const App: React.FC = () => {
         newUnlocked.add(theme.name);
         setUnlockedThemes(newUnlocked);
         
-        // FIX: Explicitly cast to ThemeName[] to fix type inference issue with Set to array conversion.
-        await updateUserData(currentUser.username, { stats: newStats, unlockedThemes: [...newUnlocked] as ThemeName[] });
+        // FIX: Changed spread operator to Array.from() to resolve a type inference issue where `[...newUnlocked]` was being inferred as unknown[].
+        await updateUserData(currentUser.username, { stats: newStats, unlockedThemes: Array.from(newUnlocked) });
 
         setToasts(prev => [...prev, {id: Date.now(), title: "Theme Unlocked!", message: `You can now use the ${theme.displayName} theme.`, icon: StarIcon, type: 'theme_unlocked'}]);
     }
@@ -899,6 +900,8 @@ const App: React.FC = () => {
         return <LeaderboardView currentUser={currentUser} userPoints={stats.points || 0} />;
       case 'admin':
         return <AdminDashboardView stations={allStations} onApproveClaim={handleApproveClaim} onDenyClaim={handleDenyClaim} currentUser={currentUser} onUpdateUserRole={handleUpdateUserRole} />;
+      case 'dashboard':
+        return <DashboardView user={currentUser} stats={stats} favoritesCount={favoriteStationUrls.size} unlockedAchievements={unlockedAchievements} />;
       case 'explore':
       case 'genre_chat':
       default:

@@ -56,10 +56,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ user, stats, favor
     const recentHistory = useMemo(() => stats.songHistory.slice(0, 5), [stats.songHistory]);
     const recentAchievements = useMemo(() => 
         Object.values(unlockedAchievements)
-            // FIX: Explicitly type callback parameters to resolve 'unknown' type error.
             .sort((a: UnlockedAchievement, b: UnlockedAchievement) => new Date(b.unlockedAt).getTime() - new Date(a.unlockedAt).getTime())
             .slice(0, 4)
-            // FIX: Explicitly type callback parameter to resolve 'unknown' type error.
             .map((ua: UnlockedAchievement) => ACHIEVEMENTS[ua.id]), 
         [unlockedAchievements]
     );
@@ -86,12 +84,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ user, stats, favor
                             value={(stats.points || 0).toLocaleString()}
                             label="Listener Points"
                         />
-                        <StatHighlight 
+                         <StatHighlight 
                             icon={<ACHIEVEMENTS.curator.icon className="h-6 w-6 text-pink-400" />}
                             value={favoritesCount}
                             label="Favorites"
                         />
-                        <StatHighlight 
+                         <StatHighlight 
                             icon={<RadioIcon className="h-6 w-6 text-fuchsia-400" />}
                             value={Object.keys(stats.stationPlays).length}
                             label="Stations Played"

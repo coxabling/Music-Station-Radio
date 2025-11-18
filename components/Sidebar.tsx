@@ -41,14 +41,14 @@ const HistoryIcon: React.FC<{ className?: string }> = ({ className }) => <svg xm
 export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, onOpenAlarm, onOpenSongChart, onOpenEvents, onOpenHistory, currentUser }) => {
     
     const handleDashboardClick = () => {
-        let targetView: ActiveView = 'explore';
+        let targetView: ActiveView = 'dashboard';
         if (currentUser?.role === 'artist') targetView = 'artist_dashboard';
         if (currentUser?.role === 'owner') targetView = 'station_manager_dashboard';
         if (currentUser?.role === 'admin') targetView = 'admin';
         setActiveView(targetView);
     };
     
-    const isDashboardActive = ['explore', 'artist_dashboard', 'station_manager_dashboard', 'admin'].includes(activeView);
+    const isDashboardActive = ['dashboard', 'artist_dashboard', 'station_manager_dashboard', 'admin'].includes(activeView);
 
     const getHomeIcon = () => {
       switch (currentUser?.role) {
