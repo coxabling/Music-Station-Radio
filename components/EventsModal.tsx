@@ -1,11 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
-import { LISTENING_EVENTS } from '../constants';
 import type { ListeningEvent } from '../types';
+import { TicketIcon, LockIcon, StarIcon } from '../constants';
 
 interface EventsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectStation: (stationName: string) => void;
+  events?: ListeningEvent[];
+  purchasedTickets?: Set<string>;
+  onPurchaseTicket?: (event: ListeningEvent) => void;
 }
 
 const CalendarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
@@ -27,7 +31,7 @@ const formatCountdown = (ms: number) => {
     return parts.join(' ');
 };
 
-export const EventsModal: React.FC<EventsModalProps> = ({ isOpen, onClose, onSelectStation }) => {
+export const EventsModal: React.FC<EventsModalProps> = ({ isOpen, onClose, onSelectStation, events = [], purchasedTickets = new Set(), onPurchaseTicket }) => {
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -38,7 +42,7 @@ export const EventsModal: React.FC<EventsModalProps> = ({ isOpen, onClose, onSel
 
   if (!isOpen) return null;
   
-  const upcomingEvents = LISTENING_EVENTS
+  const upcomingEvents = events
     .filter(event => new Date(event.endTime) > now)
     .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
     
@@ -81,25 +85,56 @@ export const EventsModal: React.FC<EventsModalProps> = ({ isOpen, onClose, onSel
           )}
         
           <ul className="space-y-4">
-            {upcomingEvents.map(event => (
-              <li key={event.id} className="bg-gray-700/30 p-4 rounded-lg border border-gray-600/50">
-                <p className="text-xs text-gray-400 font-semibold">{new Date(event.startTime).toLocaleString(undefined, { weekday: 'long', hour: 'numeric', minute: 'numeric' })}</p>
-                <h3 className="font-bold text-white mt-1">{event.title}</h3>
-                <p className="text-sm text-gray-300 mt-1">{event.description}</p>
-                <div className="mt-3 pt-3 border-t border-gray-600/50 flex justify-between items-center">
-                    <p className="text-xs text-gray-400">
-                        on <span className="font-semibold text-gray-200">{event.stationName}</span>
-                    </p>
-                    <button 
-                        onClick={() => onSelectStation(event.stationName)}
-                        className="bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-200 text-xs font-bold py-1 px-3 rounded-full transition-colors"
-                    >
-                        Tune In
-                    </button>
-                </div>
-              </li>
-            ))}
+            {upcomingEvents.map(event => {
+                const hasTicket = !event.isPremium || purchasedTickets.has(event.id);
+                const isPremium = event.isPremium;
+
+                return (
+                  <li key={event.id} className={`p-4 rounded-lg border relative overflow-hidden ${isPremium ? 'bg-yellow-900/20 border-yellow-500/30' : 'bg-gray-700/30 border-gray-600/50'}`}>
+                    {isPremium && (
+                        <div className="absolute top-0 right-0 bg-yellow-500 text-black text-[10px] font-bold px-2 py-1 rounded-bl-lg">
+                            PREMIUM
+                        </div>
+                    )}
+                    
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-xs text-gray-400 font-semibold">{new Date(event.startTime).toLocaleString(undefined, { weekday: 'long', hour: 'numeric', minute: 'numeric' })}</p>
+                            <h3 className={`font-bold mt-1 ${isPremium ? 'text-yellow-100' : 'text-white'}`}>{event.title}</h3>
+                        </div>
+                    </div>
+                    
+                    <p className="text-sm text-gray-300 mt-1">{event.description}</p>
+                    
+                    <div className="mt-3 pt-3 border-t border-gray-600/50 flex justify-between items-center">
+                        <p className="text-xs text-gray-400">
+                            on <span className="font-semibold text-gray-200">{event.stationName}</span>
+                        </p>
+                        
+                        {hasTicket ? (
+                             <button 
+                                onClick={() => onSelectStation(event.stationName)}
+                                className={`text-xs font-bold py-1.5 px-3 rounded-full transition-colors ${isPremium ? 'bg-yellow-500/80 hover:bg-yellow-500 text-black' : 'bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-200'}`}
+                            >
+                                Tune In
+                            </button>
+                        ) : (
+                            <button 
+                                onClick={() => onPurchaseTicket && onPurchaseTicket(event)}
+                                className="bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold py-1.5 px-3 rounded-full transition-colors flex items-center gap-1"
+                            >
+                                <LockIcon className="w-3 h-3"/>
+                                Buy Ticket ({event.ticketCost} <StarIcon className="w-3 h-3 inline mb-0.5"/>)
+                            </button>
+                        )}
+                    </div>
+                  </li>
+                )
+            })}
           </ul>
+          {upcomingEvents.length === 0 && (
+              <p className="text-center text-gray-500">No upcoming events scheduled.</p>
+          )}
         </div>
       </div>
       <style>{`

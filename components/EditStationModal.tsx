@@ -27,7 +27,7 @@ export const EditStationModal: React.FC<EditStationModalProps> = ({ isOpen, onCl
       setAcceptsSubmissions(station.acceptsSubmissions || false);
     }
   }, [station]);
-
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !genre || !description || !coverArt) {
@@ -39,7 +39,7 @@ export const EditStationModal: React.FC<EditStationModalProps> = ({ isOpen, onCl
         return;
     }
     try {
-        new URL(coverArt);
+        if (!coverArt.startsWith('data:image/')) new URL(coverArt);
         if (tippingUrl) new URL(tippingUrl);
     } catch (_) {
         setError('Please enter a valid URL for Cover Art and Tipping URL.');
@@ -71,10 +71,10 @@ export const EditStationModal: React.FC<EditStationModalProps> = ({ isOpen, onCl
       aria-labelledby="edit-station-title"
     >
       <div 
-        className="bg-gray-800/80 backdrop-blur-lg border accent-color-border/30 rounded-xl shadow-2xl shadow-black/50 w-full max-w-md flex flex-col animate-slide-up-fast"
+        className="bg-gray-800/80 backdrop-blur-lg border accent-color-border/30 rounded-xl shadow-2xl shadow-black/50 w-full max-w-md flex flex-col animate-slide-up-fast max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="p-4 border-b border-gray-700/50 flex justify-between items-center">
+        <header className="p-4 border-b border-gray-700/50 flex justify-between items-center flex-shrink-0">
           <h2 id="edit-station-title" className="text-lg font-bold accent-color-text font-orbitron">
             Edit Station
           </h2>
@@ -83,7 +83,7 @@ export const EditStationModal: React.FC<EditStationModalProps> = ({ isOpen, onCl
           </button>
         </header>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
           <div>
             <label htmlFor="edit-station-name" className="block text-sm font-medium text-gray-300 mb-1">Station Name</label>
             <input id="edit-station-name" type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-gray-900/50 border border-gray-600 rounded-md py-2 px-3 text-white" required />
@@ -98,8 +98,12 @@ export const EditStationModal: React.FC<EditStationModalProps> = ({ isOpen, onCl
           </div>
           <div>
             <label htmlFor="edit-cover-art" className="block text-sm font-medium text-gray-300 mb-1">Cover Art URL</label>
-            <input id="edit-cover-art" type="url" value={coverArt} onChange={(e) => setCoverArt(e.target.value)} className="w-full bg-gray-900/50 border border-gray-600 rounded-md py-2 px-3 text-white" required />
+             <div className="flex items-center gap-2">
+                <input id="edit-cover-art" type="text" value={coverArt} onChange={(e) => setCoverArt(e.target.value)} className="w-full bg-gray-900/50 border border-gray-600 rounded-md py-2 px-3 text-white" required />
+            </div>
+            {coverArt && <img src={coverArt} alt="Cover art preview" className="mt-2 rounded-md w-24 h-24 object-cover" />}
           </div>
+          
           <div>
             <label htmlFor="edit-tipping-url" className="block text-sm font-medium text-gray-300 mb-1">Tipping URL (Optional)</label>
             <input id="edit-tipping-url" type="url" value={tippingUrl} onChange={(e) => setTippingUrl(e.target.value)} className="w-full bg-gray-900/50 border border-gray-600 rounded-md py-2 px-3 text-white" />
@@ -122,7 +126,7 @@ export const EditStationModal: React.FC<EditStationModalProps> = ({ isOpen, onCl
           
           {error && <p className="text-sm text-red-400">{error}</p>}
           
-          <div className="pt-2 flex justify-end">
+          <div className="pt-2 flex justify-end flex-shrink-0">
             <button type="submit" className="bg-[var(--accent-color)] hover:opacity-80 text-black font-bold py-2 px-4 rounded-md transition-opacity">
               Save Changes
             </button>

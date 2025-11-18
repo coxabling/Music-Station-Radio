@@ -1,6 +1,7 @@
+
 import React from 'react';
 import type { ActiveView, User } from '../types';
-import { HomeIcon, ExploreIcon, CommunityIcon, StoreIcon, LeaderboardIconSidebar, ChatBubbleIcon, AdminIcon, BriefcaseIcon, MusicNoteIcon } from '../constants';
+import { HomeIcon, ExploreIcon, CommunityIcon, StoreIcon, LeaderboardIconSidebar, ChatBubbleIcon, AdminIcon, BriefcaseIcon, MusicNoteIcon, ShopIcon, QuestIcon, BattleIcon } from '../constants';
 
 interface SidebarProps {
     activeView: ActiveView;
@@ -28,7 +29,7 @@ const NavButton: React.FC<{
         aria-current={isActive ? 'page' : undefined}
     >
         {icon}
-        <span className="text-xs font-semibold mt-1">{label}</span>
+        <span className="text-[10px] font-semibold mt-1 text-center leading-tight">{label}</span>
     </button>
 );
 
@@ -60,18 +61,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, onO
     }
 
     return (
-        <nav className="hidden md:flex w-20 bg-gray-950/30 p-2 flex-shrink-0 flex-col items-center gap-3 border-r border-white/10">
+        <nav className="hidden md:flex w-20 bg-gray-950/30 p-2 flex-shrink-0 flex-col items-center gap-3 border-r border-white/10 overflow-y-auto scrollbar-hide">
             <NavButton label="Home" icon={getHomeIcon()} isActive={isDashboardActive} onClick={handleDashboardClick} />
             <NavButton label="Explore" icon={<ExploreIcon className="w-6 h-6"/>} isActive={activeView === 'explore'} onClick={() => setActiveView('explore')} />
             
-            <div className="w-full h-px bg-gray-700 my-2" />
+            <div className="w-full h-px bg-gray-700 my-1" />
 
-            <NavButton label="Store" icon={<StoreIcon className="w-6 h-6"/>} isActive={activeView === 'store'} onClick={() => setActiveView('store')} />
+            <NavButton label="Quests" icon={<QuestIcon className="w-6 h-6"/>} isActive={activeView === 'quests'} onClick={() => setActiveView('quests')} />
+            <NavButton label="Shop" icon={<ShopIcon className="w-6 h-6"/>} isActive={activeView === 'shop'} onClick={() => setActiveView('shop')} />
+            <NavButton label="Battle" icon={<BattleIcon className="w-6 h-6"/>} isActive={activeView === 'battle'} onClick={() => setActiveView('battle')} />
+            
+             <div className="w-full h-px bg-gray-700 my-1" />
+
+            <NavButton label="Themes" icon={<StoreIcon className="w-6 h-6"/>} isActive={activeView === 'store'} onClick={() => setActiveView('store')} />
             <NavButton label="Top Charts" icon={<LeaderboardIconSidebar className="w-6 h-6"/>} isActive={activeView === 'leaderboard'} onClick={() => setActiveView('leaderboard')} />
             
-            <div className="w-full h-px bg-gray-700 my-2" />
+            <div className="w-full h-px bg-gray-700 my-1" />
             
-            <NavButton label="Song Chart" icon={<ChartBarIcon className="w-6 h-6"/>} isActive={false} onClick={onOpenSongChart} />
+            <NavButton label="Songs" icon={<ChartBarIcon className="w-6 h-6"/>} isActive={false} onClick={onOpenSongChart} />
             <NavButton label="History" icon={<HistoryIcon className="w-6 h-6"/>} isActive={false} onClick={onOpenHistory} />
             <NavButton label="Events" icon={<CalendarIcon className="w-6 h-6"/>} isActive={false} onClick={onOpenEvents} />
             <NavButton label="Alarm" icon={<AlarmIcon className="w-6 h-6"/>} isActive={false} onClick={onOpenAlarm} />
