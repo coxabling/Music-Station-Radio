@@ -18,12 +18,10 @@ export const PredictionMarketModal: React.FC<PredictionMarketModalProps> = ({ is
   const [selectedSong, setSelectedSong] = useState<SongVote | null>(null);
   const [betAmount, setBetAmount] = useState(100);
   
-  // Filter for top songs to bet on (e.g., those not already in top 3 but rising)
-  const candidates = trendingSongs.slice(3, 10); 
+  const candidates = trendingSongs.slice(0, 10); 
 
   const handleBet = () => {
     if (!selectedSong) return;
-    // Simple odds simulation: higher likes = lower odds
     const odds = Math.max(1.5, (50 / (selectedSong.likes + 1))).toFixed(2);
     onPlaceBet(selectedSong.title, selectedSong.artist, betAmount, parseFloat(odds));
     setSelectedSong(null);
@@ -53,11 +51,9 @@ export const PredictionMarketModal: React.FC<PredictionMarketModalProps> = ({ is
         </header>
 
         <div className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* Market Section */}
             <div>
                 <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3">Rising Stars</h3>
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                     {candidates.map(song => {
                         const odds = Math.max(1.5, (50 / (song.likes + 1))).toFixed(2);
                         const isSelected = selectedSong?.id === song.id;
@@ -84,10 +80,7 @@ export const PredictionMarketModal: React.FC<PredictionMarketModalProps> = ({ is
                 </div>
             </div>
 
-            {/* Betting Slip & Active Bets */}
             <div className="flex flex-col gap-6">
-                
-                {/* Slip */}
                 <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50">
                     <h3 className="text-sm font-bold text-gray-300 mb-3">Betting Slip</h3>
                     {selectedSong ? (
@@ -131,7 +124,6 @@ export const PredictionMarketModal: React.FC<PredictionMarketModalProps> = ({ is
                     )}
                 </div>
 
-                {/* Active Bets */}
                 <div className="flex-grow overflow-y-auto">
                      <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3">Your Active Bets</h3>
                      <div className="space-y-2">
@@ -150,9 +142,7 @@ export const PredictionMarketModal: React.FC<PredictionMarketModalProps> = ({ is
                         {activeBets.length === 0 && <p className="text-gray-500 text-sm italic">No active bets.</p>}
                      </div>
                 </div>
-
             </div>
-
         </div>
       </div>
       <style>{`

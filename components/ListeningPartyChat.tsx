@@ -9,6 +9,7 @@ interface ListeningPartyChatProps {
     onClose: () => void;
     nowPlaying: NowPlaying | null;
     userPoints: number; // Passed if needed for future logic
+    onSuperChat: (amount: number, message: string) => void;
     activeFrame?: string; // New
 }
 
@@ -34,7 +35,7 @@ const getAvatarInfo = (author: string): {initials: string, color: string} => {
 }
 
 
-export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station, isOpen, onClose, nowPlaying, activeFrame }) => {
+export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station, isOpen, onClose, nowPlaying, activeFrame, onSuperChat }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);

@@ -8,7 +8,7 @@ interface VisualizerProps {
   isPlaying: boolean;
 }
 
-type VisualizationMode = 'bars' | 'waveform' | 'orbs' | 'tunnel';
+type VisualizationMode = 'bars' | 'waveform' | 'orbs' | 'tunnel' | 'landscape';
 
 const colorPalettes: Record<PaletteName, ColorPalette> = {
     neonSunset: ['#67e8f9', '#a855f7', '#ec4899'], // cyan-300, purple-500, pink-500
@@ -128,7 +128,7 @@ export const Visualizer: React.FC<VisualizerProps> = ({ analyser, isPlaying }) =
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameId = useRef<number>(0);
-  const [mode, setMode] = useState<VisualizationMode>('bars');
+  const [mode, setMode] = useState<VisualizationMode>('tunnel'); // Default to 3D Tunnel
   const [palette, setPalette] = useState<PaletteName>('neonSunset');
   const [isHovered, setIsHovered] = useState(false);
   
@@ -136,12 +136,12 @@ export const Visualizer: React.FC<VisualizerProps> = ({ analyser, isPlaying }) =
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const meshRef = useRef<THREE.LineSegments | null>(null);
+  const meshRef = useRef<THREE.Mesh | THREE.LineSegments | null>(null);
 
 
   const cycleMode = () => {
     setMode(prevMode => {
-      const modes: VisualizationMode[] = ['bars', 'waveform', 'orbs', 'tunnel'];
+      const modes: VisualizationMode[] = ['tunnel', 'landscape', 'bars', 'waveform', 'orbs'];
       const currentIndex = modes.indexOf(prevMode);
       return modes[(currentIndex + 1) % modes.length];
     });
@@ -156,7 +156,7 @@ export const Visualizer: React.FC<VisualizerProps> = ({ analyser, isPlaying }) =
       })
   }
 
-  // Cleanup Three.js
+  // Cleanup Three.js on unmount
   useEffect(() => {
       return () => {
           if (rendererRef.current) {
@@ -175,18 +175,39 @@ export const Visualizer: React.FC<VisualizerProps> = ({ analyser, isPlaying }) =
     const canvas = canvasRef.current;
     if (!container || !canvas || !analyser) return;
 
-    if (mode === 'tunnel') {
-        // Init Three.js if needed
+    const isThreeMode = mode === 'tunnel' || mode === 'landscape';
+
+    if (isThreeMode) {
+        // Init Renderer if needed
         if (!rendererRef.current) {
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(renderer.domElement);
             rendererRef.current = renderer;
-            
-            const scene = new THREE.Scene();
-            // scene.fog = new THREE.FogExp2(0x000000, 0.15);
-            sceneRef.current = scene;
+        } else {
+             rendererRef.current.domElement.style.display = 'block';
+        }
+        
+        // Init Scene if needed
+        if (!sceneRef.current) {
+            sceneRef.current = new THREE.Scene();
+        }
 
+        // Reset scene content for new mode
+        const scene = sceneRef.current;
+        
+        // Simple cleanup of previous meshes
+        while(scene.children.length > 0){ 
+             const obj = scene.children[0];
+             if (obj instanceof THREE.Mesh || obj instanceof THREE.LineSegments) {
+                 obj.geometry.dispose();
+                 // Material might be shared, but disposing geometry is key
+             }
+             scene.remove(obj); 
+        }
+        meshRef.current = null;
+
+        if (mode === 'tunnel') {
             const camera = new THREE.PerspectiveCamera(70, container.clientWidth / container.clientHeight, 0.1, 1000);
             camera.position.z = 40;
             cameraRef.current = camera;
@@ -201,21 +222,30 @@ export const Visualizer: React.FC<VisualizerProps> = ({ analyser, isPlaying }) =
             mesh.rotation.x = Math.PI / 2;
             scene.add(mesh);
             meshRef.current = mesh;
-        } else {
-            // Ensure canvas is visible and sized correctly if switching back
-            const renderer = rendererRef.current;
-            renderer.domElement.style.display = 'block';
-            if (canvas) canvas.style.display = 'none';
+
+        } else if (mode === 'landscape') {
+            const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 15, 35);
+            camera.lookAt(0, 0, 0);
+            cameraRef.current = camera;
+
+            // 32x32 segments = 33x33 vertices
+            const geometry = new THREE.PlaneGeometry(80, 80, 32, 32);
+            const material = new THREE.MeshBasicMaterial({
+                color: colorPalettes[palette][0],
+                wireframe: true,
+                side: THREE.DoubleSide
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.rotation.x = -Math.PI / 2;
+            scene.add(mesh);
+            meshRef.current = mesh;
         }
         
-        // Update material color based on palette
-        if (meshRef.current) {
-             // @ts-ignore
-             meshRef.current.material.color.set(colorPalettes[palette][0]);
-        }
+        if (canvas) canvas.style.display = 'none';
 
     } else {
-        // Hide Three.js canvas if not in tunnel mode
+        // 2D Mode Setup
         if (rendererRef.current) {
             rendererRef.current.domElement.style.display = 'none';
         }
@@ -240,9 +270,56 @@ export const Visualizer: React.FC<VisualizerProps> = ({ analyser, isPlaying }) =
           meshRef.current.scale.set(scale, 1, scale);
           meshRef.current.rotation.y += 0.005 + (bass / 10000);
           // @ts-ignore
-          meshRef.current.material.color.setHSL((Date.now() % 5000) / 5000, 1, 0.5); 
+          if (meshRef.current.material && meshRef.current.material.color) {
+               // @ts-ignore
+               meshRef.current.material.color.setHSL((Date.now() % 5000) / 5000, 0.8, 0.5); 
+          }
           
           rendererRef.current.render(sceneRef.current, cameraRef.current);
+      
+      } else if (mode === 'landscape' && rendererRef.current && sceneRef.current && cameraRef.current && meshRef.current) {
+           analyser.getByteFrequencyData(frequencyDataArray);
+           
+           const mesh = meshRef.current as THREE.Mesh;
+           const geometry = mesh.geometry;
+           const positionAttribute = geometry.attributes.position;
+           
+           // Grid is 32x32 segments -> 33x33 vertices
+           const segmentsW = 32;
+           const segmentsH = 32;
+           const widthVertices = segmentsW + 1;
+           const heightVertices = segmentsH + 1;
+           
+           // Shift rows "down" (towards camera, or away depending on orientation)
+           // Moving values from row i+1 to i effectively scrolls the terrain
+           for (let y = 0; y < heightVertices - 1; y++) {
+               for (let x = 0; x < widthVertices; x++) {
+                   const currentIdx = (y * widthVertices + x) * 3;
+                   const nextRowIdx = ((y + 1) * widthVertices + x) * 3;
+                   // Copy Z value (height)
+                   positionAttribute.array[currentIdx + 2] = positionAttribute.array[nextRowIdx + 2];
+               }
+           }
+           
+           // Set new data at the last row
+           const lastRowY = heightVertices - 1;
+           for (let x = 0; x < widthVertices; x++) {
+               const index = (lastRowY * widthVertices + x) * 3;
+               // Map X position to frequency bin
+               const binIndex = Math.floor((x / widthVertices) * (bufferLength / 3)); // Use lower 3rd of spectrum for terrain
+               const value = frequencyDataArray[binIndex] / 255.0;
+               
+               positionAttribute.array[index + 2] = value * 10; // Scale height
+           }
+           
+           positionAttribute.needsUpdate = true;
+           mesh.rotation.z += 0.002; // Slow spin
+           
+           // @ts-ignore
+           if(mesh.material.color) mesh.material.color.setHSL((Date.now() % 8000) / 8000, 0.8, 0.5);
+
+           rendererRef.current.render(sceneRef.current, cameraRef.current);
+
       } else if (canvas) {
           const canvasCtx = canvas.getContext('2d');
           if (canvasCtx) {

@@ -58,7 +58,6 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({ isOpen, onClos
                                     <p className="text-[10px] text-gray-300 mt-1 leading-tight line-clamp-2">{card.description}</p>
                                 </div>
                             </div>
-                            {/* Shine Effect */}
                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" style={{backgroundSize: '200% 200%'}}></div>
                         </div>
                     ))}
