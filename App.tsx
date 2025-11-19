@@ -1302,6 +1302,7 @@ const App: React.FC = () => {
               isHeaderVisible={isHeaderVisible}
               onToggleHeader={handleToggleHeader}
               onHype={handleHype}
+              hypeScore={hypeScore}
             />
           )}
         </div>

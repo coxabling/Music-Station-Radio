@@ -32,7 +32,7 @@ const CassetteIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns
 
  const FullscreenIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1v4m0 0h-4m4-4l-5 5M4 16v4m0 0h4m-4-4l5-5m11 5l-5-5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l1.5 1.5m11-1v4m0 0h-4m4-4l-5 5M4 16v4m0 0h4m-4-4l5-5m11 5l-5-5" />
   </svg>
  );
  const ExitFullscreenIcon = () => (
@@ -78,7 +78,8 @@ interface RadioPlayerProps {
   onOpenBuyNow: () => void;
   isHeaderVisible: boolean;
   onToggleHeader: () => void;
-  onHype: () => void; // New prop
+  onHype: () => void;
+  hypeScore: number;
 }
 
 // Helper to create white noise buffer (reused from previous change)
@@ -97,7 +98,7 @@ const createNoiseBuffer = (ctx: AudioContext) => {
 let lastOut = 0;
 
 export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
-  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible, onOpenBuyNow, isHeaderVisible, onToggleHeader, onHype } = props;
+  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible, onOpenBuyNow, isHeaderVisible, onToggleHeader, onHype, hypeScore } = props;
 
   const [isPlaying, setIsPlaying] = useState(true);
   const [volume, setVolume] = useState(0.75);
@@ -274,16 +275,24 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => { e.currentTarget.src = station.coverArt; };
 
-  const ControlButton: React.FC<{icon: React.ReactNode; label: string; onClick?: () => void; hasFeature?: boolean; isActive?: boolean; className?: string}> = ({icon, label, onClick, hasFeature = true, isActive = false, className}) => {
+  const ControlButton: React.FC<{icon: React.ReactNode; label: string; onClick?: () => void; hasFeature?: boolean; isActive?: boolean; className?: string, progress?: number}> = ({icon, label, onClick, hasFeature = true, isActive = false, className, progress}) => {
     if(!hasFeature) return <div className="w-16 h-16" />;
     return (
         <button 
             onClick={onClick} 
-            className={`flex flex-col items-center justify-center gap-1 transition-all text-xs w-16 h-16 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed ${isActive ? 'bg-[var(--accent-color)] text-black hover:bg-[var(--accent-color)]/90' : 'text-gray-400 hover:text-white bg-white/5 hover:bg-white/10'} ${className}`}
+            className={`relative flex flex-col items-center justify-center gap-1 transition-all text-xs w-16 h-16 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden ${isActive ? 'bg-[var(--accent-color)] text-black hover:bg-[var(--accent-color)]/90' : 'text-gray-400 hover:text-white bg-white/5 hover:bg-white/10'} ${className}`}
             disabled={!hasFeature}
             title={label}
         >
-            {icon}
+            {progress !== undefined && (
+              <div 
+                className="absolute bottom-0 left-0 right-0 bg-orange-500/40 transition-all duration-300 ease-out" 
+                style={{ height: `${progress}%` }}
+              />
+            )}
+            <div className="relative z-10 flex flex-col items-center">
+               {icon}
+            </div>
         </button>
     )
   }
@@ -389,10 +398,11 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                 <ControlButton icon={<CassetteIcon className="w-6 h-6"/>} label="Vinyl Mode" onClick={() => setIsVinylMode(!isVinylMode)} isActive={isVinylMode}/>
                 <ControlButton icon={<ChatIcon/>} label="Chat" onClick={onToggleChat}/>
                  <ControlButton 
-                    icon={<FireIcon className="w-5 h-5 text-orange-500 animate-pulse"/>} 
+                    icon={<FireIcon className={`w-5 h-5 text-orange-500 ${hypeScore > 80 ? 'animate-bounce' : 'animate-pulse'}`}/>} 
                     label="HYPE" 
                     onClick={onHype} 
                     className="bg-orange-500/20 hover:bg-orange-500/40 border border-orange-500/50 text-orange-300"
+                    progress={hypeScore}
                 />
                 <ControlButton icon={<ShareIcon/>} label="Share" onClick={() => setIsShareModalOpen(true)}/>
             </div>
@@ -413,8 +423,9 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                 </div>
             </div>
             <div className="flex items-center gap-2 ml-4">
-                 <button onClick={(e) => { e.stopPropagation(); onHype(); }} className="p-1 rounded-full transition-all duration-200 active:scale-90 text-orange-500 hover:text-orange-300" aria-label="Hype">
-                    <FireIcon className="w-6 h-6"/>
+                 <button onClick={(e) => { e.stopPropagation(); onHype(); }} className="relative p-1 rounded-full transition-all duration-200 active:scale-90 text-orange-500 hover:text-orange-300 overflow-hidden" aria-label="Hype">
+                    <div className="absolute bottom-0 left-0 right-0 bg-orange-500/30 transition-all duration-300" style={{height: `${hypeScore}%`}}></div>
+                    <FireIcon className="w-6 h-6 relative z-10"/>
                 </button>
                  <button onClick={(e) => { e.stopPropagation(); if(isSong) onVote(nowPlaying.songId, 'like'); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} ${userVote === 'like' ? 'text-green-400 drop-shadow-[0_0_4px_rgba(74,222,128,0.8)]' : 'text-gray-400 hover:text-white'}`} aria-label="Like song">
                     <ThumbUpIcon className="w-6 h-6"/>

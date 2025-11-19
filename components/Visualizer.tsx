@@ -156,6 +156,28 @@ export const Visualizer: React.FC<VisualizerProps> = ({ analyser, isPlaying }) =
       })
   }
 
+  // Handle resizing
+  useEffect(() => {
+    const handleResize = () => {
+        if (containerRef.current && rendererRef.current && cameraRef.current) {
+            const width = containerRef.current.clientWidth;
+            const height = containerRef.current.clientHeight;
+            rendererRef.current.setSize(width, height);
+            cameraRef.current.aspect = width / height;
+            cameraRef.current.updateProjectionMatrix();
+        }
+        if (containerRef.current && canvasRef.current) {
+            canvasRef.current.width = containerRef.current.clientWidth;
+            canvasRef.current.height = containerRef.current.clientHeight;
+        }
+    };
+    window.addEventListener('resize', handleResize);
+    // Trigger once on mount to ensure correct size
+    handleResize();
+    
+    return () => window.removeEventListener('resize', handleResize);
+  }, [mode]);
+
   // Cleanup Three.js on unmount
   useEffect(() => {
       return () => {
@@ -251,6 +273,9 @@ export const Visualizer: React.FC<VisualizerProps> = ({ analyser, isPlaying }) =
         }
         if (canvas) {
             canvas.style.display = 'block';
+            // Ensure canvas size matches container
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
         }
     }
 
@@ -371,7 +396,7 @@ export const Visualizer: React.FC<VisualizerProps> = ({ analyser, isPlaying }) =
         onMouseLeave={() => setIsHovered(false)}
         title="Click to change visualizer style"
     >
-        <canvas ref={canvasRef} width="300" height="60" className="w-full h-full" />
+        <canvas ref={canvasRef} className="w-full h-full" />
         <div className={`absolute inset-0 flex items-center justify-center bg-black/50 rounded-md transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
             <div className='text-center'>
                 <p className="text-xs font-semibold capitalize tracking-wider">{mode}</p>
