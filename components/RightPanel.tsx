@@ -41,7 +41,6 @@ const TabButton: React.FC<{ icon: React.ReactNode; isActive: boolean; onClick: (
     </button>
 );
 
-
 export const RightPanel: React.FC<RightPanelProps> = (props) => {
     const [activeTab, setActiveTab] = useState<ActiveTab>('details');
 

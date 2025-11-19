@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react';
 import type { Station, StationReview, User } from '../types';
 import { StarRating } from './StarRating';
 import { formatTimeAgo } from '../utils/time';
-import { UploadIcon, ShieldCheckIcon } from '../constants';
+import { UploadIcon, ShieldCheckIcon, ChatBubbleIcon } from '../constants';
 import { RoleBadge } from './RoleBadge';
+import { StationGuestbook } from './StationGuestbook';
 
 interface StationInfoPanelProps {
   station: Station | null;
@@ -68,6 +70,7 @@ const ReviewForm: React.FC<{ onSubmit: (rating: number, text: string) => void }>
 
 export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
   const { station, mockReviews, userReviews, onAddReview, onSelectStation, onRateStation, userRating, isOwner, onEdit, currentUser, onOpenMusicSubmissionModal, onOpenClaimModal } = props;
+  const [activeTab, setActiveTab] = useState<'reviews' | 'guestbook'>('reviews');
 
   const allReviewsForStation = React.useMemo(() => {
     if (!station) return [];
@@ -88,6 +91,12 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
   }
 
   const claimPendingForCurrentUser = !!(station.claimRequest && currentUser && station.claimRequest.username === currentUser.username);
+
+  // Fake guestbook data for demo since backend is mocked
+  const mockGuestbookEntries = station.guestbook || [
+      { id: 'g1', username: 'Listener88', message: 'Love the vibes here!', timestamp: new Date(Date.now() - 3600000).toISOString() },
+      { id: 'g2', username: 'MusicFan', message: 'Great selection today.', timestamp: new Date(Date.now() - 7200000).toISOString() },
+  ];
 
   return (
     <div className="animate-fade-in">
@@ -137,26 +146,40 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
             </button>
         </div>
         
+        <div className="border-b border-gray-700/50 mt-4 px-4 flex gap-4">
+            <button onClick={() => setActiveTab('reviews')} className={`pb-2 text-sm font-bold ${activeTab === 'reviews' ? 'text-[var(--accent-color)] border-b-2 border-[var(--accent-color)]' : 'text-gray-400'}`}>Reviews</button>
+            <button onClick={() => setActiveTab('guestbook')} className={`pb-2 text-sm font-bold ${activeTab === 'guestbook' ? 'text-[var(--accent-color)] border-b-2 border-[var(--accent-color)]' : 'text-gray-400'}`}>Guestbook</button>
+        </div>
+
         <div className="p-4 overflow-y-auto flex-grow">
-            <div className="space-y-4">
-                <ReviewForm onSubmit={(rating, text) => onAddReview(station.streamUrl, { rating, text })} />
-                <h3 className="font-semibold text-gray-300">Reviews ({allReviewsForStation.length})</h3>
-                <div className="space-y-3">
-                    {allReviewsForStation.map((review, index) => (
-                        <div key={index} className="p-3 bg-gray-700/30 rounded-lg">
-                            <div className="flex justify-between items-start mb-1">
-                                <span className="font-semibold text-sm text-white flex items-center gap-1.5">
-                                    {review.author}
-                                    {review.authorRole && <RoleBadge role={review.authorRole} />}
-                                </span>
-                                <StarRating rating={review.rating} readOnly starClassName="h-4 w-4" />
+            {activeTab === 'reviews' && (
+                <div className="space-y-4">
+                    <ReviewForm onSubmit={(rating, text) => onAddReview(station.streamUrl, { rating, text })} />
+                    <div className="space-y-3">
+                        {allReviewsForStation.map((review, index) => (
+                            <div key={index} className="p-3 bg-gray-700/30 rounded-lg">
+                                <div className="flex justify-between items-start mb-1">
+                                    <span className="font-semibold text-sm text-white flex items-center gap-1.5">
+                                        {review.author}
+                                        {review.authorRole && <RoleBadge role={review.authorRole} />}
+                                    </span>
+                                    <StarRating rating={review.rating} readOnly starClassName="h-4 w-4" />
+                                </div>
+                                <p className="text-sm text-gray-300">{review.text}</p>
+                                <p className="text-xs text-gray-500 text-right mt-1">{formatTimeAgo(review.createdAt)}</p>
                             </div>
-                            <p className="text-sm text-gray-300">{review.text}</p>
-                            <p className="text-xs text-gray-500 text-right mt-1">{formatTimeAgo(review.createdAt)}</p>
-                        </div>
-                    ))}
+                        ))}
+                        {allReviewsForStation.length === 0 && <p className="text-center text-gray-500 text-sm">No reviews yet.</p>}
+                    </div>
                 </div>
-            </div>
+            )}
+            {activeTab === 'guestbook' && (
+                <StationGuestbook 
+                    entries={mockGuestbookEntries} 
+                    onAddEntry={(msg) => console.log('Guestbook entry added:', msg)} 
+                    currentUser={currentUser}
+                />
+            )}
         </div>
     </div>
   );

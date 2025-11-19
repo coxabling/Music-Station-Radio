@@ -1,16 +1,17 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import type { ChatMessage, Station, NowPlaying } from '../types';
-import { AVATAR_FRAMES } from '../constants';
+import type { ChatMessage, Station, NowPlaying, AchievementID } from '../types';
+import { AVATAR_FRAMES, ACHIEVEMENTS } from '../constants';
 
 interface ListeningPartyChatProps {
     station: Station;
     isOpen: boolean;
     onClose: () => void;
     nowPlaying: NowPlaying | null;
-    userPoints: number; // Passed if needed for future logic
+    userPoints: number; 
     onSuperChat: (amount: number, message: string) => void;
-    activeFrame?: string; // New
+    activeFrame?: string;
+    onUserClick?: (username: string) => void; // New
 }
 
 const botMessages = [
@@ -28,14 +29,23 @@ const USER_COLORS = ['#34d399', '#fbbf24', '#f87171', '#60a5fa', '#a78bfa', '#f4
 const getAvatarInfo = (author: string): {initials: string, color: string} => {
     if (author === 'You') return { initials: 'You', color: 'var(--accent-color)' };
     if (author === 'RadioBot' || author === 'RoomBot') return { initials: 'Bot', color: '#9ca3af' };
-    if (author === 'DJ') return { initials: 'DJ', color: '#a855f7' }; // purple-500
+    if (author === 'DJ') return { initials: 'DJ', color: '#a855f7' }; 
     const initials = author.replace('Guest', 'G');
     const colorIndex = parseInt(author.replace('Guest', ''), 10) % USER_COLORS.length;
     return { initials, color: USER_COLORS[colorIndex] };
 }
 
+const BadgeIcon: React.FC<{id: AchievementID}> = ({id}) => {
+    const Achievement = ACHIEVEMENTS[id];
+    if(!Achievement) return null;
+    return (
+        <div className="w-3 h-3 text-yellow-400" title={Achievement.name}>
+            <Achievement.icon />
+        </div>
+    )
+}
 
-export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station, isOpen, onClose, nowPlaying, activeFrame, onSuperChat }) => {
+export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station, isOpen, onClose, nowPlaying, activeFrame, onUserClick }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -52,7 +62,6 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
 
     useEffect(scrollToBottom, [messages]);
 
-    // DJ Auto Announcer
     useEffect(() => {
         if (nowPlaying && nowPlaying.songId && nowPlaying.songId !== lastAnnouncedSongIdRef.current && nowPlaying.title !== "Live Stream" && nowPlaying.title !== "Station Data Unavailable") {
             const djInfo = getAvatarInfo('DJ');
@@ -64,13 +73,11 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
                 initials: djInfo.initials,
                 avatarColor: djInfo.color,
             };
-
             setMessages(prev => [...prev, djMessage]);
             lastAnnouncedSongIdRef.current = nowPlaying.songId;
         }
     }, [nowPlaying]);
 
-    // Bot messages and welcome logic
     useEffect(() => {
         const botInfo = getAvatarInfo('RadioBot');
         setMessages([{
@@ -81,9 +88,8 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
             avatarColor: botInfo.color,
             initials: botInfo.initials,
         }]);
-        lastAnnouncedSongIdRef.current = null; // Reset announcer on station change
+        lastAnnouncedSongIdRef.current = null; 
 
-        // Simulate other users chatting
         const interval = setInterval(() => {
             const guestName = 'Guest' + Math.floor(Math.random() * 100);
             const guestInfo = getAvatarInfo(guestName);
@@ -95,7 +101,7 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
                 avatarColor: guestInfo.color,
                 initials: guestInfo.initials
             }]);
-        }, 8000 + Math.random() * 5000); // every 8-13 seconds
+        }, 8000 + Math.random() * 5000); 
 
         return () => clearInterval(interval);
     }, [station.name]);
@@ -110,7 +116,9 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
                 text: input.trim(),
                 avatarColor: userInfo.color,
                 initials: userInfo.initials,
-                frame: activeFrame // Use current frame
+                frame: activeFrame,
+                // Simulate badges for demo
+                badges: ['first_listen']
             }]);
             setInput('');
         }
@@ -137,21 +145,24 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
                         const isYou = msg.author === 'You';
                         return (
                             <li key={msg.id} className={`text-sm animate-fade-in flex items-end gap-1.5 ${isYou ? 'flex-row-reverse' : 'flex-row'}`}>
-                                {/* Avatar Circle with Frame */}
-                                {isYou && (
-                                     <div 
-                                        className={`w-6 h-6 rounded-full flex-shrink-0 bg-[var(--accent-color)] ${getFrameClass(msg.frame)}`}
-                                        title={msg.author}
-                                     />
-                                )}
+                                <div 
+                                    className={`w-8 h-8 rounded-full flex-shrink-0 bg-gray-700 cursor-pointer relative flex items-center justify-center text-xs font-bold text-white ${activeFrame && isYou ? AVATAR_FRAMES.find(f=>f.id===activeFrame)?.cssClass : ''}`}
+                                    onClick={() => onUserClick && onUserClick(msg.author)}
+                                    style={{backgroundColor: msg.avatarColor}}
+                                >
+                                     {msg.initials}
+                                </div>
 
-                                <div className={`inline-block rounded-lg px-2 py-1 max-w-[85%] ${
-                                    isYou ? 'bg-cyan-600/50' :
-                                    msg.isBot ? 'bg-gray-700/50' : 'bg-gray-800/50'
-                                }`}>
-                                    <span className={`block font-bold text-xs ${isYou ? 'text-cyan-200' : 'text-purple-300'}`}>
-                                        {msg.author}
-                                    </span>
+                                <div className={`inline-block rounded-lg px-2 py-1 max-w-[85%] ${isYou ? 'bg-cyan-600/50' : 'bg-gray-800/50'}`}>
+                                    <div className="flex items-center gap-1 mb-0.5">
+                                        <span className={`block font-bold text-xs ${isYou ? 'text-cyan-200' : 'text-purple-300'}`}>{msg.author}</span>
+                                        {/* Badges Row */}
+                                        {msg.badges && (
+                                            <div className="flex gap-0.5">
+                                                {msg.badges.map(b => <BadgeIcon key={b} id={b} />)}
+                                            </div>
+                                        )}
+                                    </div>
                                     <span className="text-gray-200">{msg.text}</span>
                                 </div>
                             </li>

@@ -25,6 +25,7 @@ export interface Station {
     submittedAt: string;
   };
   submissions?: MusicSubmission[];
+  guestbook?: GuestbookEntry[]; // New
 }
 
 export interface NowPlaying {
@@ -42,7 +43,9 @@ export interface ChatMessage {
   isDJ?: boolean;
   avatarColor: string;
   initials: string;
-  frame?: string; // CSS class for the avatar frame
+  frame?: string; 
+  badges?: AchievementID[]; // New
+  tier?: 'bronze' | 'silver' | 'gold'; // New
 }
 
 // Types for Visualizer Customization
@@ -78,7 +81,7 @@ export interface SongHistoryItem {
     artist: string;
     albumArt: string;
     stationName: string;
-    playedAt: string; // ISO date string
+    playedAt: string; 
 }
 
 // Type for Listening Stats
@@ -92,26 +95,26 @@ export interface ListeningStats {
   totalTime: number; // in seconds
   points?: number;
   stationPlays: Record<string, StationPlayData>;
-  stationRatings?: Record<string, number>; // { [stationUrl]: rating }
-  songUserVotes?: Record<string, 'like' | 'dislike'>; // { [songId]: 'like' | 'dislike' }
-  lastListenDate?: string; // YYYY-MM-DD
+  stationRatings?: Record<string, number>; 
+  songUserVotes?: Record<string, 'like' | 'dislike'>; 
+  lastListenDate?: string; 
   currentStreak?: number;
   maxStreak?: number;
   genresPlayed?: string[];
   songHistory: SongHistoryItem[];
-  stationReviews?: Record<string, StationReview[]>; // { [stationUrl]: reviews[] }
+  stationReviews?: Record<string, StationReview[]>; 
 }
 
 // Type for Alarm Clock
 export interface Alarm {
-  time: string; // "HH:mm"
+  time: string; 
   stationUrl: string;
   stationName: string;
   isActive: boolean;
 }
 
 // Type for UI Themes
-export type ThemeName = 'dynamic' | 'kente' | 'sahara' | 'naija' | 'galaxy' | 'cyberpunk' | 'midnight' | 'forest' | 'royal' | 'retro';
+export type ThemeName = 'dynamic' | 'kente' | 'sahara' | 'naija' | 'galaxy' | 'cyberpunk' | 'midnight' | 'forest' | 'royal' | 'retro' | string; // Added string for custom themes
 
 export interface Theme {
   name: ThemeName;
@@ -120,11 +123,13 @@ export interface Theme {
   gradient?: string;
   description?: string;
   cost?: number;
+  isCustom?: boolean; // New
+  backgroundImage?: string; // New
 }
 
 // Type for Song Voting
 export interface SongVote {
-  id: string; // songId
+  id: string; 
   artist: string;
   title: string;
   albumArt: string;
@@ -149,7 +154,7 @@ export interface Achievement {
 
 export interface UnlockedAchievement {
   id: AchievementID;
-  unlockedAt: string; // ISO date string
+  unlockedAt: string; 
 }
 
 // Type for Toast Notifications
@@ -175,31 +180,29 @@ export interface TranslationLanguage {
     name: string;
 }
 
-// New interface for Station Reviews
 export interface StationReview {
   author: string;
   authorRole?: User['role'];
-  rating: number; // 1-5
+  rating: number; 
   text: string;
-  createdAt: string; // ISO date string
+  createdAt: string; 
 }
 
-// New interface for Listening Events
 export interface ListeningEvent {
     id: string;
     title: string;
     description: string;
     stationName: string;
     genre: string;
-    startTime: string; // ISO date string
-    endTime: string; // ISO date string
+    startTime: string; 
+    endTime: string; 
 }
 
 // New Social Types
 export interface AvatarFrame {
     id: string;
     name: string;
-    cssClass: string; // Tailwind classes for styling
+    cssClass: string; 
     cost: number;
     description?: string;
 }
@@ -213,10 +216,8 @@ export interface FriendActivity {
     frame?: string;
 }
 
-// For unified sidebar navigation
 export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard';
 
-// Gamification Types
 export interface Bet {
   id: string;
   songTitle: string;
@@ -257,7 +258,34 @@ export interface Lounge {
   listeners: number;
 }
 
-// Represents the complete data structure for a single user, to be stored in the database.
+// New Feature Types
+
+export interface UserProfile {
+    bio: string;
+    topArtists: string[];
+    favoriteGenres: string[];
+    location?: string;
+    following: string[];
+    followers: string[];
+}
+
+export interface DirectMessage {
+    id: string;
+    from: string;
+    to: string;
+    text: string;
+    timestamp: string;
+    read: boolean;
+}
+
+export interface GuestbookEntry {
+    id: string;
+    username: string;
+    message: string;
+    timestamp: string;
+    reply?: string; // Station manager reply
+}
+
 export interface UserData {
     role: 'user' | 'artist' | 'owner' | 'admin';
     stats: ListeningStats;
@@ -271,24 +299,16 @@ export interface UserData {
     activeView?: ActiveView;
     
     // Social
-    activeFrame?: string; // ID of active frame
-    unlockedFrames: string[]; // IDs of unlocked frames
+    activeFrame?: string; 
+    unlockedFrames: string[]; 
+    profile?: UserProfile; // New
+    messages?: DirectMessage[]; // New
+    customThemes?: Theme[]; // New
 
     // Gamification
     quests?: Quest[];
     bets?: Bet[];
     collection?: CollectorCard[];
-}
-
-// For community feed
-export interface CommunityEvent {
-    id: number;
-    username: string;
-    action: string;
-    details?: string;
-    timestamp: string; // ISO Date string
-    icon: React.FC<{className?: string}>;
-    role?: User['role'];
 }
 
 // For music submissions by artists
@@ -297,11 +317,21 @@ export interface MusicSubmission {
     artistName: string;
     songTitle: string;
     trackUrl: string;
-    submittedAt: string; // ISO date string
-    submittedBy: string; // username of the artist
+    submittedAt: string; 
+    submittedBy: string; 
     stationStreamUrl: string;
     stationName: string;
     status: 'pending' | 'approved' | 'rejected';
     managerComment?: string;
-    reviewedAt?: string; // ISO date string
+    reviewedAt?: string; 
+}
+
+export interface CommunityEvent {
+    id: number;
+    username: string;
+    action: string;
+    details?: string;
+    timestamp: string;
+    icon: React.FC<{className?: string}>;
+    role?: User['role'];
 }
