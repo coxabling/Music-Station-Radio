@@ -6,6 +6,7 @@ import { formatTimeAgo } from '../utils/time';
 import { UploadIcon, ShieldCheckIcon, ChatBubbleIcon } from '../constants';
 import { RoleBadge } from './RoleBadge';
 import { StationGuestbook } from './StationGuestbook';
+import { RequestSongModal } from './RequestSongModal';
 
 interface StationInfoPanelProps {
   station: Station | null;
@@ -25,6 +26,8 @@ interface StationInfoPanelProps {
 
 const PlayIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.546l-6.38 8.195A2 2 0 005.46 15H14.54a2 2 0 001.84-3.259L10 3.546z" transform="rotate(90 10 10)" /></svg>;
 const EditIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L16.732 3.732z" /></svg>;
+const MicrophoneIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>;
+
 
 const ReviewForm: React.FC<{ onSubmit: (rating: number, text: string) => void }> = ({ onSubmit }) => {
     const [rating, setRating] = useState(0);
@@ -71,6 +74,7 @@ const ReviewForm: React.FC<{ onSubmit: (rating: number, text: string) => void }>
 export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
   const { station, mockReviews, userReviews, onAddReview, onSelectStation, onRateStation, userRating, isOwner, onEdit, currentUser, onOpenMusicSubmissionModal, onOpenClaimModal } = props;
   const [activeTab, setActiveTab] = useState<'reviews' | 'guestbook'>('reviews');
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
 
   const allReviewsForStation = React.useMemo(() => {
     if (!station) return [];
@@ -99,7 +103,7 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
   ];
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in relative">
         <header className="p-4 flex flex-col items-center text-center">
             <img src={station.coverArt} alt={station.name} className="w-24 h-24 rounded-lg object-cover shadow-lg mb-4" />
             <div>
@@ -140,10 +144,15 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
                     </button>
                 )}
             </div>
-             <button onClick={() => onSelectStation(station)} className="w-full flex items-center justify-center gap-2 bg-[var(--accent-color)] hover:opacity-80 text-black font-bold py-2.5 px-6 rounded-md transition-opacity text-sm">
-                <PlayIcon className="h-5 w-5"/>
-                Tune In
-            </button>
+            
+             <div className="w-full grid grid-cols-2 gap-2">
+                 <button onClick={() => setIsRequestModalOpen(true)} className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 px-4 rounded-md transition-colors text-sm border border-gray-600">
+                    <MicrophoneIcon className="h-4 w-4"/> Request
+                </button>
+                 <button onClick={() => onSelectStation(station)} className="flex items-center justify-center gap-2 bg-[var(--accent-color)] hover:opacity-80 text-black font-bold py-2.5 px-4 rounded-md transition-opacity text-sm">
+                    <PlayIcon className="h-5 w-5"/> Tune In
+                </button>
+             </div>
         </div>
         
         <div className="border-b border-gray-700/50 mt-4 px-4 flex gap-4">
@@ -181,6 +190,13 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
                 />
             )}
         </div>
+        
+        <RequestSongModal 
+            isOpen={isRequestModalOpen} 
+            onClose={() => setIsRequestModalOpen(false)} 
+            stationName={station.name} 
+            onSubmit={() => console.log("Request submitted")} 
+        />
     </div>
   );
 };

@@ -2,6 +2,7 @@
 
 
 
+
 import React, { useState, useMemo } from 'react';
 import type { Station, LayoutMode, SongVote, User } from '../types';
 import { StarRating } from './StarRating';
@@ -38,6 +39,20 @@ const XIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http:
 
 const TabButton: React.FC<{label: string; isActive: boolean; onClick: () => void}> = ({ label, isActive, onClick }) => (
     <button onClick={onClick} className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors focus:outline-none ${ isActive ? 'bg-gray-800/50 text-[var(--accent-color)] border-b-2 accent-color-border' : 'text-gray-400 hover:text-white' }`}>{label}</button>
+);
+
+const SponsorCard: React.FC = () => (
+    <div className="relative group flex flex-col rounded-lg overflow-hidden bg-gradient-to-br from-yellow-900/20 to-gray-900 border border-yellow-500/30 shadow-lg animate-fade-in" style={{ aspectRatio: '1 / 1' }}>
+         <div className="absolute top-2 left-2 bg-yellow-500/90 text-black text-[10px] font-bold px-2 py-0.5 rounded uppercase z-10">Sponsored</div>
+         <img src="https://picsum.photos/seed/sponsor1/300" alt="Sponsor" className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-500 group-hover:scale-105 grayscale group-hover:grayscale-0" />
+         <div className="absolute inset-0 bg-black/30 p-4 flex flex-col justify-center items-center text-center">
+             <h3 className="font-bold text-xl text-white mb-2">Premium Audio Gear</h3>
+             <p className="text-xs text-gray-200 mb-4">Upgrade your listening experience today.</p>
+             <button className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2 px-4 rounded-full text-xs transition-colors">
+                 Shop Now
+             </button>
+         </div>
+    </div>
 );
 
 type SortMode = 'name' | 'rating';
@@ -207,6 +222,29 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {displayedStations.map((station, index) => {
                const isHighGrade = station.name === "High Grade Radio";
+               
+               // Insert Sponsor Card after the 4th item (index 3)
+               if (index === 3 && activeTab === 'all' && !aiSearchResults) {
+                    return (
+                        <React.Fragment key={station.streamUrl}>
+                             <SponsorCard />
+                             <div className="relative group flex flex-col station-card-animate" style={{ animationDelay: `${index * 30}ms`}}>
+                                <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-lg overflow-hidden transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-color)] focus-visible:ring-opacity-75 shadow-lg hover:shadow-[var(--accent-color)]/40 hover:scale-[1.03] ${ currentStation?.name === station.name ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/50' : isHighGrade ? 'ring-2 ring-yellow-500/80 hover:ring-yellow-400 shadow-yellow-500/20' : 'ring-2 ring-gray-700/50 hover:ring-[var(--accent-color)]/70' }`} style={{ aspectRatio: '1 / 1' }} aria-label={`Play ${station.name}`} >
+                                  <img src={station.coverArt} alt={station.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                  <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-colors duration-300 p-4 flex flex-col justify-end"><h3 className="font-bold text-lg text-white truncate">{station.name}</h3><p className="text-xs text-gray-300 truncate">{station.genre}</p></div>
+                                  {isHighGrade && <div className="absolute top-2 left-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Featured</div>}
+                                </button>
+                                <div className="flex items-center justify-between mt-2">
+                                    <button onClick={() => onShowDetails(station)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-white" title="View details"><InfoIcon className="h-4 w-4" /> Details</button>
+                                    <StarRating rating={station.rating || 0} readOnly={true} starClassName="h-4 w-4" />
+                                </div>
+                                <button onClick={() => onToggleFavorite(station)} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full transition-opacity opacity-0 group-hover:opacity-100 hover:!opacity-100 hover:bg-black/70"><HeartIcon isFavorite={!!station.isFavorite} /></button>
+                                {currentStation?.name === station.name && <PlayIndicator />}
+                              </div>
+                        </React.Fragment>
+                    )
+               }
+
                return (
               <div key={station.streamUrl} className="relative group flex flex-col station-card-animate" style={{ animationDelay: `${index * 30}ms`}}>
                 <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-lg overflow-hidden transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-color)] focus-visible:ring-opacity-75 shadow-lg hover:shadow-[var(--accent-color)]/40 hover:scale-[1.03] ${ currentStation?.name === station.name ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/50' : isHighGrade ? 'ring-2 ring-yellow-500/80 hover:ring-yellow-400 shadow-yellow-500/20' : 'ring-2 ring-gray-700/50 hover:ring-[var(--accent-color)]/70' }`} style={{ aspectRatio: '1 / 1' }} aria-label={`Play ${station.name}`} >

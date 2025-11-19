@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { SongHistoryItem } from '../types';
 import { formatTimeAgo } from '../utils/time';
@@ -10,6 +11,7 @@ interface SongHistoryModalProps {
 
 const ShoppingCartIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" /></svg>;
 const HistoryIcon: React.FC<{className?: string}> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z" /></svg>;
+const DownloadIcon: React.FC<{className?: string}> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>;
 
 
 export const SongHistoryModal: React.FC<SongHistoryModalProps> = ({ isOpen, onClose, history }) => {
@@ -20,6 +22,30 @@ export const SongHistoryModal: React.FC<SongHistoryModalProps> = ({ isOpen, onCl
     const searchQuery = encodeURIComponent(`${item.artist} ${item.title}`);
     const url = `https://www.amazon.com/s?k=${searchQuery}&tag=${affiliateTag}`;
     window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleExportCSV = () => {
+    if (history.length === 0) return;
+    
+    const headers = ['Date,Title,Artist,Station'];
+    const rows = history.map(item => {
+        const date = new Date(item.playedAt).toISOString();
+        // Escape quotes for CSV
+        const title = `"${item.title.replace(/"/g, '""')}"`;
+        const artist = `"${item.artist.replace(/"/g, '""')}"`;
+        const station = `"${item.stationName.replace(/"/g, '""')}"`;
+        return `${date},${title},${artist},${station}`;
+    });
+    
+    const csvContent = [headers, ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'music_station_history.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -46,7 +72,7 @@ export const SongHistoryModal: React.FC<SongHistoryModalProps> = ({ isOpen, onCl
           </button>
         </header>
         
-        <div className="p-6 overflow-y-auto">
+        <div className="p-6 overflow-y-auto flex-grow">
           {history && history.length > 0 ? (
             <ul className="space-y-4">
               {history.map((item) => (
@@ -77,6 +103,17 @@ export const SongHistoryModal: React.FC<SongHistoryModalProps> = ({ isOpen, onCl
             </div>
           )}
         </div>
+        
+        {history.length > 0 && (
+            <footer className="p-4 border-t border-gray-700/50">
+                <button 
+                    onClick={handleExportCSV} 
+                    className="w-full flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-gray-200 py-2 rounded-lg transition-colors text-sm font-bold"
+                >
+                    <DownloadIcon className="w-4 h-4"/> Export History
+                </button>
+            </footer>
+        )}
       </div>
        <style>{`
         @keyframes fade-in-fast { from { opacity: 0; } to { opacity: 1; } }

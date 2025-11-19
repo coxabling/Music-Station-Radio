@@ -82,6 +82,8 @@ interface RadioPlayerProps {
   hypeScore: number;
   isPlaying: boolean;
   onPlayPause: (playing: boolean) => void;
+  isDataSaver?: boolean;
+  sleepTimerTarget?: number | null;
 }
 
 // Helper to create white noise buffer (reused from previous change)
@@ -100,9 +102,10 @@ const createNoiseBuffer = (ctx: AudioContext) => {
 let lastOut = 0;
 
 export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
-  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible, onOpenBuyNow, isHeaderVisible, onToggleHeader, onHype, hypeScore, isPlaying, onPlayPause } = props;
+  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible, onOpenBuyNow, isHeaderVisible, onToggleHeader, onHype, hypeScore, isPlaying, onPlayPause, isDataSaver, sleepTimerTarget } = props;
 
   const [volume, setVolume] = useState(0.75);
+  const [fadeFactor, setFadeFactor] = useState(1); // For sleep timer
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isEqModalOpen, setIsEqModalOpen] = useState(false);
@@ -135,8 +138,28 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
   
   useEffect(() => { onNowPlayingUpdate(nowPlaying); }, [nowPlaying, onNowPlayingUpdate]);
   
-  // ... (setupAudioContext and vinyl effect logic same as before)
-  // Re-pasting the logic for context to ensure it works with new props
+  // Handle Sleep Timer Fade Out
+  useEffect(() => {
+      if (!sleepTimerTarget) {
+          setFadeFactor(1);
+          return;
+      }
+      
+      const interval = setInterval(() => {
+          const diff = sleepTimerTarget - Date.now();
+          if (diff <= 0) {
+              setFadeFactor(0);
+          } else if (diff <= 60000) {
+              // Linear fade out over the last 60 seconds
+              setFadeFactor(diff / 60000);
+          } else {
+              setFadeFactor(1);
+          }
+      }, 1000);
+      
+      return () => clearInterval(interval);
+  }, [sleepTimerTarget]);
+
   useEffect(() => {
       if (!audioRef.current) return;
       if (!audioContextRef.current) {
@@ -269,7 +292,13 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
     }
   }, [isPlaying]);
   
-  useEffect(() => { if (gainNodeRef.current) gainNodeRef.current.gain.value = volume * (eqSettings.on ? eqSettings.preamp : 1); }, [volume, eqSettings]);
+  useEffect(() => { 
+      if (gainNodeRef.current) {
+          // Combine user volume, preamp, and sleep timer fade factor
+          gainNodeRef.current.gain.value = volume * (eqSettings.on ? eqSettings.preamp : 1) * fadeFactor;
+      }
+  }, [volume, eqSettings, fadeFactor]);
+
   useEffect(() => {
     const contextTime = audioContextRef.current?.currentTime || 0;
     eqNodesRef.current.forEach((node, index) => node.gain.setValueAtTime(eqSettings.on ? eqSettings.values[index] : 0, contextTime));
@@ -385,7 +414,15 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
       </div>
       <div className="flex-shrink-0 flex flex-col gap-4 z-10">
         <div className="w-full max-w-sm mx-auto"><LiveReactions/></div>
-        <div className="w-full h-16"><Visualizer analyser={analyserRef.current} isPlaying={isPlaying} /></div>
+        <div className="w-full h-16">
+            {!isDataSaver ? (
+                <Visualizer analyser={analyserRef.current} isPlaying={isPlaying} />
+            ) : (
+                <div className="w-full h-full flex items-center justify-center bg-black/20 rounded-lg text-xs text-gray-500">
+                    Visualizer Paused (Data Saver)
+                </div>
+            )}
+        </div>
         <div className="flex items-center justify-center gap-8 text-white">
           <button onClick={onPreviousStation} className="text-gray-300 hover:text-white transition-colors"><BackwardIcon /></button>
           <button onClick={togglePlayPause} className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center text-[var(--accent-color)] ring-2 ring-white/20 hover:scale-105 transition-transform">

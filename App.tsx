@@ -1,3 +1,5 @@
+
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -41,6 +43,7 @@ import { ThemeCreatorModal } from './components/ThemeCreatorModal';
 import { WeatherOverlay } from './components/WeatherOverlay';
 import { CoinExplosionOverlay } from './components/CoinExplosionOverlay';
 import { UserProfileModal } from './components/UserProfileModal';
+import { SettingsModal } from './components/SettingsModal';
 
 const hexToRgb = (hex: string) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -60,6 +63,11 @@ const App: React.FC = () => {
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
+  
+  // Settings & Preferences
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isDataSaver, setIsDataSaver] = useState(false);
+  const [sleepTimerTarget, setSleepTimerTarget] = useState<number | null>(null);
   
   const [backgrounds, setBackgrounds] = useState<[string | null, string | null]>([null, null]);
   const [activeBgIndex, setActiveBgIndex] = useState(0);
@@ -257,7 +265,7 @@ const App: React.FC = () => {
     setBets(data.bets || []);
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
-    setUnlockedFrames((data.unlockedFrames as string[]) || []);
+    setUnlockedFrames((data.unlockedFrames as unknown as string[]) || []);
     setUserProfile(data.profile || { 
         bio: '', 
         topArtists: [] as string[], 
@@ -265,7 +273,7 @@ const App: React.FC = () => {
         following: [] as string[], 
         followers: [] as string[] 
     });
-    setCustomThemes(data.customThemes || []);
+    setCustomThemes((data.customThemes as unknown as Theme[]) || []);
 
     let defaultView: ActiveView = 'dashboard';
     if (user.role === 'admin') defaultView = 'admin';
@@ -535,6 +543,17 @@ const App: React.FC = () => {
       });
   }, []);
 
+  const handleSetSleepTimer = (minutes: number | null) => {
+      if (minutes === null) {
+          setSleepTimerTarget(null);
+          setToasts(t => [...t, { id: Date.now(), title: 'Sleep Timer Off', icon: UserIcon, type: 'info' }]);
+      } else {
+          const target = Date.now() + minutes * 60000;
+          setSleepTimerTarget(target);
+          setToasts(t => [...t, { id: Date.now(), title: `Sleep Timer Set`, message: `Stopping in ${minutes} mins`, icon: UserIcon, type: 'success' }]);
+      }
+  };
+
   // Hype Logic: Decay & Simulation
   useEffect(() => {
       const decay = setInterval(() => {
@@ -580,6 +599,60 @@ const App: React.FC = () => {
       
       return () => clearInterval(interval);
   }, [userProfile?.following, currentStation]);
+  
+  // Sleep Timer Logic
+  useEffect(() => {
+      if (!sleepTimerTarget) return;
+      const checkTimer = setInterval(() => {
+          if (Date.now() >= sleepTimerTarget) {
+              setIsPlaying(false);
+              setSleepTimerTarget(null);
+              setToasts(t => [...t, { id: Date.now(), title: 'Sleep Timer', message: 'Playback stopped.', icon: UserIcon, type: 'info' }]);
+          }
+      }, 1000);
+      return () => clearInterval(checkTimer);
+  }, [sleepTimerTarget]);
+
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+        switch(e.code) {
+            case 'Space':
+                e.preventDefault();
+                setIsPlaying(prev => !prev);
+                break;
+            case 'KeyM':
+                // Mute toggle usually handled in RadioPlayer local state, 
+                // but we can trigger a toast or implement a global mute state if needed.
+                // For now, we'll just show a toast as feedback since volume is local.
+                setToasts(t => [...t, { id: Date.now(), title: 'Use Player controls', message: 'Mute is handled in player bar.', icon: UserIcon, type: 'info' }]);
+                break;
+            case 'KeyF':
+                if (currentStation) {
+                   // Logic to favorite/unfavorite needs access to handler, wrapping in effect means we might need refs or dependency
+                   // For simplicity in this global handler without prop drilling mess:
+                   console.log('Favorite shortcut pressed'); 
+                }
+                break;
+            case 'ArrowRight':
+                 handleNextStation();
+                 break;
+            case 'ArrowLeft':
+                 handlePreviousStation();
+                 break;
+            case 'Escape':
+                 setIsSettingsModalOpen(false);
+                 setStationForDetail(null);
+                 setViewingProfile(null);
+                 break;
+        }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentStation, allStations]); // Re-bind when stations change for next/prev
 
   if (!hasEnteredApp) {
     return <LandingPage onEnter={() => setHasEnteredApp(true)} />;
@@ -610,7 +683,15 @@ const App: React.FC = () => {
       case 'leaderboard':
         return <LeaderboardView currentUser={currentUser} userPoints={stats.points || 0} />;
       case 'dashboard':
-          return <DashboardView user={currentUser} stats={stats} favoritesCount={favoriteStationUrls.size} unlockedAchievements={unlockedAchievements} />;
+          return (
+              <DashboardView 
+                user={currentUser} 
+                stats={stats} 
+                favoritesCount={favoriteStationUrls.size} 
+                unlockedAchievements={unlockedAchievements} 
+                onOpenSettings={() => setIsSettingsModalOpen(true)}
+              />
+          );
       default:
         return (
              <StationList 
@@ -644,17 +725,19 @@ const App: React.FC = () => {
       
       <div className="relative h-screen w-screen overflow-hidden">
         {/* Background Handling */}
-        {isVideoBg(currentBg || undefined) ? (
-            <video 
-                src={currentBg!} 
-                autoPlay loop muted className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000"
-            />
-        ) : (
-             backgrounds.map((bg, index) => (
-              <div key={index} className={`absolute inset-0 bg-cover bg-center transition-all duration-[2000ms] ease-in-out ${activeBgIndex === index ? 'opacity-100 scale-100' : 'opacity-0 scale-110'}`} style={{ backgroundImage: bg ? `url(${bg})` : 'none', animation: bg ? `${index === 0 ? 'kenburns-a' : 'kenburns-b'} 60s ease-in-out infinite` : 'none' }} />
-            ))
+        {!isDataSaver && (
+             isVideoBg(currentBg || undefined) ? (
+                <video 
+                    src={currentBg!} 
+                    autoPlay loop muted className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000"
+                />
+            ) : (
+                 backgrounds.map((bg, index) => (
+                  <div key={index} className={`absolute inset-0 bg-cover bg-center transition-all duration-[2000ms] ease-in-out ${activeBgIndex === index ? 'opacity-100 scale-100' : 'opacity-0 scale-110'}`} style={{ backgroundImage: bg ? `url(${bg})` : 'none', animation: bg ? `${index === 0 ? 'kenburns-a' : 'kenburns-b'} 60s ease-in-out infinite` : 'none' }} />
+                ))
+            )
         )}
-        <div className="absolute inset-0 bg-black/70 backdrop-blur-2xl"></div>
+        <div className={`absolute inset-0 bg-black/${isDataSaver ? '90' : '70'} backdrop-blur-${isDataSaver ? 'none' : '2xl'}`}></div>
 
         <div className={`relative text-gray-200 flex flex-col h-full transition-[padding-top] duration-300 ${isHeaderVisible && !isImmersiveMode ? 'pt-16' : 'pt-0'}`}>
             {/* ... Header ... */}
@@ -726,6 +809,8 @@ const App: React.FC = () => {
                   hypeScore={hypeScore}
                   isPlaying={isPlaying}
                   onPlayPause={setIsPlaying}
+                  isDataSaver={isDataSaver}
+                  sleepTimerTarget={sleepTimerTarget}
                 />
               )}
 
@@ -744,6 +829,15 @@ const App: React.FC = () => {
             )}
         </div>
       </div>
+      
+      <SettingsModal 
+        isOpen={isSettingsModalOpen} 
+        onClose={() => setIsSettingsModalOpen(false)}
+        isDataSaver={isDataSaver}
+        onToggleDataSaver={() => setIsDataSaver(!isDataSaver)}
+        sleepTimerTarget={sleepTimerTarget}
+        onSetSleepTimer={handleSetSleepTimer}
+      />
       
       <ThemeCreatorModal isOpen={isThemeCreatorOpen} onClose={() => setIsThemeCreatorOpen(false)} onSave={handleCreateTheme} userPoints={stats.points || 0} />
       <UserProfileModal 
