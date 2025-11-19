@@ -22,8 +22,8 @@ import { AdminDashboardView } from './components/AdminDashboardView';
 import { StationManagerDashboardView } from './components/StationManagerDashboardView';
 import { ArtistDashboardView } from './components/ArtistDashboardView';
 import { RightPanel } from './components/RightPanel';
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon, FireIcon } from './constants';
-import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, Quest, CollectorCard, Lounge, UserProfile } from './types';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon, FireIcon, StarIcon, LockIcon } from './constants';
+import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, Quest, CollectorCard, Lounge, UserProfile, AvatarFrame } from './types';
 import { getDominantColor } from './utils/colorExtractor';
 import { LandingPage } from './components/LandingPage';
 import { getUserData, updateUserData, createUserData, followUser, unfollowUser } from './services/apiService';
@@ -258,7 +258,13 @@ const App: React.FC = () => {
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
     setUnlockedFrames((data.unlockedFrames as string[]) || []);
-    setUserProfile(data.profile || { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [] });
+    setUserProfile(data.profile || { 
+        bio: '', 
+        topArtists: [] as string[], 
+        favoriteGenres: [] as string[], 
+        following: [] as string[], 
+        followers: [] as string[] 
+    });
     setCustomThemes(data.customThemes || []);
 
     let defaultView: ActiveView = 'dashboard';
@@ -395,6 +401,75 @@ const App: React.FC = () => {
           stats: { ...stats, points: newPoints } 
         });
   };
+
+  const handleUnlockTheme = (theme: Theme) => {
+    if (!currentUser || !theme.cost) return;
+    const currentPoints = stats.points || 0;
+    
+    if (currentPoints >= theme.cost) {
+      const newPoints = currentPoints - theme.cost;
+      const newUnlocked = new Set(unlockedThemes);
+      newUnlocked.add(theme.name);
+      
+      setStats(prev => ({ ...prev, points: newPoints }));
+      setUnlockedThemes(newUnlocked);
+      
+      updateUserData(currentUser.username, {
+        stats: { ...stats, points: newPoints },
+        unlockedThemes: Array.from(newUnlocked)
+      });
+      
+      setToasts(t => [...t, { 
+        id: Date.now(), 
+        title: 'Theme Unlocked!', 
+        message: `You purchased ${theme.displayName}`, 
+        icon: StarIcon, 
+        type: 'theme_unlocked' 
+      }]);
+    } else {
+       setToasts(t => [...t, { 
+        id: Date.now(), 
+        title: 'Insufficient Points', 
+        message: `Need ${theme.cost - currentPoints} more points.`, 
+        icon: LockIcon, 
+        type: 'error' 
+      }]);
+    }
+  };
+
+  const handleUnlockFrame = (frame: AvatarFrame) => {
+    if (!currentUser) return;
+    const currentPoints = stats.points || 0;
+    
+    if (currentPoints >= frame.cost) {
+      const newPoints = currentPoints - frame.cost;
+      const newUnlocked = [...unlockedFrames, frame.id];
+      
+      setStats(prev => ({ ...prev, points: newPoints }));
+      setUnlockedFrames(newUnlocked);
+      
+      updateUserData(currentUser.username, {
+        stats: { ...stats, points: newPoints },
+        unlockedFrames: newUnlocked
+      });
+      
+       setToasts(t => [...t, { 
+        id: Date.now(), 
+        title: 'Avatar Unlocked!', 
+        message: `You purchased ${frame.name}`, 
+        icon: StarIcon, 
+        type: 'theme_unlocked' 
+      }]);
+    } else {
+       setToasts(t => [...t, { 
+        id: Date.now(), 
+        title: 'Insufficient Points', 
+        message: `Need ${frame.cost - currentPoints} more points.`, 
+        icon: LockIcon, 
+        type: 'error' 
+      }]);
+    }
+  };
   
   const handleUpdateProfile = (newProfile: UserProfile) => {
       if (!currentUser) return;
@@ -523,13 +598,13 @@ const App: React.FC = () => {
             <StoreView 
                 activeTheme={activeTheme} 
                 onSetTheme={(t) => { setActiveTheme(t); if(currentUser) updateUserData(currentUser.username, { activeTheme: t }); }} 
-                onUnlockTheme={() => {}} 
+                onUnlockTheme={handleUnlockTheme} 
                 unlockedThemes={unlockedThemes} 
                 currentPoints={stats.points || 0}
                 activeFrame={activeFrame}
                 unlockedFrames={unlockedFrames}
                 onSetFrame={(f) => { setActiveFrame(f); if(currentUser) updateUserData(currentUser.username, { activeFrame: f }); }}
-                onUnlockFrame={() => {}} 
+                onUnlockFrame={handleUnlockFrame} 
             />
         );
       case 'leaderboard':
