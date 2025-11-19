@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -44,6 +42,7 @@ import { WeatherOverlay } from './components/WeatherOverlay';
 import { CoinExplosionOverlay } from './components/CoinExplosionOverlay';
 import { UserProfileModal } from './components/UserProfileModal';
 import { SettingsModal } from './components/SettingsModal';
+import { RequestSongModal } from './components/RequestSongModal';
 
 const hexToRgb = (hex: string) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -109,7 +108,7 @@ const App: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isImmersiveMode, setIsImmersiveMode] = useState(false);
 
-  const [stats, setStats] = useState<ListeningStats>({ totalTime: 0, stationPlays: {}, points: 0, songHistory: [] });
+  const [stats, setStats] = useState<ListeningStats>({ totalTime: 0, stationPlays: {}, points: 0, songHistory: [], songUserVotes: {} });
   const [alarm, setAlarm] = useState<Alarm | null>(null);
   const [songVotes, setSongVotes] = useState<Record<string, SongVote>>({});
   const [unlockedAchievements, setUnlockedAchievements] = useState<Record<string, UnlockedAchievement>>({});
@@ -265,7 +264,7 @@ const App: React.FC = () => {
     setBets(data.bets || []);
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
-    setUnlockedFrames((data.unlockedFrames as unknown as string[]) || []);
+    setUnlockedFrames(data.unlockedFrames || []);
     setUserProfile(data.profile || { 
         bio: '', 
         topArtists: [] as string[], 
@@ -273,7 +272,7 @@ const App: React.FC = () => {
         following: [] as string[], 
         followers: [] as string[] 
     });
-    setCustomThemes((data.customThemes as unknown as Theme[]) || []);
+    setCustomThemes(data.customThemes || []);
 
     let defaultView: ActiveView = 'dashboard';
     if (user.role === 'admin') defaultView = 'admin';
@@ -477,6 +476,56 @@ const App: React.FC = () => {
         type: 'error' 
       }]);
     }
+  };
+
+  const handleSongVote = (songId: string, voteType: 'like' | 'dislike') => {
+    if (!currentUser || !nowPlaying || nowPlaying.songId !== songId) return;
+
+    const currentVote = stats.songUserVotes?.[songId];
+    let newSongVotes = { ...songVotes };
+    let newStats = { ...stats };
+    let newUserVotes = { ...(newStats.songUserVotes || {}) };
+    
+    // Ensure song entry exists
+    if (!newSongVotes[songId]) {
+        newSongVotes[songId] = {
+            id: songId,
+            artist: nowPlaying.artist,
+            title: nowPlaying.title,
+            albumArt: nowPlaying.albumArt || '',
+            likes: 0,
+            dislikes: 0
+        };
+    }
+
+    if (currentVote === voteType) {
+        // Toggle off (remove vote)
+        delete newUserVotes[songId];
+        if (voteType === 'like') newSongVotes[songId].likes = Math.max(0, newSongVotes[songId].likes - 1);
+        else newSongVotes[songId].dislikes = Math.max(0, newSongVotes[songId].dislikes - 1);
+    } else {
+        // Add or Change vote
+        if (currentVote) {
+            // Remove previous vote count
+            if (currentVote === 'like') newSongVotes[songId].likes = Math.max(0, newSongVotes[songId].likes - 1);
+            else newSongVotes[songId].dislikes = Math.max(0, newSongVotes[songId].dislikes - 1);
+        }
+        // Add new vote count
+        newUserVotes[songId] = voteType;
+        if (voteType === 'like') newSongVotes[songId].likes++;
+        else newSongVotes[songId].dislikes++;
+    }
+
+    setSongVotes(newSongVotes);
+    setStats({ ...newStats, songUserVotes: newUserVotes });
+    
+    updateUserData(currentUser.username, { 
+        stats: { ...newStats, songUserVotes: newUserVotes },
+        songVotes: newSongVotes
+    });
+
+    const action = currentVote === voteType ? 'Removed vote' : `Voted ${voteType}`;
+    setToasts(t => [...t, { id: Date.now(), title: action, icon: voteType === 'like' ? StarIcon : FireIcon, type: 'success' }]);
   };
   
   const handleUpdateProfile = (newProfile: UserProfile) => {
@@ -791,7 +840,7 @@ const App: React.FC = () => {
                   isImmersive={isImmersiveMode}
                   onToggleImmersive={() => setIsImmersiveMode(!isImmersiveMode)}
                   songVotes={songVotes}
-                  onVote={() => {}} 
+                  onVote={handleSongVote} 
                   onRateStation={() => {}}
                   userRating={0}
                   onOpenTippingModal={() => {}}
@@ -811,6 +860,7 @@ const App: React.FC = () => {
                   onPlayPause={setIsPlaying}
                   isDataSaver={isDataSaver}
                   sleepTimerTarget={sleepTimerTarget}
+                  userSongVotes={stats.songUserVotes}
                 />
               )}
 
@@ -830,6 +880,7 @@ const App: React.FC = () => {
         </div>
       </div>
       
+      <BuyNowModal isOpen={isBuyNowModalOpen} onClose={() => setIsBuyNowModalOpen(false)} nowPlaying={nowPlaying} />
       <SettingsModal 
         isOpen={isSettingsModalOpen} 
         onClose={() => setIsSettingsModalOpen(false)}
