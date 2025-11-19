@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -198,7 +199,7 @@ const App: React.FC = () => {
     setUserStations(data.userStations);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
-    setUnlockedThemes(new Set(data.unlockedThemes));
+    setUnlockedThemes(new Set(data.unlockedThemes as ThemeName[]));
     setStats(data.stats);
     setAlarm(data.alarm);
     setSongVotes(data.songVotes);
@@ -207,7 +208,7 @@ const App: React.FC = () => {
     setBets(data.bets || []);
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
-    setUnlockedFrames(data.unlockedFrames || []);
+    setUnlockedFrames((data.unlockedFrames || []) as string[]);
     setUserProfile(data.profile || { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [] });
     setCustomThemes(data.customThemes || []);
 
@@ -303,20 +304,22 @@ const App: React.FC = () => {
   const handleCreateTheme = (newTheme: Theme) => {
       if (!currentUser) return;
       
-      setCustomThemes(prev => [...prev, newTheme]);
-      setUnlockedThemes(prev => new Set(prev).add(newTheme.name));
+      // Safely update state and calculate derived values for update
+      const updatedCustomThemes = [...customThemes, newTheme];
+      const updatedUnlockedThemesSet = new Set(unlockedThemes);
+      updatedUnlockedThemesSet.add(newTheme.name);
       
       const newPoints = (stats.points || 0) - (newTheme.cost || 0);
+
+      // Update React state
+      setCustomThemes(updatedCustomThemes);
+      setUnlockedThemes(updatedUnlockedThemesSet);
       setStats(prev => ({ ...prev, points: newPoints }));
       
-      const updatedUnlockedThemes = Array.from(unlockedThemes) as string[];
-      if (!updatedUnlockedThemes.includes(newTheme.name)) {
-          updatedUnlockedThemes.push(newTheme.name);
-      }
-
+      // Persist to backend
       updateUserData(currentUser.username, { 
-          customThemes: [...customThemes, newTheme], 
-          unlockedThemes: updatedUnlockedThemes,
+          customThemes: updatedCustomThemes, 
+          unlockedThemes: Array.from(updatedUnlockedThemesSet),
           stats: { ...stats, points: newPoints } 
         });
   };

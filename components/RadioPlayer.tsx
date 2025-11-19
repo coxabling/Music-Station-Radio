@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { Station, NowPlaying, EQSettings, SongVote } from '../types';
 import { fetchNowPlaying } from '../services/geminiService';
@@ -211,7 +213,8 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
               src.start();
               noiseSourceRef.current = src;
           }
-          noiseGainRef.current?.gain.setTargetAtTime(0.03, now, 0.5); 
+          // Reduced noise volume for high-grade audio experience
+          noiseGainRef.current?.gain.setTargetAtTime(0.015, now, 0.5); 
       } else {
           lofiFilterRef.current?.frequency.setTargetAtTime(22000, now, 0.5);
           wobbleGainRef.current?.gain.setTargetAtTime(0, now, 0.5);

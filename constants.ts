@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import type { Station, EQBand, EQPreset, Theme, Achievement, AchievementID, LeaderboardEntry, TranslationLanguage, ListeningEvent, StationReview, CommunityEvent, MusicSubmission, AvatarFrame, FriendActivity, Quest, CollectorCard } from './types';
 
@@ -157,6 +158,7 @@ export const stations: Station[] = initialStations;
 
 export const THEMES: Theme[] = [
   { name: 'dynamic', displayName: 'Dynamic (Album Art)', color: '#67e8f9' }, // Cyan default
+  { name: 'reggae', displayName: 'Irie Vibes', color: '#ef4444', cost: 200, description: 'Red, gold, and green for the soul.', gradient: 'linear-gradient(to right, #ef4444, #eab308, #22c55e)' },
   { name: 'kente', displayName: 'Kente Cloth', color: '#f59e0b', cost: 100, description: 'Vibrant patterns inspired by Ghanaian Kente.' },
   { name: 'sahara', displayName: 'Sahara Sunset', color: '#ea580c', cost: 150, description: 'Warm oranges and deep purples.' },
   { name: 'naija', displayName: 'Naija Green', color: '#16a34a', cost: 100, description: 'Bold greens representing Nigerian spirit.' },
