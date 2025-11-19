@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { User, UserProfile } from '../types';
 import { RoleBadge } from './RoleBadge';
 
@@ -17,8 +17,16 @@ interface UserProfileModalProps {
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, username, profile, currentUser, onUpdateProfile, onMessage, onFollow, isFollowing }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [bio, setBio] = useState(profile?.bio || '');
-  const [location, setLocation] = useState(profile?.location || '');
+  const [bio, setBio] = useState('');
+  const [location, setLocation] = useState('');
+  
+  useEffect(() => {
+      if (isOpen && profile) {
+          setBio(profile.bio);
+          setLocation(profile.location || '');
+          setIsEditing(false);
+      }
+  }, [isOpen, profile]);
 
   if (!isOpen) return null;
 
@@ -64,7 +72,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
                          {!isMe && (
                              <>
                                 <button onClick={() => onMessage(username)} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white text-sm font-bold">Message</button>
-                                <button onClick={() => onFollow(username)} className={`px-4 py-2 rounded-lg text-white text-sm font-bold ${isFollowing ? 'bg-gray-600' : 'bg-[var(--accent-color)] text-black'}`}>
+                                <button 
+                                    onClick={() => onFollow(username)} 
+                                    className={`px-4 py-2 rounded-lg text-white text-sm font-bold transition-all ${isFollowing ? 'bg-gray-600 hover:bg-red-600 hover:text-white' : 'bg-[var(--accent-color)] text-black hover:opacity-90'}`}
+                                >
                                     {isFollowing ? 'Following' : 'Follow'}
                                 </button>
                              </>
@@ -88,15 +99,15 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
                         )}
                     </div>
                     <div className="grid grid-cols-3 gap-4 text-center">
-                         <div className="bg-gray-800/30 p-2 rounded">
+                         <div className="bg-gray-800/30 p-2 rounded hover:bg-gray-800/50 transition-colors">
                              <div className="text-xl font-bold text-white">{profile?.followers.length || 0}</div>
                              <div className="text-xs text-gray-500">Followers</div>
                          </div>
-                         <div className="bg-gray-800/30 p-2 rounded">
+                         <div className="bg-gray-800/30 p-2 rounded hover:bg-gray-800/50 transition-colors">
                              <div className="text-xl font-bold text-white">{profile?.following.length || 0}</div>
                              <div className="text-xs text-gray-500">Following</div>
                          </div>
-                         <div className="bg-gray-800/30 p-2 rounded">
+                         <div className="bg-gray-800/30 p-2 rounded hover:bg-gray-800/50 transition-colors">
                              <div className="text-xl font-bold text-white">0</div>
                              <div className="text-xs text-gray-500">Broadcasts</div>
                          </div>

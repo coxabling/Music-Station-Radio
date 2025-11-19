@@ -38,6 +38,7 @@ const createDefaultUserData = (): Omit<UserData, 'role'> => ({
     quests: [],
     bets: [],
     collection: [],
+    profile: { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [] }
 });
 
 
@@ -124,6 +125,61 @@ export const updateUserData = (username: string, partialData: Partial<UserData>)
         processUpdateQueue();
     });
 }
+
+export const followUser = async (followerUsername: string, targetUsername: string): Promise<void> => {
+    return new Promise((resolve) => {
+        const task = () => new Promise<void>((taskResolve) => {
+            setTimeout(() => {
+                const follower = getDb(followerUsername);
+                const target = getDb(targetUsername);
+
+                if (follower && target) {
+                    // Initialize profiles if missing
+                    if (!follower.profile) follower.profile = { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [] };
+                    if (!target.profile) target.profile = { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [] };
+
+                    // Add to following
+                    if (!follower.profile.following.includes(targetUsername)) {
+                        follower.profile.following.push(targetUsername);
+                    }
+
+                    // Add to followers
+                    if (!target.profile.followers.includes(followerUsername)) {
+                        target.profile.followers.push(followerUsername);
+                    }
+
+                    setDb(followerUsername, follower);
+                    setDb(targetUsername, target);
+                }
+                taskResolve();
+            }, SIMULATED_LATENCY);
+        });
+        updateQueue.push(async () => { await task(); resolve(); });
+        processUpdateQueue();
+    });
+};
+
+export const unfollowUser = async (followerUsername: string, targetUsername: string): Promise<void> => {
+     return new Promise((resolve) => {
+        const task = () => new Promise<void>((taskResolve) => {
+            setTimeout(() => {
+                const follower = getDb(followerUsername);
+                const target = getDb(targetUsername);
+
+                if (follower && target && follower.profile && target.profile) {
+                    follower.profile.following = follower.profile.following.filter(u => u !== targetUsername);
+                    target.profile.followers = target.profile.followers.filter(u => u !== followerUsername);
+                    
+                    setDb(followerUsername, follower);
+                    setDb(targetUsername, target);
+                }
+                taskResolve();
+            }, SIMULATED_LATENCY);
+        });
+        updateQueue.push(async () => { await task(); resolve(); });
+        processUpdateQueue();
+    });
+};
 
 /**
  * Fetches data for all users in the mock database.

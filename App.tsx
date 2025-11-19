@@ -23,11 +23,11 @@ import { AdminDashboardView } from './components/AdminDashboardView';
 import { StationManagerDashboardView } from './components/StationManagerDashboardView';
 import { ArtistDashboardView } from './components/ArtistDashboardView';
 import { RightPanel } from './components/RightPanel';
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS } from './constants';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon } from './constants';
 import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, Quest, CollectorCard, Lounge, UserProfile } from './types';
 import { getDominantColor } from './utils/colorExtractor';
 import { LandingPage } from './components/LandingPage';
-import { getUserData, updateUserData, createUserData } from './services/apiService';
+import { getUserData, updateUserData, createUserData, followUser, unfollowUser } from './services/apiService';
 import { EditStationModal } from './components/EditStationModal';
 import { MusicSubmissionModal } from './components/MusicSubmissionModal';
 import { ClaimOwnershipModal } from './components/ClaimOwnershipModal';
@@ -60,6 +60,7 @@ const App: React.FC = () => {
   const [stationForDetail, setStationForDetail] = useState<Station | null>(null);
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isPlaying, setIsPlaying] = useState(false);
   
   const [backgrounds, setBackgrounds] = useState<[string | null, string | null]>([null, null]);
   const [activeBgIndex, setActiveBgIndex] = useState(0);
@@ -90,7 +91,10 @@ const App: React.FC = () => {
   const [giftRecipient, setGiftRecipient] = useState<string | null>(null);
   const [isLoungeModalOpen, setIsLoungeModalOpen] = useState(false);
   const [isThemeCreatorOpen, setIsThemeCreatorOpen] = useState(false);
+  
+  // Profile state
   const [viewingProfile, setViewingProfile] = useState<string | null>(null);
+  const [targetUserProfile, setTargetUserProfile] = useState<UserProfile | undefined>(undefined);
 
   const [favoriteStationUrls, setFavoriteStationUrls] = useState<Set<string>>(new Set());
   const [unlockedThemes, setUnlockedThemes] = useState<Set<ThemeName>>(new Set(['dynamic']));
@@ -122,7 +126,6 @@ const App: React.FC = () => {
   const [customThemes, setCustomThemes] = useState<Theme[]>([]);
 
   const statsUpdateInterval = useRef<number | null>(null);
-  const alarmTimeout = useRef<number | null>(null);
   
   // Combine stock themes with user custom themes
   const availableThemes = useMemo(() => [...THEMES, ...customThemes], [customThemes]);
@@ -145,6 +148,54 @@ const App: React.FC = () => {
   
   const accentColorRgb = useMemo(() => hexToRgb(accentColor), [accentColor]);
 
+  // Listening Time & Stats Tracker
+  useEffect(() => {
+    if (currentStation && isPlaying && currentUser) {
+        statsUpdateInterval.current = window.setInterval(() => {
+            setStats(prev => {
+                const next = { ...prev };
+                
+                // Total Time
+                next.totalTime = (next.totalTime || 0) + 1;
+                
+                // Station Time
+                const sUrl = currentStation.streamUrl;
+                const sStats = next.stationPlays[sUrl] || { name: currentStation.name, genre: currentStation.genre, time: 0 };
+                next.stationPlays[sUrl] = { ...sStats, time: sStats.time + 1 };
+                
+                // Points System: 5 points every minute
+                if (next.totalTime > 0 && next.totalTime % 60 === 0) {
+                    next.points = (next.points || 0) + 5;
+                }
+
+                // Check for time-based achievements (simplified)
+                if (next.totalTime === 3600 && !unlockedAchievements['one_hour']) {
+                   // Trigger achievement unlock would go here
+                }
+
+                return next;
+            });
+        }, 1000);
+    } else {
+        if (statsUpdateInterval.current) {
+            clearInterval(statsUpdateInterval.current);
+        }
+    }
+    return () => {
+        if (statsUpdateInterval.current) {
+            clearInterval(statsUpdateInterval.current);
+        }
+    };
+  }, [currentStation, isPlaying, currentUser]);
+
+  // Persist Stats Periodically (Every 10s)
+  useEffect(() => {
+      if (currentUser && stats.totalTime > 0 && stats.totalTime % 10 === 0) {
+          updateUserData(currentUser.username, { stats });
+      }
+  }, [stats.totalTime, currentUser]);
+
+
   // Dynamic Favicon Logic
   useEffect(() => {
     const canvas = document.createElement('canvas');
@@ -156,7 +207,7 @@ const App: React.FC = () => {
     if (ctx && link) {
         let frame = 0;
         const animateFavicon = () => {
-            if (!currentStation) return;
+            if (!currentStation || !isPlaying) return;
             ctx.clearRect(0, 0, 32, 32);
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, 32, 32);
@@ -171,10 +222,9 @@ const App: React.FC = () => {
             frame++;
             requestAnimationFrame(animateFavicon);
         };
-        // Only run if playing (mock)
-        if (currentStation) animateFavicon();
+        if (currentStation && isPlaying) animateFavicon();
     }
-  }, [currentStation, accentColor]);
+  }, [currentStation, isPlaying, accentColor]);
 
   const loadUserData = useCallback(async (username: string) => {
     setIsDataLoading(true);
@@ -187,7 +237,7 @@ const App: React.FC = () => {
         return;
     }
     
-    const favUrls = new Set(data.favoriteStationUrls);
+    const favUrls = new Set(data.favoriteStationUrls as unknown as string[]);
     const stationsWithFavorites = defaultStations.map(s => ({...s, isFavorite: favUrls.has(s.streamUrl)}));
     const userStationsWithFavorites = data.userStations.map(s => ({...s, isFavorite: favUrls.has(s.streamUrl)}));
     const allKnownStations = [...stationsWithFavorites, ...userStationsWithFavorites];
@@ -199,7 +249,7 @@ const App: React.FC = () => {
     setUserStations(data.userStations);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
-    setUnlockedThemes(new Set(data.unlockedThemes as ThemeName[]));
+    setUnlockedThemes(new Set(data.unlockedThemes as unknown as ThemeName[]));
     setStats(data.stats);
     setAlarm(data.alarm);
     setSongVotes(data.songVotes);
@@ -208,7 +258,7 @@ const App: React.FC = () => {
     setBets(data.bets || []);
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
-    setUnlockedFrames((data.unlockedFrames || []) as string[]);
+    setUnlockedFrames((data.unlockedFrames || []) as unknown as string[]);
     setUserProfile(data.profile || { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [] });
     setCustomThemes(data.customThemes || []);
 
@@ -255,6 +305,7 @@ const App: React.FC = () => {
     setCurrentStation(null);
     setStationForDetail(null);
     setCurrentUser(null);
+    setIsPlaying(false);
     localStorage.removeItem('currentUser');
     setIsLoginModalOpen(true);
     setAllStations(defaultStations);
@@ -274,7 +325,13 @@ const App: React.FC = () => {
   }, [currentUser]);
   
   const handleSelectStation = (station: Station) => { 
-      if (currentStation?.streamUrl !== station.streamUrl) setCurrentStation(station);
+      if (currentStation?.streamUrl !== station.streamUrl) {
+          setCurrentStation(station);
+          setIsPlaying(true); // Auto-play new station
+      } else {
+          // If clicking same station, toggle play/pause if needed, or just open details
+          if (!isPlaying) setIsPlaying(true);
+      }
       setStationForDetail(station);
       setIsPlayerVisible(true);
   };
@@ -329,6 +386,79 @@ const App: React.FC = () => {
       setUserProfile(newProfile);
       updateUserData(currentUser.username, { profile: newProfile });
   };
+
+  const handleOpenProfile = useCallback(async (username: string) => {
+      setViewingProfile(username);
+      if (currentUser && username === currentUser.username) {
+          setTargetUserProfile(userProfile || undefined);
+      } else {
+          const data = await getUserData(username);
+          if (data) setTargetUserProfile(data.profile || { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [] });
+      }
+  }, [currentUser, userProfile]);
+
+  const handleToggleFollow = async (targetUsername: string) => {
+      if (!currentUser || !userProfile) return;
+      
+      const isFollowing = userProfile.following.includes(targetUsername);
+      
+      if (isFollowing) {
+          await unfollowUser(currentUser.username, targetUsername);
+          // Update local state
+          const newFollowing = userProfile.following.filter(u => u !== targetUsername);
+          setUserProfile({ ...userProfile, following: newFollowing });
+          
+          // Update target profile if viewing
+          if (targetUserProfile && viewingProfile === targetUsername) {
+               setTargetUserProfile({
+                   ...targetUserProfile,
+                   followers: targetUserProfile.followers.filter(u => u !== currentUser.username)
+               });
+          }
+          setToasts(t => [...t, { id: Date.now(), title: `Unfollowed ${targetUsername}`, icon: UserIcon, type: 'success' }]);
+      } else {
+          await followUser(currentUser.username, targetUsername);
+           // Update local state
+          const newFollowing = [...userProfile.following, targetUsername];
+          setUserProfile({ ...userProfile, following: newFollowing });
+          
+          // Update target profile if viewing
+          if (targetUserProfile && viewingProfile === targetUsername) {
+               setTargetUserProfile({
+                   ...targetUserProfile,
+                   followers: [...targetUserProfile.followers, currentUser.username]
+               });
+          }
+           setToasts(t => [...t, { id: Date.now(), title: `Following ${targetUsername}`, icon: UserIcon, type: 'success' }]);
+      }
+  };
+  
+  // Friend Notifications Simulation
+  useEffect(() => {
+      if (!userProfile?.following.length) return;
+      
+      const interval = setInterval(() => {
+          if (Math.random() > 0.7) { // 30% chance every check
+              const randomFriend = userProfile.following[Math.floor(Math.random() * userProfile.following.length)];
+              const actions = [
+                  { msg: 'came online', type: 'info' },
+                  { msg: 'started a Listening Party', type: 'party' },
+                  { msg: `is listening to ${currentStation ? 'a new station' : 'High Grade Radio'}`, type: 'music' }
+              ];
+              const action = actions[Math.floor(Math.random() * actions.length)];
+              
+              setToasts(prev => [...prev, {
+                  id: Date.now(),
+                  title: randomFriend,
+                  message: action.msg,
+                  icon: UserIcon,
+                  type: 'milestone'
+              }]);
+          }
+      }, 45000); // Check every 45s
+      
+      return () => clearInterval(interval);
+  }, [userProfile?.following, currentStation]);
 
   if (!hasEnteredApp) {
     return <LandingPage onEnter={() => setHasEnteredApp(true)} />;
@@ -473,6 +603,8 @@ const App: React.FC = () => {
                   onToggleHeader={handleToggleHeader}
                   onHype={() => setHypeScore(s => Math.min(s+5, 100))}
                   hypeScore={hypeScore}
+                  isPlaying={isPlaying}
+                  onPlayPause={setIsPlaying}
                 />
               )}
 
@@ -486,6 +618,7 @@ const App: React.FC = () => {
                     onSuperChat={() => {}} 
                     userPoints={stats.points || 0} 
                     activeFrame={activeFrame}
+                    onUserClick={handleOpenProfile}
                 />
             )}
         </div>
@@ -497,11 +630,11 @@ const App: React.FC = () => {
         onClose={() => setViewingProfile(null)} 
         username={viewingProfile || ''} 
         currentUser={currentUser}
-        profile={userProfile}
+        profile={targetUserProfile}
         onUpdateProfile={handleUpdateProfile}
         onMessage={(u) => console.log('msg', u)}
-        onFollow={(u) => console.log('follow', u)}
-        isFollowing={false}
+        onFollow={handleToggleFollow}
+        isFollowing={!!(userProfile && viewingProfile && userProfile.following.includes(viewingProfile))}
       />
       <LoginModal isOpen={isLoginModalOpen} onLogin={handleLogin} />
       <SubmitStationModal isOpen={isSubmitModalOpen} onClose={() => setIsSubmitModalOpen(false)} onSubmit={()=>{}} />
