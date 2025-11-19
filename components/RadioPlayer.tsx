@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { Station, NowPlaying, EQSettings, SongVote } from '../types';
 import { fetchNowPlaying } from '../services/geminiService';
@@ -82,6 +80,8 @@ interface RadioPlayerProps {
   onToggleHeader: () => void;
   onHype: () => void;
   hypeScore: number;
+  isPlaying: boolean;
+  onPlayPause: (playing: boolean) => void;
 }
 
 // Helper to create white noise buffer (reused from previous change)
@@ -100,9 +100,8 @@ const createNoiseBuffer = (ctx: AudioContext) => {
 let lastOut = 0;
 
 export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
-  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible, onOpenBuyNow, isHeaderVisible, onToggleHeader, onHype, hypeScore } = props;
+  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible, onOpenBuyNow, isHeaderVisible, onToggleHeader, onHype, hypeScore, isPlaying, onPlayPause } = props;
 
-  const [isPlaying, setIsPlaying] = useState(true);
   const [volume, setVolume] = useState(0.75);
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
@@ -238,11 +237,11 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
     const playPromise = audioEl.play();
     if(playPromise !== undefined) {
       playPromise.then(() => {
-        setIsPlaying(true);
+        onPlayPause(true);
       }).catch(error => {
         if (error.name !== 'AbortError') {
             console.error("Audio playback failed:", error);
-            setIsPlaying(false);
+            onPlayPause(false);
         }
       });
     }
@@ -261,11 +260,11 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
   
     if (isPlaying) {
       audioEl.pause();
-      setIsPlaying(false);
+      onPlayPause(false);
     } else {
       const playPromise = audioEl.play();
       if (playPromise !== undefined) {
-        playPromise.then(() => setIsPlaying(true)).catch(error => { console.error("Playback failed:", error); setIsPlaying(false); });
+        playPromise.then(() => onPlayPause(true)).catch(error => { console.error("Playback failed:", error); onPlayPause(false); });
       }
     }
   }, [isPlaying]);

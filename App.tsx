@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -23,7 +22,7 @@ import { AdminDashboardView } from './components/AdminDashboardView';
 import { StationManagerDashboardView } from './components/StationManagerDashboardView';
 import { ArtistDashboardView } from './components/ArtistDashboardView';
 import { RightPanel } from './components/RightPanel';
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon } from './constants';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon, FireIcon } from './constants';
 import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, Quest, CollectorCard, Lounge, UserProfile } from './types';
 import { getDominantColor } from './utils/colorExtractor';
 import { LandingPage } from './components/LandingPage';
@@ -258,7 +257,7 @@ const App: React.FC = () => {
     setBets(data.bets || []);
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
-    setUnlockedFrames(data.unlockedFrames || []);
+    setUnlockedFrames((data.unlockedFrames as string[]) || []);
     setUserProfile(data.profile || { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [] });
     setCustomThemes(data.customThemes || []);
 
@@ -449,6 +448,37 @@ const App: React.FC = () => {
       }
   };
   
+  const handleHype = useCallback(() => {
+      setHypeScore(prev => {
+          const newScore = prev + 10; 
+          if (newScore >= 100) {
+              setIsHypeActive(true);
+              setToasts(t => [...t, { id: Date.now(), title: 'HYPE OVERLOAD!', message: 'The crowd is going wild!', icon: FireIcon, type: 'hype' }]);
+              return 0;
+          }
+          return newScore;
+      });
+  }, []);
+
+  // Hype Logic: Decay & Simulation
+  useEffect(() => {
+      const decay = setInterval(() => {
+          setHypeScore(prev => Math.max(0, prev - 1));
+      }, 200);
+      
+      const sim = setInterval(() => {
+          if(Math.random() > 0.6) {
+               setHypeScore(prev => {
+                   // Cap simulated hype so it doesn't auto-trigger explosion easily
+                   if (prev >= 95) return prev;
+                   return prev + Math.floor(Math.random() * 3) + 1;
+               });
+          }
+      }, 1000);
+
+      return () => { clearInterval(decay); clearInterval(sim); };
+  }, []);
+
   // Friend Notifications Simulation
   useEffect(() => {
       if (!userProfile?.following.length) return;
@@ -617,7 +647,7 @@ const App: React.FC = () => {
                   onOpenBuyNow={() => setIsBuyNowModalOpen(true)}
                   isHeaderVisible={isHeaderVisible}
                   onToggleHeader={handleToggleHeader}
-                  onHype={() => setHypeScore(s => Math.min(s+5, 100))}
+                  onHype={handleHype}
                   hypeScore={hypeScore}
                   isPlaying={isPlaying}
                   onPlayPause={setIsPlaying}
