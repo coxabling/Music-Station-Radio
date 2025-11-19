@@ -1,6 +1,8 @@
 
+
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import type { Station, NowPlaying, EQSettings, SongVote } from '../types';
+import type { Station, NowPlaying, EQSettings, SongVote, SkinID } from '../types';
 import { fetchNowPlaying } from '../services/geminiService';
 import { Visualizer } from './Visualizer';
 import { SongInfoModal } from './SongInfoModal';
@@ -84,6 +86,7 @@ interface RadioPlayerProps {
   onPlayPause: (playing: boolean) => void;
   isDataSaver?: boolean;
   sleepTimerTarget?: number | null;
+  activeSkin: SkinID; // New
 }
 
 // Helper to create white noise buffer (reused from previous change)
@@ -102,7 +105,7 @@ const createNoiseBuffer = (ctx: AudioContext) => {
 let lastOut = 0;
 
 export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
-  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible, onOpenBuyNow, isHeaderVisible, onToggleHeader, onHype, hypeScore, isPlaying, onPlayPause, isDataSaver, sleepTimerTarget } = props;
+  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible, onOpenBuyNow, isHeaderVisible, onToggleHeader, onHype, hypeScore, isPlaying, onPlayPause, isDataSaver, sleepTimerTarget, activeSkin } = props;
 
   const [volume, setVolume] = useState(0.75);
   const [fadeFactor, setFadeFactor] = useState(1); // For sleep timer
@@ -308,14 +311,29 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
 
   const ControlButton: React.FC<{icon: React.ReactNode; label: string; onClick?: () => void; hasFeature?: boolean; isActive?: boolean; className?: string, progress?: number}> = ({icon, label, onClick, hasFeature = true, isActive = false, className, progress}) => {
     if(!hasFeature) return <div className="w-16 h-16" />;
+    
+    // Skin-based styling for buttons
+    let buttonClass = "relative flex flex-col items-center justify-center gap-1 transition-all text-xs w-16 h-16 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden";
+    
+    if (activeSkin === 'winamp') {
+        buttonClass = `relative flex items-center justify-center w-12 h-12 border border-[#00ff00] ${isActive ? 'bg-[#00ff00] text-black' : 'bg-black text-[#00ff00]'}`;
+    } else if (activeSkin === 'wooden') {
+        buttonClass = `relative flex flex-col items-center justify-center w-16 h-16 rounded-full shadow-lg border-2 border-[#d4a017] bg-[#5c4033] text-[#d4a017] ${isActive ? 'brightness-125' : ''}`;
+    } else if (activeSkin === 'boombox') {
+        buttonClass = `relative flex flex-col items-center justify-center w-16 h-16 bg-gradient-to-b from-gray-300 to-gray-500 border-2 border-gray-600 rounded shadow-md active:translate-y-1 ${isActive ? 'text-blue-600' : 'text-gray-800'}`;
+    } else {
+        // Modern
+        buttonClass += ` ${isActive ? 'bg-[var(--accent-color)] text-black hover:bg-[var(--accent-color)]/90' : 'text-gray-400 hover:text-white bg-white/5 hover:bg-white/10'}`;
+    }
+
     return (
         <button 
             onClick={onClick} 
-            className={`relative flex flex-col items-center justify-center gap-1 transition-all text-xs w-16 h-16 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden ${isActive ? 'bg-[var(--accent-color)] text-black hover:bg-[var(--accent-color)]/90' : 'text-gray-400 hover:text-white bg-white/5 hover:bg-white/10'} ${className}`}
+            className={`${buttonClass} ${className}`}
             disabled={!hasFeature}
             title={label}
         >
-            {progress !== undefined && (
+            {progress !== undefined && activeSkin === 'modern' && (
               <div 
                 className="absolute bottom-0 left-0 right-0 bg-orange-500/40 transition-all duration-300 ease-out" 
                 style={{ height: `${progress}%` }}
@@ -329,31 +347,45 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
   }
   
   const userVote = isSong && nowPlaying.songId ? userSongVotes?.[nowPlaying.songId] : undefined;
+  
+  // Skin Specific Classes
+  const getPlayerContainerClass = () => {
+      switch(activeSkin) {
+          case 'winamp': return "bg-black border-2 border-[#808080] font-mono text-[#00ff00]";
+          case 'boombox': return "bg-gradient-to-br from-gray-800 to-black border-4 border-gray-600 rounded-3xl shadow-[inset_0_0_50px_rgba(0,0,0,0.8)]";
+          case 'wooden': return "bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')] bg-[#3b2417] border-8 border-[#2a1a11] rounded-xl shadow-2xl text-[#eecfa1]";
+          default: return "bg-gray-900";
+      }
+  };
 
   const renderContent = () => (
     <>
     <div 
-      className={`fixed inset-0 bg-gray-900 z-50 flex flex-col p-4 transition-transform duration-500 ease-in-out ${isExpanded && isVisible ? 'translate-y-0' : 'translate-y-full'}`}
-      style={{
+      className={`fixed inset-0 z-50 flex flex-col p-4 transition-transform duration-500 ease-in-out ${isExpanded && isVisible ? 'translate-y-0' : 'translate-y-full'} ${getPlayerContainerClass()}`}
+      style={activeSkin === 'modern' ? {
         backgroundImage: 'radial-gradient(ellipse at bottom, var(--accent-color-rgb, 103, 232, 249) 0.1%, transparent 40%)'
-      }}
+      } : {}}
     >
-      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-black/50"></div>
-      <div className="flex-shrink-0 text-center relative z-10">
-        <button onClick={() => setIsExpanded(false)} className="absolute top-0 left-0 p-4 text-gray-400 hover:text-white"><ChevronDownIcon/></button>
+      {activeSkin === 'modern' && <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-black/50"></div>}
+      
+      {/* Header Bar */}
+      <div className={`flex-shrink-0 text-center relative z-10 ${activeSkin === 'winamp' ? 'bg-[#202020] border-b border-[#808080] mb-2' : ''}`}>
+        <button onClick={() => setIsExpanded(false)} className={`absolute top-0 left-0 p-4 ${activeSkin === 'winamp' ? 'text-[#00ff00]' : 'text-gray-400 hover:text-white'}`}><ChevronDownIcon/></button>
         <div className="absolute top-0 right-0 flex items-center">
-          <button onClick={onToggleHeader} className="p-4 text-gray-400 hover:text-white" title={isHeaderVisible ? "Hide Header" : "Show Header"}>
+          <button onClick={onToggleHeader} className={`p-4 ${activeSkin === 'winamp' ? 'text-[#00ff00]' : 'text-gray-400 hover:text-white'}`} title={isHeaderVisible ? "Hide Header" : "Show Header"}>
             {isHeaderVisible ? <HideHeaderIcon /> : <ShowHeaderIcon />}
           </button>
-          <button onClick={onToggleImmersive} className="p-4 text-gray-400 hover:text-white" title={isImmersive ? "Exit Immersive Mode" : "Enter Immersive Mode"}>
+          <button onClick={onToggleImmersive} className={`p-4 ${activeSkin === 'winamp' ? 'text-[#00ff00]' : 'text-gray-400 hover:text-white'}`} title={isImmersive ? "Exit Immersive Mode" : "Enter Immersive Mode"}>
             {isImmersive ? <ExitFullscreenIcon /> : <FullscreenIcon />}
           </button>
         </div>
         <div className="pt-3">
-          <p className="text-sm font-semibold uppercase tracking-wider">Now Playing</p>
-          <p className="text-xs text-gray-400">{station.name}</p>
+          {activeSkin !== 'winamp' && <p className="text-sm font-semibold uppercase tracking-wider">Now Playing</p>}
+          <p className={`text-xs ${activeSkin === 'winamp' ? 'text-[#00ff00] font-bold' : 'text-gray-400'}`}>{activeSkin === 'winamp' ? `*** ${station.name} ***` : station.name}</p>
         </div>
       </div>
+
+      {/* Main Content Area */}
       <div className="relative flex-grow flex flex-col items-center justify-center gap-4 text-center px-4 z-10">
         {raidStatus === 'voting' && raidTarget && (
           <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10 animate-fade-in">
@@ -365,31 +397,36 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
             <p className="text-xs text-gray-400 mt-2 animate-pulse">Gathering raiders...</p>
           </div>
         )}
+        
         <div 
-            className="w-full max-w-xs aspect-square transition-all duration-300 ease-in-out relative"
-            style={{ filter: `drop-shadow(0 10px 25px rgba(var(--accent-color-rgb), 0.3))`}}
+            className={`w-full max-w-xs aspect-square transition-all duration-300 ease-in-out relative ${activeSkin === 'boombox' ? 'border-8 border-gray-700 rounded-full shadow-[inset_0_0_20px_black] bg-black' : ''}`}
+            style={activeSkin === 'modern' ? { filter: `drop-shadow(0 10px 25px rgba(var(--accent-color-rgb), 0.3))` } : {}}
         >
             <img 
                 src={nowPlaying?.albumArt || station.coverArt} 
                 alt={nowPlaying?.title || station.name} 
-                className="w-full h-full rounded-2xl shadow-2xl shadow-black/50 object-cover animate-fade-in" 
+                className={`w-full h-full object-cover animate-fade-in ${activeSkin === 'modern' ? 'rounded-2xl shadow-2xl' : activeSkin === 'boombox' ? 'rounded-full opacity-80 hover:opacity-100' : activeSkin === 'wooden' ? 'sepia-[.4] rounded-lg border-4 border-[#8b5a2b]' : 'border border-[#00ff00]'}`}
                 key={nowPlaying?.albumArt || station.name} 
                 onError={handleImageError} 
             />
+            {/* Boombox Speaker Grille Overlay */}
+            {activeSkin === 'boombox' && <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_30%,black_120%)] rounded-full pointer-events-none grid place-items-center opacity-50" style={{backgroundImage: 'radial-gradient(#333 15%, transparent 16%)', backgroundSize: '10px 10px'}}></div>}
+            
             {isVinylMode && (
               <div className="absolute inset-0 pointer-events-none rounded-2xl bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-40 mix-blend-overlay animate-pulse"></div>
             )}
         </div>
-        <div className="w-full max-w-xs mt-4">
-          <Marquee text={nowPlaying?.title || station.name} className="text-2xl font-bold text-white" />
-          <Marquee text={nowPlaying?.artist || 'Live Stream'} className="text-lg text-gray-300" />
+        
+        <div className={`w-full max-w-xs mt-4 ${activeSkin === 'winamp' ? 'bg-black border border-[#808080] p-2' : ''}`}>
+          <Marquee text={nowPlaying?.title || station.name} className={`text-2xl font-bold ${activeSkin === 'winamp' ? 'text-[#00ff00] font-mono' : activeSkin === 'wooden' ? 'text-[#d4a017] font-serif' : 'text-white'}`} />
+          <Marquee text={nowPlaying?.artist || 'Live Stream'} className={`text-lg ${activeSkin === 'winamp' ? 'text-[#00ff00] font-mono' : 'text-gray-300'}`} />
         </div>
 
         <div className="flex items-center gap-6 my-2">
             <button 
                 onClick={() => isSong && onVote(nowPlaying.songId, 'like')}
                 disabled={!isSong}
-                className={`p-2 rounded-full transition-all duration-200 active:scale-95 ${isSong ? 'hover:bg-white/10' : 'opacity-30 cursor-not-allowed'} ${userVote === 'like' ? 'text-green-400 scale-110 shadow-lg shadow-green-400/50' : 'text-gray-400 hover:text-white'}`}
+                className={`p-2 rounded-full transition-all duration-200 active:scale-95 ${isSong ? 'hover:bg-white/10' : 'opacity-30 cursor-not-allowed'} ${userVote === 'like' ? 'text-green-400 scale-110 shadow-lg shadow-green-400/50' : activeSkin === 'winamp' ? 'text-[#00ff00]' : 'text-gray-400 hover:text-white'}`}
                 aria-label="Like this song"
             >
                 <ThumbUpIcon className="w-7 h-7" />
@@ -397,7 +434,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
             <button
                 onClick={() => onOpenBuyNow()}
                 disabled={!isSong}
-                className={`p-3 rounded-full transition-all duration-200 active:scale-95 ${isSong ? 'hover:bg-white/10' : 'opacity-30 cursor-not-allowed'} text-gray-400 hover:text-white`}
+                className={`p-3 rounded-full transition-all duration-200 active:scale-95 ${isSong ? 'hover:bg-white/10' : 'opacity-30 cursor-not-allowed'} ${activeSkin === 'winamp' ? 'text-[#00ff00]' : 'text-gray-400 hover:text-white'}`}
                 aria-label="Buy this song"
             >
                 <ShoppingCartIcon className="w-7 h-7" />
@@ -405,13 +442,15 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
             <button
                 onClick={() => isSong && onVote(nowPlaying.songId, 'dislike')}
                 disabled={!isSong}
-                className={`p-2 rounded-full transition-all duration-200 active:scale-95 ${isSong ? 'hover:bg-white/10' : 'opacity-30 cursor-not-allowed'} ${userVote === 'dislike' ? 'text-red-400 scale-110 shadow-lg shadow-red-400/50' : 'text-gray-400 hover:text-white'}`}
+                className={`p-2 rounded-full transition-all duration-200 active:scale-95 ${isSong ? 'hover:bg-white/10' : 'opacity-30 cursor-not-allowed'} ${userVote === 'dislike' ? 'text-red-400 scale-110 shadow-lg shadow-red-400/50' : activeSkin === 'winamp' ? 'text-[#00ff00]' : 'text-gray-400 hover:text-white'}`}
                 aria-label="Dislike this song"
             >
                 <ThumbDownIcon className="w-7 h-7" />
             </button>
         </div>
       </div>
+      
+      {/* Controls Area */}
       <div className="flex-shrink-0 flex flex-col gap-4 z-10">
         <div className="w-full max-w-sm mx-auto"><LiveReactions/></div>
         <div className="w-full h-16">
@@ -423,24 +462,28 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                 </div>
             )}
         </div>
-        <div className="flex items-center justify-center gap-8 text-white">
-          <button onClick={onPreviousStation} className="text-gray-300 hover:text-white transition-colors"><BackwardIcon /></button>
-          <button onClick={togglePlayPause} className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center text-[var(--accent-color)] ring-2 ring-white/20 hover:scale-105 transition-transform">
+        
+        <div className={`flex items-center justify-center gap-8 ${activeSkin === 'winamp' ? 'text-[#00ff00]' : activeSkin === 'wooden' ? 'text-[#4a3728]' : 'text-white'}`}>
+          <button onClick={onPreviousStation} className={`${activeSkin === 'boombox' ? 'bg-gray-300 text-black w-12 h-12 rounded-full border-b-4 border-gray-500 active:border-b-0 active:translate-y-1' : ''} hover:scale-110 transition-transform`}><BackwardIcon /></button>
+          
+          <button onClick={togglePlayPause} className={`w-20 h-20 rounded-full flex items-center justify-center transition-transform ${activeSkin === 'modern' ? 'bg-white/10 text-[var(--accent-color)] ring-2 ring-white/20 hover:scale-105' : activeSkin === 'winamp' ? 'border-2 border-[#00ff00] text-[#00ff00]' : activeSkin === 'boombox' ? 'bg-red-600 border-b-8 border-red-800 active:border-b-0 active:translate-y-2 shadow-lg' : 'bg-[#d4a017] text-[#3b2417] shadow-xl border-4 border-[#8b5a2b]'}`}>
             <div className="w-10 h-10">{isPlaying ? <PauseIcon/> : <PlayIcon/>}</div>
           </button>
-          <button onClick={onNextStation} className="text-gray-300 hover:text-white transition-colors"><ForwardIcon /></button>
+          
+          <button onClick={onNextStation} className={`${activeSkin === 'boombox' ? 'bg-gray-300 text-black w-12 h-12 rounded-full border-b-4 border-gray-500 active:border-b-0 active:translate-y-1' : ''} hover:scale-110 transition-transform`}><ForwardIcon /></button>
         </div>
-        <div className="w-full max-w-sm mx-auto">
-            <div className="grid grid-cols-6 text-gray-400 relative gap-2">
+        
+        <div className="w-full max-w-sm mx-auto mt-4">
+            <div className={`grid grid-cols-6 relative gap-2 ${activeSkin === 'winamp' ? 'bg-[#202020] p-2 border border-[#808080]' : ''}`}>
                 <ControlButton icon={<InfoIcon/>} label="Info" onClick={() => setIsInfoModalOpen(true)} hasFeature={isSong}/>
                 <ControlButton icon={<EqIcon/>} label="Equalizer" onClick={() => setIsEqModalOpen(true)}/>
                 <ControlButton icon={<CassetteIcon className="w-6 h-6"/>} label="Vinyl Mode" onClick={() => setIsVinylMode(!isVinylMode)} isActive={isVinylMode}/>
                 <ControlButton icon={<ChatIcon/>} label="Chat" onClick={onToggleChat}/>
                  <ControlButton 
-                    icon={<FireIcon className={`w-5 h-5 text-orange-500 ${hypeScore > 80 ? 'animate-bounce' : 'animate-pulse'}`}/>} 
+                    icon={<FireIcon className={`w-5 h-5 ${activeSkin === 'modern' ? 'text-orange-500' : ''} ${hypeScore > 80 ? 'animate-bounce' : 'animate-pulse'}`}/>} 
                     label="HYPE" 
                     onClick={onHype} 
-                    className="bg-orange-500/20 hover:bg-orange-500/40 border border-orange-500/50 text-orange-300"
+                    className={activeSkin === 'modern' ? "bg-orange-500/20 hover:bg-orange-500/40 border border-orange-500/50 text-orange-300" : ""}
                     progress={hypeScore}
                 />
                 <ControlButton icon={<ShareIcon/>} label="Share" onClick={() => setIsShareModalOpen(true)}/>

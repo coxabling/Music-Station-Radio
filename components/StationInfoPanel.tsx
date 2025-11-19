@@ -1,10 +1,12 @@
 
 
+
+
 import React, { useState } from 'react';
-import type { Station, StationReview, User } from '../types';
+import type { Station, StationReview, User, Bounty } from '../types';
 import { StarRating } from './StarRating';
 import { formatTimeAgo } from '../utils/time';
-import { UploadIcon, ShieldCheckIcon, HeartIcon } from '../constants';
+import { UploadIcon, ShieldCheckIcon, HeartIcon, FireIcon, CheckCircleIcon } from '../constants';
 import { RoleBadge } from './RoleBadge';
 import { StationGuestbook } from './StationGuestbook';
 import { RequestSongModal } from './RequestSongModal';
@@ -24,6 +26,8 @@ interface StationInfoPanelProps {
   currentUser: User | null;
   onOpenMusicSubmissionModal: (station: Station) => void;
   onOpenClaimModal: (station: Station) => void;
+  bounties?: Bounty[];
+  onOpenJingleModal: () => void;
 }
 
 const PlayIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.546l-6.38 8.195A2 2 0 005.46 15H14.54a2 2 0 001.84-3.259L10 3.546z" transform="rotate(90 10 10)" /></svg>;
@@ -73,9 +77,21 @@ const ReviewForm: React.FC<{ onSubmit: (rating: number, text: string) => void }>
     );
 };
 
+const BountyCard: React.FC<{ bounty: Bounty }> = ({ bounty }) => (
+    <div className={`p-3 rounded-lg border flex items-center gap-3 ${bounty.completed ? 'bg-green-900/20 border-green-500/50' : 'bg-gray-800/50 border-gray-700/50'}`}>
+        <div className={`p-2 rounded-full ${bounty.completed ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+            {bounty.completed ? <CheckCircleIcon className="w-5 h-5"/> : <FireIcon className="w-5 h-5"/>}
+        </div>
+        <div className="flex-1">
+            <p className={`text-sm font-bold ${bounty.completed ? 'text-green-400' : 'text-gray-200'}`}>{bounty.description}</p>
+            <p className="text-xs text-gray-400">Reward: <span className="text-yellow-400 font-mono">{bounty.reward} pts</span></p>
+        </div>
+    </div>
+);
+
 export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
-  const { station, mockReviews, userReviews, onAddReview, onSelectStation, onRateStation, onToggleFavorite, userRating, isOwner, onEdit, currentUser, onOpenMusicSubmissionModal, onOpenClaimModal } = props;
-  const [activeTab, setActiveTab] = useState<'reviews' | 'guestbook'>('reviews');
+  const { station, mockReviews, userReviews, onAddReview, onSelectStation, onRateStation, onToggleFavorite, userRating, isOwner, onEdit, currentUser, onOpenMusicSubmissionModal, onOpenClaimModal, bounties, onOpenJingleModal } = props;
+  const [activeTab, setActiveTab] = useState<'reviews' | 'guestbook' | 'bounties'>('reviews');
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
 
   const allReviewsForStation = React.useMemo(() => {
@@ -163,11 +179,16 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
                     <PlayIcon className="h-5 w-5"/> Tune In
                 </button>
              </div>
+             
+             <button onClick={onOpenJingleModal} className="w-full bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-xs font-bold py-2 rounded border border-purple-500/40">
+                 🎙️ Record Station Jingle
+             </button>
         </div>
         
         <div className="border-b border-gray-700/50 mt-4 px-4 flex gap-4">
             <button onClick={() => setActiveTab('reviews')} className={`pb-2 text-sm font-bold ${activeTab === 'reviews' ? 'text-[var(--accent-color)] border-b-2 border-[var(--accent-color)]' : 'text-gray-400'}`}>Reviews</button>
             <button onClick={() => setActiveTab('guestbook')} className={`pb-2 text-sm font-bold ${activeTab === 'guestbook' ? 'text-[var(--accent-color)] border-b-2 border-[var(--accent-color)]' : 'text-gray-400'}`}>Guestbook</button>
+            <button onClick={() => setActiveTab('bounties')} className={`pb-2 text-sm font-bold ${activeTab === 'bounties' ? 'text-[var(--accent-color)] border-b-2 border-[var(--accent-color)]' : 'text-gray-400'}`}>Bounties</button>
         </div>
 
         <div className="p-4 overflow-y-auto flex-grow">
@@ -198,6 +219,12 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
                     onAddEntry={(msg) => console.log('Guestbook entry added:', msg)} 
                     currentUser={currentUser}
                 />
+            )}
+            {activeTab === 'bounties' && bounties && (
+                <div className="space-y-3">
+                    <p className="text-xs text-gray-400 text-center mb-2">Complete active bounties to earn big points!</p>
+                    {bounties.map(b => <BountyCard key={b.id} bounty={b} />)}
+                </div>
             )}
         </div>
         

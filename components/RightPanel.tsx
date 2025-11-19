@@ -1,7 +1,9 @@
 
 
+
+
 import React, { useState } from 'react';
-import type { Station, User, ListeningStats, StationReview, NowPlaying } from '../types';
+import type { Station, User, ListeningStats, StationReview, NowPlaying, Bounty } from '../types';
 import { StationInfoPanel } from './StationInfoPanel';
 import { CommunityFeed } from './CommunityFeed';
 import { GenreChatView } from './GenreChatView';
@@ -27,6 +29,8 @@ interface RightPanelProps {
     onToggleFavorite: (station: Station) => void;
     nowPlaying: NowPlaying | null;
     onGiftStation?: (station: Station) => void;
+    bounties?: Bounty[];
+    onOpenJingleModal: () => void;
 }
 
 type ActiveTab = 'details' | 'community' | 'chat' | 'friends';
@@ -64,6 +68,8 @@ export const RightPanel: React.FC<RightPanelProps> = (props) => {
                         isOwner={!!(props.currentUser && props.station && props.station.owner === props.currentUser.username)}
                         mockReviews={MOCK_REVIEWS}
                         onToggleFavorite={props.onToggleFavorite}
+                        bounties={props.bounties}
+                        onOpenJingleModal={props.onOpenJingleModal}
                         {...props}
                     />
                 );

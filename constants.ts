@@ -1,7 +1,8 @@
 
 
+
 import React from 'react';
-import type { Station, EQBand, EQPreset, Theme, Achievement, AchievementID, LeaderboardEntry, TranslationLanguage, ListeningEvent, StationReview, CommunityEvent, MusicSubmission, AvatarFrame, FriendActivity, Quest, CollectorCard } from './types';
+import type { Station, EQBand, EQPreset, Theme, Achievement, AchievementID, LeaderboardEntry, TranslationLanguage, ListeningEvent, StationReview, CommunityEvent, MusicSubmission, AvatarFrame, FriendActivity, Quest, CollectorCard, PlayerSkin, Bounty, Stock } from './types';
 
 // --- Achievement Icons (using React.createElement to avoid JSX in .ts file) ---
 const PlayIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8.006v3.988a1 1 0 001.555.832l3.197-2.005a1 1 0 000-1.664L9.555 7.168z", clipRule: "evenodd" }));
@@ -27,6 +28,7 @@ export const XCircleIcon: React.FC<{className?: string}> = ({className = ''}) =>
 export const UserCircleIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns:"http://www.w3.org/2000/svg", className, viewBox:"0 0 20 20", fill:"currentColor"}, React.createElement('path', {fillRule:"evenodd", d:"M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z", clipRule:"evenodd"}));
 export const UserGroupIcon: React.FC<{className?: string}> = ({className}) => React.createElement('svg', {xmlns:"http://www.w3.org/2000/svg", className, fill:"none", viewBox:"0 0 24 24", strokeWidth:1.5, stroke:"currentColor"}, React.createElement('path', {strokeLinecap:"round", strokeLinejoin:"round", d:"M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m-7.5-2.969A3 3 0 006 10.729v8.54a3 3 0 001.258 2.548m-4.01-15.045A3 3 0 004.01 4.5v8.54a3 3 0 001.258 2.548M12 15a3 3 0 100-6 3 3 0 000 6z"}));
 export const DeviceIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"}));
+export const SpeakerIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"}));
 
 
 // --- Sidebar Icons ---
@@ -182,6 +184,25 @@ export const CARDS_DB: Omit<CollectorCard, 'id' | 'acquiredAt'>[] = [
   { name: 'Golden Vinyl', rarity: 'legendary', image: 'https://picsum.photos/seed/vinyl/100', description: 'A rare golden record.' },
   { name: 'Retro Mic', rarity: 'rare', image: 'https://picsum.photos/seed/mic/100', description: 'Old school microphone.' },
   { name: 'Boombox', rarity: 'common', image: 'https://picsum.photos/seed/boombox/100', description: 'Classic street sound.' },
+];
+
+export const PLAYER_SKINS: PlayerSkin[] = [
+    { id: 'modern', name: 'Glass Modern', description: 'The default sleek, translucent look.', cost: 0, previewImage: 'https://picsum.photos/seed/modern_skin/200' },
+    { id: 'winamp', name: 'Winamp Classic', description: 'Nostalgic 2000s player interface with green text.', cost: 500, previewImage: 'https://picsum.photos/seed/winamp_skin/200' },
+    { id: 'boombox', name: '80s Boombox', description: 'Metallic textures and big speakers.', cost: 1000, previewImage: 'https://picsum.photos/seed/boombox_skin/200' },
+    { id: 'wooden', name: '1950s Radio', description: 'Vintage wood grain and analog vibes.', cost: 800, previewImage: 'https://picsum.photos/seed/wooden_skin/200' },
+];
+
+export const BOUNTIES: Bounty[] = [
+    { id: 'b1', targetType: 'artist', targetValue: 'Burna Boy', description: 'Listen to a track by Burna Boy', reward: 300, completed: false },
+    { id: 'b2', targetType: 'genre', targetValue: 'Reggae', description: 'Vibe to Reggae for 10 mins', reward: 150, completed: false },
+    { id: 'b3', targetType: 'station', targetValue: 'High Grade Radio', description: 'Tune into High Grade Radio', reward: 100, completed: false },
+];
+
+export const STOCKS: Stock[] = [
+    { stationUrl: 'https://music-station.live/listen/high_grade_radio/radio.mp3', stationName: 'High Grade Radio', symbol: 'HGR', price: 120.50, change: 2.4, owned: 0 },
+    { stationUrl: 'https://music-station.live/listen/namradio/radio.mp3', stationName: 'Nam Radio', symbol: 'NAM', price: 85.20, change: -0.8, owned: 0 },
+    { stationUrl: 'https://music-station.live/listen/pamtengo_radio/radio.mp3', stationName: 'Pamtengo Radio', symbol: 'PMR', price: 95.00, change: 1.2, owned: 0 },
 ];
 
 export const EQ_BANDS: EQBand[] = [

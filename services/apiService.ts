@@ -38,7 +38,12 @@ const createDefaultUserData = (): Omit<UserData, 'role'> => ({
     quests: [],
     bets: [],
     collection: [],
-    profile: { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [] }
+    profile: { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [] },
+    // New Features
+    activeSkin: 'modern',
+    unlockedSkins: ['modern'],
+    portfolio: {},
+    completedBounties: []
 });
 
 

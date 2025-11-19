@@ -23,8 +23,8 @@ import { AdminDashboardView } from './components/AdminDashboardView';
 import { StationManagerDashboardView } from './components/StationManagerDashboardView';
 import { ArtistDashboardView } from './components/ArtistDashboardView';
 import { RightPanel } from './components/RightPanel';
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon } from './constants';
-import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, Quest, CollectorCard, Lounge, UserProfile, AvatarFrame } from './types';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, STOCKS, BOUNTIES } from './constants';
+import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, Quest, CollectorCard, Lounge, UserProfile, AvatarFrame, SkinID, Stock, Bounty, Jingle, PlayerSkin } from './types';
 import { getDominantColor } from './utils/colorExtractor';
 import { LandingPage } from './components/LandingPage';
 import { getUserData, updateUserData, createUserData, followUser, unfollowUser } from './services/apiService';
@@ -44,6 +44,8 @@ import { CoinExplosionOverlay } from './components/CoinExplosionOverlay';
 import { UserProfileModal } from './components/UserProfileModal';
 import { SettingsModal } from './components/SettingsModal';
 import { RequestSongModal } from './components/RequestSongModal';
+import { StockMarketModal } from './components/StockMarketModal';
+import { JingleModal } from './components/JingleModal';
 
 const hexToRgb = (hex: string) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -98,6 +100,9 @@ const App: React.FC = () => {
   const [giftRecipient, setGiftRecipient] = useState<string | null>(null);
   const [isLoungeModalOpen, setIsLoungeModalOpen] = useState(false);
   const [isThemeCreatorOpen, setIsThemeCreatorOpen] = useState(false);
+  const [isStockMarketOpen, setIsStockMarketOpen] = useState(false);
+  const [isJingleModalOpen, setIsJingleModalOpen] = useState(false);
+
   
   // Profile state
   const [viewingProfile, setViewingProfile] = useState<string | null>(null);
@@ -124,6 +129,15 @@ const App: React.FC = () => {
   const [hypeScore, setHypeScore] = useState(0);
   const [isHypeActive, setIsHypeActive] = useState(false);
   const [isCoinActive, setIsCoinActive] = useState(false);
+  
+  // New Feature State
+  const [activeSkin, setActiveSkin] = useState<SkinID>('modern');
+  const [unlockedSkins, setUnlockedSkins] = useState<SkinID[]>(['modern']);
+  const [stocks, setStocks] = useState<Stock[]>(STOCKS);
+  const [portfolio, setPortfolio] = useState<Record<string, number>>({});
+  const [bounties, setBounties] = useState<Bounty[]>(BOUNTIES);
+  const [jingles, setJingles] = useState<Jingle[]>([]);
+
   
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const [raidStatus, setRaidStatus] = useState<'idle' | 'voting'>('idle');
@@ -202,6 +216,29 @@ const App: React.FC = () => {
       }
   }, [stats.totalTime, currentUser]);
 
+  // Check Bounties
+  useEffect(() => {
+      if (!nowPlaying || !currentUser) return;
+      
+      const activeBounties = bounties.filter(b => !b.completed);
+      activeBounties.forEach(bounty => {
+          let matched = false;
+          if (bounty.targetType === 'artist' && nowPlaying.artist.toLowerCase().includes(bounty.targetValue.toLowerCase())) matched = true;
+          if (bounty.targetType === 'station' && currentStation?.name.toLowerCase().includes(bounty.targetValue.toLowerCase())) matched = true;
+          if (bounty.targetType === 'genre' && currentStation?.genre.toLowerCase().includes(bounty.targetValue.toLowerCase())) matched = true;
+
+          if (matched) {
+              // Claim bounty
+              const newBounties = bounties.map(b => b.id === bounty.id ? { ...b, completed: true } : b);
+              setBounties(newBounties);
+              const newPoints = (stats.points || 0) + bounty.reward;
+              setStats(prev => ({ ...prev, points: newPoints }));
+              updateUserData(currentUser.username, { stats: { ...stats, points: newPoints }, completedBounties: newBounties.filter(b => b.completed).map(b => b.id) });
+              
+              setToasts(t => [...t, { id: Date.now(), title: 'Bounty Complete!', message: `Earned ${bounty.reward} pts`, icon: StarIcon, type: 'success' }]);
+          }
+      });
+  }, [nowPlaying, currentStation, bounties, currentUser]);
 
   // Dynamic Favicon Logic
   useEffect(() => {
@@ -310,7 +347,7 @@ const App: React.FC = () => {
     setBets(data.bets || []);
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
-    setUnlockedFrames((data.unlockedFrames as string[]) || []);
+    setUnlockedFrames(data.unlockedFrames || []);
     setUserProfile(data.profile || { 
         bio: '', 
         topArtists: [] as string[], 
@@ -319,6 +356,14 @@ const App: React.FC = () => {
         followers: [] as string[] 
     });
     setCustomThemes(data.customThemes || []);
+    setActiveSkin(data.activeSkin || 'modern');
+    setUnlockedSkins(data.unlockedSkins || ['modern']);
+    setPortfolio(data.portfolio || {});
+    
+    // Restore completed bounties
+    if(data.completedBounties) {
+        setBounties(prev => prev.map(b => data.completedBounties.includes(b.id) ? { ...b, completed: true } : b));
+    }
 
     let defaultView: ActiveView = 'dashboard';
     if (user.role === 'admin') defaultView = 'admin';
@@ -483,7 +528,7 @@ const App: React.FC = () => {
     
     if (currentPoints >= frame.cost) {
       const newPoints = currentPoints - frame.cost;
-      const newUnlocked = [...(unlockedFrames as string[]), frame.id];
+      const newUnlocked = [...unlockedFrames, frame.id];
       
       setStats(prev => ({ ...prev, points: newPoints }));
       setUnlockedFrames(newUnlocked);
@@ -509,6 +554,40 @@ const App: React.FC = () => {
         type: 'error' 
       }]);
     }
+  };
+  
+  const handleUnlockSkin = (skin: PlayerSkin) => {
+      if (!currentUser) return;
+      const currentPoints = stats.points || 0;
+      
+      if (currentPoints >= skin.cost) {
+          const newPoints = currentPoints - skin.cost;
+          const newUnlocked = [...unlockedSkins, skin.id];
+          
+          setStats(prev => ({ ...prev, points: newPoints }));
+          setUnlockedSkins(newUnlocked);
+          
+          updateUserData(currentUser.username, {
+            stats: { ...stats, points: newPoints },
+            unlockedSkins: newUnlocked
+          });
+          
+           setToasts(t => [...t, { 
+            id: Date.now(), 
+            title: 'Skin Unlocked!', 
+            message: `You purchased ${skin.name}`, 
+            icon: StarIcon, 
+            type: 'theme_unlocked' 
+          }]);
+      } else {
+          setToasts(t => [...t, { 
+            id: Date.now(), 
+            title: 'Insufficient Points', 
+            message: `Need ${skin.cost - currentPoints} more points.`, 
+            icon: LockIcon, 
+            type: 'error' 
+          }]);
+      }
   };
 
   const handleSongVote = (songId: string, voteType: 'like' | 'dislike') => {
@@ -635,6 +714,54 @@ const App: React.FC = () => {
           setToasts(t => [...t, { id: Date.now(), title: `Sleep Timer Set`, message: `Stopping in ${minutes} mins`, icon: UserIcon, type: 'success' }]);
       }
   };
+  
+  const handleStockTransaction = (symbol: string, amount: number, type: 'buy' | 'sell') => {
+      if (!currentUser) return;
+      const stock = stocks.find(s => s.symbol === symbol);
+      if (!stock) return;
+      
+      const totalCost = stock.price * amount;
+      let newPoints = stats.points || 0;
+      let newPortfolio = { ...portfolio };
+      
+      if (type === 'buy') {
+          if (newPoints < totalCost) {
+              setToasts(t => [...t, { id: Date.now(), title: 'Insufficient Points', icon: LockIcon, type: 'error' }]);
+              return;
+          }
+          newPoints -= totalCost;
+          newPortfolio[symbol] = (newPortfolio[symbol] || 0) + amount;
+           setToasts(t => [...t, { id: Date.now(), title: `Bought ${amount} ${symbol}`, message: `Spent ${totalCost.toFixed(0)} pts`, icon: StarIcon, type: 'success' }]);
+      } else {
+          if ((newPortfolio[symbol] || 0) < amount) {
+              setToasts(t => [...t, { id: Date.now(), title: 'Insufficient Stock', icon: LockIcon, type: 'error' }]);
+              return;
+          }
+          newPoints += totalCost;
+          newPortfolio[symbol] -= amount;
+          if (newPortfolio[symbol] === 0) delete newPortfolio[symbol];
+           setToasts(t => [...t, { id: Date.now(), title: `Sold ${amount} ${symbol}`, message: `Earned ${totalCost.toFixed(0)} pts`, icon: StarIcon, type: 'success' }]);
+      }
+      
+      setStats(prev => ({ ...prev, points: newPoints }));
+      setPortfolio(newPortfolio);
+      updateUserData(currentUser.username, { stats: { ...stats, points: newPoints }, portfolio: newPortfolio });
+  }
+  
+  const handleSubmitJingle = (blob: Blob) => {
+      // In a real app, this would upload the blob. Here we just mock it.
+      if (!currentUser) return;
+      const newJingle: Jingle = {
+          id: `jingle_${Date.now()}`,
+          url: URL.createObjectURL(blob),
+          stationUrl: currentStation?.streamUrl || '',
+          creator: currentUser.username,
+          status: 'pending',
+          timestamp: new Date().toISOString()
+      };
+      setJingles(prev => [...prev, newJingle]);
+      setToasts(t => [...t, { id: Date.now(), title: 'Jingle Submitted!', message: 'Waiting for station manager approval.', icon: FireIcon, type: 'success' }]);
+  }
 
   // Hype Logic: Decay & Simulation
   useEffect(() => {
@@ -653,6 +780,18 @@ const App: React.FC = () => {
       }, 1000);
 
       return () => { clearInterval(decay); clearInterval(sim); };
+  }, []);
+  
+  // Stock Price Simulation
+  useEffect(() => {
+      const interval = setInterval(() => {
+          setStocks(prev => prev.map(s => {
+              const change = (Math.random() - 0.5) * 2;
+              const newPrice = Math.max(10, s.price + change);
+              return { ...s, price: parseFloat(newPrice.toFixed(2)), change: parseFloat(change.toFixed(2)) };
+          }));
+      }, 5000);
+      return () => clearInterval(interval);
   }, []);
 
   // Friend Notifications Simulation
@@ -706,9 +845,6 @@ const App: React.FC = () => {
                 setIsPlaying(prev => !prev);
                 break;
             case 'KeyM':
-                // Mute toggle usually handled in RadioPlayer local state, 
-                // but we can trigger a toast or implement a global mute state if needed.
-                // For now, we'll just show a toast as feedback since volume is local.
                 setToasts(t => [...t, { id: Date.now(), title: 'Use Player controls', message: 'Mute is handled in player bar.', icon: UserIcon, type: 'info' }]);
                 break;
             case 'KeyF':
@@ -726,6 +862,8 @@ const App: React.FC = () => {
                  setIsSettingsModalOpen(false);
                  setStationForDetail(null);
                  setViewingProfile(null);
+                 setIsStockMarketOpen(false);
+                 setIsJingleModalOpen(false);
                  break;
         }
     };
@@ -757,7 +895,11 @@ const App: React.FC = () => {
                 activeFrame={activeFrame}
                 unlockedFrames={unlockedFrames}
                 onSetFrame={(f) => { setActiveFrame(f); if(currentUser) updateUserData(currentUser.username, { activeFrame: f }); }}
-                onUnlockFrame={handleUnlockFrame} 
+                onUnlockFrame={handleUnlockFrame}
+                activeSkin={activeSkin}
+                unlockedSkins={unlockedSkins}
+                onSetSkin={(s) => { setActiveSkin(s); if(currentUser) updateUserData(currentUser.username, { activeSkin: s }); }}
+                onUnlockSkin={handleUnlockSkin}
             />
         );
       case 'leaderboard':
@@ -825,7 +967,7 @@ const App: React.FC = () => {
 
             <div className={`flex flex-1 overflow-hidden transition-opacity duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                 {/* Sidebar */}
-                {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModalOpen(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} />}
+                {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModalOpen(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} onOpenStockMarket={() => setIsStockMarketOpen(true)} />}
                 
                 <main id="main-content" className="flex-1 overflow-y-auto pb-24">
                     {renderActiveView()}
@@ -845,6 +987,8 @@ const App: React.FC = () => {
                     onOpenClaimModal={() => {}} 
                     onToggleFavorite={handleToggleFavorite}
                     nowPlaying={nowPlaying}
+                    bounties={bounties}
+                    onOpenJingleModal={() => setIsJingleModalOpen(true)}
                 />
             </div>
             
@@ -893,6 +1037,7 @@ const App: React.FC = () => {
                   isDataSaver={isDataSaver}
                   sleepTimerTarget={sleepTimerTarget}
                   userSongVotes={stats.songUserVotes}
+                  activeSkin={activeSkin} // New prop
                 />
               )}
 
@@ -912,7 +1057,22 @@ const App: React.FC = () => {
         </div>
       </div>
       
-      <BuyNowModal isOpen={isBuyNowModalOpen} onClose={() => setIsBuyNowModalOpen(false)} nowPlaying={nowPlaying} />
+      <BuyNowModal isOpen={isBuyNowModalOpen} onClose={() => setIsBuyNowModalOpen(false)} nowPlaying={nowPlaying} onPurchase={() => { 
+          if(currentUser && nowPlaying && nowPlaying.albumArt) {
+               // Simulate digital vinyl addition
+              const newCard: CollectorCard = {
+                  id: `vinyl_${Date.now()}`,
+                  name: nowPlaying.title,
+                  description: `Digital Vinyl for ${nowPlaying.title}`,
+                  image: nowPlaying.albumArt,
+                  rarity: 'rare',
+                  acquiredAt: new Date().toISOString()
+              };
+              setCollection([...collection, newCard]);
+              updateUserData(currentUser.username, { collection: [...collection, newCard] });
+              setToasts(t => [...t, { id: Date.now(), title: 'Digital Vinyl Added!', message: `You collected ${nowPlaying.title}`, icon: StarIcon, type: 'success' }]);
+          }
+      }} />
       <SettingsModal 
         isOpen={isSettingsModalOpen} 
         onClose={() => setIsSettingsModalOpen(false)}
@@ -934,6 +1094,20 @@ const App: React.FC = () => {
         onFollow={handleToggleFollow}
         isFollowing={!!(userProfile && viewingProfile && userProfile.following.includes(viewingProfile))}
       />
+      <StockMarketModal 
+          isOpen={isStockMarketOpen} 
+          onClose={() => setIsStockMarketOpen(false)} 
+          stocks={stocks} 
+          portfolio={portfolio} 
+          userPoints={stats.points || 0} 
+          onTransaction={handleStockTransaction} 
+      />
+      <JingleModal 
+        isOpen={isJingleModalOpen}
+        onClose={() => setIsJingleModalOpen(false)}
+        onSubmit={handleSubmitJingle}
+      />
+
       <LoginModal isOpen={isLoginModalOpen} onLogin={handleLogin} />
       <SubmitStationModal isOpen={isSubmitModalOpen} onClose={() => setIsSubmitModalOpen(false)} onSubmit={()=>{}} />
       <AlarmModal isOpen={isAlarmModalOpen} onClose={() => setIsAlarmModalOpen(false)} alarm={alarm} onSetAlarm={setAlarm} favoriteStations={userStations} />

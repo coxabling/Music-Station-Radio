@@ -1,4 +1,5 @@
 
+
 import type * as React from 'react';
 
 export interface User {
@@ -127,6 +128,16 @@ export interface Theme {
   backgroundImage?: string; // New
 }
 
+export type SkinID = 'modern' | 'winamp' | 'boombox' | 'wooden';
+export interface PlayerSkin {
+    id: SkinID;
+    name: string;
+    description: string;
+    cost: number;
+    previewImage?: string;
+}
+
+
 // Type for Song Voting
 export interface SongVote {
   id: string; 
@@ -239,6 +250,34 @@ export interface Quest {
   isClaimed: boolean;
 }
 
+// New Features Types
+export interface Stock {
+    stationUrl: string;
+    stationName: string;
+    symbol: string;
+    price: number;
+    change: number; // Percentage change
+    owned: number;
+}
+
+export interface Bounty {
+    id: string;
+    targetType: 'artist' | 'genre' | 'station';
+    targetValue: string; // e.g. "Burna Boy" or "Reggae"
+    description: string;
+    reward: number;
+    completed: boolean;
+}
+
+export interface Jingle {
+    id: string;
+    url: string; // Blob URL for now
+    stationUrl: string;
+    creator: string;
+    status: 'pending' | 'approved' | 'rejected';
+    timestamp: string;
+}
+
 export interface CollectorCard {
   id: string;
   name: string;
@@ -309,6 +348,12 @@ export interface UserData {
     quests?: Quest[];
     bets?: Bet[];
     collection?: CollectorCard[];
+    
+    // New
+    activeSkin: SkinID;
+    unlockedSkins: SkinID[];
+    portfolio: Record<string, number>; // Station URL -> Quantity
+    completedBounties: string[];
 }
 
 // For music submissions by artists
