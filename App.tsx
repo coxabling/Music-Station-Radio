@@ -237,7 +237,7 @@ const App: React.FC = () => {
         return;
     }
     
-    const favUrls = new Set(data.favoriteStationUrls as unknown as string[]);
+    const favUrls = new Set(data.favoriteStationUrls || []);
     const stationsWithFavorites = defaultStations.map(s => ({...s, isFavorite: favUrls.has(s.streamUrl)}));
     const userStationsWithFavorites = data.userStations.map(s => ({...s, isFavorite: favUrls.has(s.streamUrl)}));
     const allKnownStations = [...stationsWithFavorites, ...userStationsWithFavorites];
@@ -249,7 +249,7 @@ const App: React.FC = () => {
     setUserStations(data.userStations);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
-    setUnlockedThemes(new Set(data.unlockedThemes as unknown as ThemeName[]));
+    setUnlockedThemes(new Set(data.unlockedThemes || []));
     setStats(data.stats);
     setAlarm(data.alarm);
     setSongVotes(data.songVotes);
@@ -258,7 +258,7 @@ const App: React.FC = () => {
     setBets(data.bets || []);
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
-    setUnlockedFrames((data.unlockedFrames || []) as unknown as string[]);
+    setUnlockedFrames(data.unlockedFrames || []);
     setUserProfile(data.profile || { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [] });
     setCustomThemes(data.customThemes || []);
 
@@ -334,6 +334,22 @@ const App: React.FC = () => {
       }
       setStationForDetail(station);
       setIsPlayerVisible(true);
+  };
+  
+  const handleNextStation = () => {
+    if (!currentStation) return;
+    const currentIndex = allStations.findIndex(s => s.streamUrl === currentStation.streamUrl);
+    if (currentIndex === -1) return;
+    const nextIndex = (currentIndex + 1) % allStations.length;
+    handleSelectStation(allStations[nextIndex]);
+  };
+
+  const handlePreviousStation = () => {
+    if (!currentStation) return;
+    const currentIndex = allStations.findIndex(s => s.streamUrl === currentStation.streamUrl);
+    if (currentIndex === -1) return;
+    const prevIndex = (currentIndex - 1 + allStations.length) % allStations.length;
+    handleSelectStation(allStations[prevIndex]);
   };
 
   const handleNowPlayingUpdate = useCallback((nowPlayingUpdate: NowPlaying | null) => {
@@ -582,8 +598,8 @@ const App: React.FC = () => {
                   station={currentStation}
                   allStations={allStations}
                   onNowPlayingUpdate={handleNowPlayingUpdate}
-                  onNextStation={() => {}}
-                  onPreviousStation={() => {}}
+                  onNextStation={handleNextStation}
+                  onPreviousStation={handlePreviousStation}
                   isImmersive={isImmersiveMode}
                   onToggleImmersive={() => setIsImmersiveMode(!isImmersiveMode)}
                   songVotes={songVotes}
