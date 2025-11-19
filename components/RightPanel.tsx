@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import type { Station, User, ListeningStats, StationReview, NowPlaying } from '../types';
 import { StationInfoPanel } from './StationInfoPanel';
@@ -23,6 +24,7 @@ interface RightPanelProps {
     onEdit: (station: Station) => void;
     onOpenMusicSubmissionModal: (station: Station) => void;
     onOpenClaimModal: (station: Station) => void;
+    onToggleFavorite: (station: Station) => void;
     nowPlaying: NowPlaying | null;
     onGiftStation?: (station: Station) => void;
 }
@@ -61,6 +63,7 @@ export const RightPanel: React.FC<RightPanelProps> = (props) => {
                         userReviews={props.stats.stationReviews?.[props.station?.streamUrl || ''] || []}
                         isOwner={!!(props.currentUser && props.station && props.station.owner === props.currentUser.username)}
                         mockReviews={MOCK_REVIEWS}
+                        onToggleFavorite={props.onToggleFavorite}
                         {...props}
                     />
                 );

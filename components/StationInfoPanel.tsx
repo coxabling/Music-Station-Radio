@@ -1,9 +1,10 @@
 
+
 import React, { useState } from 'react';
 import type { Station, StationReview, User } from '../types';
 import { StarRating } from './StarRating';
 import { formatTimeAgo } from '../utils/time';
-import { UploadIcon, ShieldCheckIcon, ChatBubbleIcon } from '../constants';
+import { UploadIcon, ShieldCheckIcon, HeartIcon } from '../constants';
 import { RoleBadge } from './RoleBadge';
 import { StationGuestbook } from './StationGuestbook';
 import { RequestSongModal } from './RequestSongModal';
@@ -16,6 +17,7 @@ interface StationInfoPanelProps {
   onAddReview: (stationUrl: string, review: Omit<StationReview, 'createdAt' | 'author' | 'authorRole'>) => void;
   onSelectStation: (station: Station) => void;
   onRateStation: (stationUrl: string, rating: number) => void;
+  onToggleFavorite: (station: Station) => void;
   userRating: number;
   isOwner?: boolean;
   onEdit?: (station: Station) => void;
@@ -72,7 +74,7 @@ const ReviewForm: React.FC<{ onSubmit: (rating: number, text: string) => void }>
 };
 
 export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
-  const { station, mockReviews, userReviews, onAddReview, onSelectStation, onRateStation, userRating, isOwner, onEdit, currentUser, onOpenMusicSubmissionModal, onOpenClaimModal } = props;
+  const { station, mockReviews, userReviews, onAddReview, onSelectStation, onRateStation, onToggleFavorite, userRating, isOwner, onEdit, currentUser, onOpenMusicSubmissionModal, onOpenClaimModal } = props;
   const [activeTab, setActiveTab] = useState<'reviews' | 'guestbook'>('reviews');
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
 
@@ -119,6 +121,14 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
                 <StarRating rating={userRating} onRate={(r) => onRateStation(station.streamUrl, r)} starClassName="h-6 w-6"/>
             </div>
             <div className="flex items-center gap-2 flex-wrap justify-center">
+                <button 
+                    onClick={() => onToggleFavorite(station)} 
+                    className={`flex items-center gap-2 font-bold py-2 px-3 rounded-md transition-colors text-sm ${station.isFavorite ? 'bg-pink-500/20 text-pink-400 hover:bg-pink-500/30' : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'}`}
+                >
+                    <HeartIcon className={`h-4 w-4 ${station.isFavorite ? 'fill-current' : ''}`}/>
+                    <span>{station.isFavorite ? 'Favorited' : 'Favorite'}</span>
+                </button>
+
                 {currentUser && !station.owner && !station.claimRequest && (
                     <button onClick={() => onOpenClaimModal(station)} className="flex items-center gap-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 font-bold py-2 px-3 rounded-md transition-colors text-sm">
                         <ShieldCheckIcon className="h-4 w-4"/>

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -22,7 +23,7 @@ import { AdminDashboardView } from './components/AdminDashboardView';
 import { StationManagerDashboardView } from './components/StationManagerDashboardView';
 import { ArtistDashboardView } from './components/ArtistDashboardView';
 import { RightPanel } from './components/RightPanel';
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon, FireIcon, StarIcon, LockIcon } from './constants';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon } from './constants';
 import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, Quest, CollectorCard, Lounge, UserProfile, AvatarFrame } from './types';
 import { getDominantColor } from './utils/colorExtractor';
 import { LandingPage } from './components/LandingPage';
@@ -232,6 +233,51 @@ const App: React.FC = () => {
     }
   }, [currentStation, isPlaying, accentColor]);
 
+  const unlockAchievement = useCallback((achievementId: AchievementID) => {
+    if (!currentUser) return;
+    setUnlockedAchievements(prev => {
+      if (prev[achievementId]) return prev;
+      const achievement = ACHIEVEMENTS[achievementId];
+      if (!achievement) return prev;
+      const newUnlocked: Record<string, UnlockedAchievement> = { ...prev, [achievementId]: { id: achievementId, unlockedAt: new Date().toISOString() }};
+      updateUserData(currentUser.username, { unlockedAchievements: newUnlocked });
+      setToasts(prevToasts => [...prevToasts, { id: Date.now(), title: achievement.name, icon: achievement.icon, type: 'achievement' }]);
+      return newUnlocked;
+    });
+  }, [currentUser]);
+
+  const handleToggleFavorite = useCallback((station: Station) => {
+      setFavoriteStationUrls(prev => {
+          const newSet = new Set(prev);
+          const isFav = newSet.has(station.streamUrl);
+          if (isFav) {
+              newSet.delete(station.streamUrl);
+              setToasts(t => [...t, { id: Date.now(), title: 'Removed from Favorites', icon: HeartIcon, type: 'info' }]);
+          } else {
+              newSet.add(station.streamUrl);
+              setToasts(t => [...t, { id: Date.now(), title: 'Added to Favorites', icon: HeartIcon, type: 'success' }]);
+               if (newSet.size === 1) unlockAchievement('curator');
+          }
+          
+          if (currentUser) {
+              updateUserData(currentUser.username, { favoriteStationUrls: Array.from(newSet) });
+          }
+          
+          return newSet;
+      });
+      
+      // Optimistic UI update
+      setAllStations(prev => prev.map(s => s.streamUrl === station.streamUrl ? { ...s, isFavorite: !s.isFavorite } : s));
+      
+      // Update detail panel if open
+      setStationForDetail(prev => {
+          if (prev && prev.streamUrl === station.streamUrl) {
+              return { ...prev, isFavorite: !prev.isFavorite };
+          }
+          return prev;
+      });
+  }, [currentUser, unlockAchievement]);
+
   const loadUserData = useCallback(async (username: string) => {
     setIsDataLoading(true);
 
@@ -264,7 +310,7 @@ const App: React.FC = () => {
     setBets(data.bets || []);
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
-    setUnlockedFrames(data.unlockedFrames || []);
+    setUnlockedFrames((data.unlockedFrames as string[]) || []);
     setUserProfile(data.profile || { 
         bio: '', 
         topArtists: [] as string[], 
@@ -323,19 +369,6 @@ const App: React.FC = () => {
     setAllStations(defaultStations);
   }, []);
 
-  const unlockAchievement = useCallback((achievementId: AchievementID) => {
-    if (!currentUser) return;
-    setUnlockedAchievements(prev => {
-      if (prev[achievementId]) return prev;
-      const achievement = ACHIEVEMENTS[achievementId];
-      if (!achievement) return prev;
-      const newUnlocked: Record<string, UnlockedAchievement> = { ...prev, [achievementId]: { id: achievementId, unlockedAt: new Date().toISOString() }};
-      updateUserData(currentUser.username, { unlockedAchievements: newUnlocked });
-      setToasts(prevToasts => [...prevToasts, { id: Date.now(), title: achievement.name, icon: achievement.icon, type: 'achievement' }]);
-      return newUnlocked;
-    });
-  }, [currentUser]);
-  
   const handleSelectStation = (station: Station) => { 
       if (currentStation?.streamUrl !== station.streamUrl) {
           setCurrentStation(station);
@@ -450,7 +483,7 @@ const App: React.FC = () => {
     
     if (currentPoints >= frame.cost) {
       const newPoints = currentPoints - frame.cost;
-      const newUnlocked = [...unlockedFrames, frame.id];
+      const newUnlocked = [...(unlockedFrames as string[]), frame.id];
       
       setStats(prev => ({ ...prev, points: newPoints }));
       setUnlockedFrames(newUnlocked);
@@ -680,9 +713,7 @@ const App: React.FC = () => {
                 break;
             case 'KeyF':
                 if (currentStation) {
-                   // Logic to favorite/unfavorite needs access to handler, wrapping in effect means we might need refs or dependency
-                   // For simplicity in this global handler without prop drilling mess:
-                   console.log('Favorite shortcut pressed'); 
+                   handleToggleFavorite(currentStation);
                 }
                 break;
             case 'ArrowRight':
@@ -701,7 +732,7 @@ const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentStation, allStations]); // Re-bind when stations change for next/prev
+  }, [currentStation, allStations, handleToggleFavorite]); // Re-bind when stations change for next/prev
 
   if (!hasEnteredApp) {
     return <LandingPage onEnter={() => setHasEnteredApp(true)} />;
@@ -751,7 +782,7 @@ const App: React.FC = () => {
                 searchQuery={searchQuery} 
                 onSearchChange={setSearchQuery} 
                 onOpenSubmitModal={() => setIsSubmitModalOpen(true)} 
-                onToggleFavorite={() => {}} 
+                onToggleFavorite={handleToggleFavorite} 
                 songVotes={songVotes} 
                 onOpenGenreSpotlight={setGenreForSpotlight}
                 onShowDetails={setStationForDetail}
@@ -812,6 +843,7 @@ const App: React.FC = () => {
                     onEdit={() => {}} 
                     onOpenMusicSubmissionModal={() => {}} 
                     onOpenClaimModal={() => {}} 
+                    onToggleFavorite={handleToggleFavorite}
                     nowPlaying={nowPlaying}
                 />
             </div>
@@ -909,6 +941,7 @@ const App: React.FC = () => {
       <SongChartModal isOpen={isSongChartModalOpen} onClose={() => setIsSongChartModalOpen(false)} songVotes={songVotes} />
       <EventsModal isOpen={isEventsModalOpen} onClose={() => setIsEventsModalOpen(false)} onSelectStation={(name) => { const s = allStations.find(st=>st.name===name); if(s) handleSelectStation(s); setIsEventsModalOpen(false); }} />
       <SongHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} history={stats.songHistory} />
+      <RequestSongModal isOpen={false} onClose={() => {}} stationName="" onSubmit={() => {}} />
     </div>
   );
 };
