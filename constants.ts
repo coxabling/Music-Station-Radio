@@ -1,6 +1,5 @@
-
 import React from 'react';
-import type { Station, EQBand, EQPreset, Theme, Achievement, AchievementID, LeaderboardEntry, TranslationLanguage, ListeningEvent, StationReview, CommunityEvent, MusicSubmission, AvatarFrame, FriendActivity, Quest, CollectorCard, PlayerSkin, Bounty, Stock } from './types';
+import type { Station, EQBand, EQPreset, Theme, Achievement, AchievementID, LeaderboardEntry, TranslationLanguage, ListeningEvent, StationReview, CommunityEvent, MusicSubmission, AvatarFrame, FriendActivity, Quest, CollectorCard, PlayerSkin, Bounty, Stock, GuestbookEntry } from './types';
 
 // --- Achievement Icons (using React.createElement to avoid JSX in .ts file) ---
 const PlayIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8.006v3.988a1 1 0 001.555.832l3.197-2.005a1 1 0 000-1.664L9.555 7.168z", clipRule: "evenodd" }));
@@ -199,9 +198,9 @@ export const BOUNTIES: Bounty[] = [
 ];
 
 export const STOCKS: Stock[] = [
-    { stationUrl: 'https://music-station.live/listen/high_grade_radio/radio.mp3', stationName: 'High Grade Radio', symbol: 'HGR', price: 120.50, change: 2.4, owned: 0 },
-    { stationUrl: 'https://music-station.live/listen/namradio/radio.mp3', stationName: 'Nam Radio', symbol: 'NAM', price: 85.20, change: -0.8, owned: 0 },
-    { stationUrl: 'https://music-station.live/listen/pamtengo_radio/radio.mp3', stationName: 'Pamtengo Radio', symbol: 'PMR', price: 95.00, change: 1.2, owned: 0 },
+    { stationUrl: 'https://music-station.live/listen/high_grade_radio/radio.mp3', stationName: 'High Grade Radio', symbol: 'HGR', price: 120.50, change: 2.4, owned: 0, priceHistory: [120.0, 120.2, 120.5] },
+    { stationUrl: 'https://music-station.live/listen/namradio/radio.mp3', stationName: 'Nam Radio', symbol: 'NAM', price: 85.20, change: -0.8, owned: 0, priceHistory: [85.5, 85.3, 85.2] },
+    { stationUrl: 'https://music-station.live/listen/pamtengo_radio/radio.mp3', stationName: 'Pamtengo Radio', symbol: 'PMR', price: 95.00, change: 1.2, owned: 0, priceHistory: [94.5, 94.8, 95.0] },
 ];
 
 export const EQ_BANDS: EQBand[] = [
@@ -264,6 +263,14 @@ export const MOCK_REVIEWS: Record<string, StationReview[]> = {
         { author: 'Listener2', rating: 4, text: 'Great selection.', createdAt: new Date(Date.now() - 20000000).toISOString() }
     ]
 };
+
+export const MOCK_GUESTBOOK_ENTRIES: GuestbookEntry[] = [
+    { id: 'gb1', username: 'ChillWave', message: 'First time here, amazing station!', timestamp: new Date(Date.now() - 50000000).toISOString() },
+    { id: 'gb2', username: 'PatiDance', message: 'Always brings the energy!', timestamp: new Date(Date.now() - 40000000).toISOString(), reply: 'Thanks for tuning in!' },
+    { id: 'gb3', username: 'GrooveGuru', message: 'Just what I needed this morning.', timestamp: new Date(Date.now() - 30000000).toISOString() },
+    { id: 'gb4', username: 'RhythmQueen', message: 'Keep up the fantastic work!', timestamp: new Date(Date.now() - 20000000).toISOString() },
+    { id: 'gb5', username: 'BeatMaster', message: 'My go-to for discovery.', timestamp: new Date(Date.now() - 10000000).toISOString(), reply: 'Glad you enjoy it!' },
+];
 
 // --- SOCIAL & COMMUNITY CONSTANTS ---
 

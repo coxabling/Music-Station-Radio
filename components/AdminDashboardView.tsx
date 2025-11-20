@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import type { Station, User, UserData } from '../types';
 import { formatTimeAgo } from '../utils/time';
@@ -114,7 +113,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ stations
     }, [stations, stationSearch]);
 
     // Stats
-    const totalUsers = allUsers.length + 1; // +1 for current admin
+    const totalUsers = allUsers.length + (currentUser ? 1 : 0); // +1 for current admin if logged in
     const totalStations = stations.length;
     const totalArtists = allUsers.filter(u => u.data.role === 'artist').length + (currentUser?.role === 'artist' ? 1 : 0);
     const totalOwners = allUsers.filter(u => u.data.role === 'owner').length + (currentUser?.role === 'owner' ? 1 : 0);

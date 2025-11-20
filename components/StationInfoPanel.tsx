@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useState } from 'react';
 import type { Station, StationReview, User, Bounty } from '../types';
 import { StarRating } from './StarRating';

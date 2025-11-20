@@ -1,4 +1,5 @@
 
+
 import type { UserData } from '../types';
 
 const SIMULATED_LATENCY = 50; // ms
@@ -43,7 +44,9 @@ const createDefaultUserData = (): Omit<UserData, 'role'> => ({
     activeSkin: 'modern',
     unlockedSkins: ['modern'],
     portfolio: {},
-    completedBounties: []
+    completedBounties: [],
+    // Fix: Add stockTransactions to the default data to match the UserData type.
+    stockTransactions: [],
 });
 
 

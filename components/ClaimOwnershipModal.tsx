@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import type { Station } from '../types';
+import type { Station, User } from '../types';
 
 interface ClaimOwnershipModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (station: Station, reason: string) => void;
+  onSubmit: (station: Station, reason: string, claimantUsername: string) => void;
   station: Station | null;
+  currentUser: User | null;
 }
 
-export const ClaimOwnershipModal: React.FC<ClaimOwnershipModalProps> = ({ isOpen, onClose, onSubmit, station }) => {
+export const ClaimOwnershipModal: React.FC<ClaimOwnershipModalProps> = ({ isOpen, onClose, onSubmit, station, currentUser }) => {
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
 
@@ -19,13 +20,14 @@ export const ClaimOwnershipModal: React.FC<ClaimOwnershipModalProps> = ({ isOpen
       return;
     }
     setError('');
-    if (station) {
-        onSubmit(station, reason);
+    if (station && currentUser) {
+        onSubmit(station, reason, currentUser.username);
     }
     setReason('');
+    onClose(); // Close modal on successful submission
   };
 
-  if (!isOpen || !station) return null;
+  if (!isOpen || !station || !currentUser) return null;
 
   return (
     <div 

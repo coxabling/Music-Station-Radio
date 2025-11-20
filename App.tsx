@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -24,8 +23,8 @@ import { StationManagerDashboardView } from './components/StationManagerDashboar
 import { ArtistDashboardView } from './components/ArtistDashboardView';
 import { RightPanel } from './components/RightPanel';
 import { HelpView } from './components/HelpView'; // New Import
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, STOCKS, BOUNTIES } from './constants';
-import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, Quest, CollectorCard, Lounge, UserProfile, AvatarFrame, SkinID, Stock, Bounty, Jingle, PlayerSkin } from './types';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, STOCKS, BOUNTIES, ShieldCheckIcon } from './constants';
+import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, Quest, CollectorCard, Lounge, UserProfile, AvatarFrame, SkinID, Stock, Bounty, Jingle, PlayerSkin, StockTransaction, StockSentiment, StockNewsEvent } from './types';
 import { getDominantColor } from './utils/colorExtractor';
 import { LandingPage } from './components/LandingPage';
 import { getUserData, updateUserData, createUserData, followUser, unfollowUser } from './services/apiService';
@@ -47,13 +46,14 @@ import { SettingsModal } from './components/SettingsModal';
 import { RequestSongModal } from './components/RequestSongModal';
 import { StockMarketModal } from './components/StockMarketModal';
 import { JingleModal } from './components/JingleModal';
+import { getMarketSentiment, generateStockNews } from './services/geminiService';
 
 const hexToRgb = (hex: string) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '103, 232, 249';
 };
 
-const App: React.FC = () => {
+export const App: React.FC = () => {
   const [hasEnteredApp, setHasEnteredApp] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -138,6 +138,8 @@ const App: React.FC = () => {
   const [portfolio, setPortfolio] = useState<Record<string, number>>({});
   const [bounties, setBounties] = useState<Bounty[]>(BOUNTIES);
   const [jingles, setJingles] = useState<Jingle[]>([]);
+  const [stockTransactions, setStockTransactions] = useState<StockTransaction[]>([]); // New
+  const [stockMarketNews, setStockMarketNews] = useState<StockNewsEvent[]>([]); // New
 
   
   const [toasts, setToasts] = useState<ToastData[]>([]);
@@ -202,20 +204,20 @@ const App: React.FC = () => {
         if (statsUpdateInterval.current) {
             clearInterval(statsUpdateInterval.current);
         }
-    }
+    };
     return () => {
         if (statsUpdateInterval.current) {
             clearInterval(statsUpdateInterval.current);
         }
     };
-  }, [currentStation, isPlaying, currentUser]);
+  }, [currentStation, isPlaying, currentUser, unlockedAchievements]);
 
   // Persist Stats Periodically (Every 10s)
   useEffect(() => {
       if (currentUser && stats.totalTime > 0 && stats.totalTime % 10 === 0) {
           updateUserData(currentUser.username, { stats });
       }
-  }, [stats.totalTime, currentUser]);
+  }, [stats.totalTime, currentUser, stats]);
 
   // Check Bounties
   useEffect(() => {
@@ -239,7 +241,7 @@ const App: React.FC = () => {
               setToasts(t => [...t, { id: Date.now(), title: 'Bounty Complete!', message: `Earned ${bounty.reward} pts`, icon: StarIcon, type: 'success' }]);
           }
       });
-  }, [nowPlaying, currentStation, bounties, currentUser]);
+  }, [nowPlaying, currentStation, bounties, currentUser, stats]);
 
   // Dynamic Favicon Logic
   useEffect(() => {
@@ -267,7 +269,10 @@ const App: React.FC = () => {
             frame++;
             requestAnimationFrame(animateFavicon);
         };
-        if (currentStation && isPlaying) animateFavicon();
+        if (currentStation && isPlaying) {
+          // Request the first frame, and it will loop if playing
+          requestAnimationFrame(animateFavicon);
+        }
     }
   }, [currentStation, isPlaying, accentColor]);
 
@@ -359,7 +364,7 @@ const App: React.FC = () => {
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
     // Fix: Ensure `unlockedFrames` is an array of strings when loading user data.
-    setUnlockedFrames(Array.isArray(data.unlockedFrames) ? (data.unlockedFrames as string[]) : []);
+    setUnlockedFrames(Array.isArray(data.unlockedFrames) ? (data.unlockedFrames as unknown[]).filter((item): item is string => typeof item === 'string') : []);
     setUserProfile(data.profile || { 
         bio: '', 
         topArtists: [] as string[], 
@@ -370,8 +375,10 @@ const App: React.FC = () => {
     setCustomThemes(data.customThemes || []);
     setActiveSkin(data.activeSkin || 'modern');
     // Fix: Ensure `unlockedSkins` is an array of `SkinID` when loading user data.
-    setUnlockedSkins(Array.isArray(data.unlockedSkins) ? (data.unlockedSkins as SkinID[]) : ['modern']);
+    setUnlockedSkins(Array.isArray(data.unlockedSkins) ? (data.unlockedSkins as unknown[]).filter((item): item is SkinID => typeof item === 'string') : ['modern']);
     setPortfolio(data.portfolio || {});
+    // Fix: Ensure `stockTransactions` is an array of `StockTransaction` when loading user data.
+    setStockTransactions(Array.isArray(data.stockTransactions) ? (data.stockTransactions as unknown[]).filter((item): item is StockTransaction => typeof item === 'object' && item !== null) : []);
     
     // Restore completed bounties
     // Fix: Ensure `data.completedBounties` is an array of strings before using `includes`.
@@ -466,7 +473,7 @@ const App: React.FC = () => {
         setBackgrounds(newBackgrounds); 
         setActiveBgIndex(nextIndex); 
     }
-  }, [activeBgIndex, backgrounds, currentStation, currentUser, currentThemeObj]);
+  }, [activeBgIndex, backgrounds, currentThemeObj]);
 
   const handleCreateTheme = (newTheme: Theme) => {
       if (!currentUser) return;
@@ -532,16 +539,16 @@ const App: React.FC = () => {
     
     if (currentPoints >= frame.cost) {
       const newPoints = currentPoints - frame.cost;
-      const newUnlocked = [...unlockedFrames, frame.id]; 
+      // Fix: Explicitly declare `newUnlocked` as `string[]` to ensure type consistency for `setUnlockedFrames`.
+      const newUnlocked: string[] = [...unlockedFrames, frame.id]; 
       
       setStats(prev => ({ ...prev, points: newPoints }));
-      // Fix: Explicitly declare `newUnlocked` as `string[]` to ensure type consistency for `setUnlockedFrames`.
       setUnlockedFrames(newUnlocked);
       
       // Fix: Ensure `unlockedFrames` passed to `updateUserData` is of type `string[]`.
       updateUserData(currentUser.username, {
         stats: { ...stats, points: newPoints },
-        unlockedFrames: newUnlocked as string[] // Explicitly cast here for the API service
+        unlockedFrames: newUnlocked
       });
       
        setToasts(t => [...t, { 
@@ -568,7 +575,8 @@ const App: React.FC = () => {
       
       if (currentPoints >= skin.cost) {
           const newPoints = currentPoints - skin.cost;
-          const newUnlocked = [...unlockedSkins, skin.id];
+          // Fix: Explicitly declare `newUnlocked` as `SkinID[]` to ensure type consistency for `setUnlockedSkins`.
+          const newUnlocked: SkinID[] = [...unlockedSkins, skin.id];
           
           setStats(prev => ({ ...prev, points: newPoints }));
           setUnlockedSkins(newUnlocked);
@@ -576,7 +584,7 @@ const App: React.FC = () => {
           // Fix: Ensure `unlockedSkins` passed to `updateUserData` is of type `SkinID[]`.
           updateUserData(currentUser.username, {
             stats: { ...stats, points: newPoints },
-            unlockedSkins: newUnlocked as SkinID[] // Explicitly cast here for the API service
+            unlockedSkins: newUnlocked
           });
           
            setToasts(t => [...t, { 
@@ -730,6 +738,7 @@ const App: React.FC = () => {
       const totalCost = stock.price * amount;
       let newPoints = stats.points || 0;
       let newPortfolio = { ...portfolio };
+      let newStockTransactions = [...stockTransactions];
       
       if (type === 'buy') {
           if (newPoints < totalCost) {
@@ -738,6 +747,15 @@ const App: React.FC = () => {
           }
           newPoints -= totalCost;
           newPortfolio[symbol] = (newPortfolio[symbol] || 0) + amount;
+          newStockTransactions.unshift({
+            id: Date.now().toString(),
+            type: 'buy',
+            symbol,
+            amount,
+            price: stock.price,
+            totalValue: totalCost,
+            timestamp: new Date().toISOString()
+          });
            setToasts(t => [...t, { id: Date.now(), title: `Bought ${amount} ${symbol}`, message: `Spent ${totalCost.toFixed(0)} pts`, icon: StarIcon, type: 'success' }]);
       } else {
           if ((newPortfolio[symbol] || 0) < amount) {
@@ -747,12 +765,26 @@ const App: React.FC = () => {
           newPoints += totalCost;
           newPortfolio[symbol] -= amount;
           if (newPortfolio[symbol] === 0) delete newPortfolio[symbol];
+          newStockTransactions.unshift({
+            id: Date.now().toString(),
+            type: 'sell',
+            symbol,
+            amount,
+            price: stock.price,
+            totalValue: totalCost,
+            timestamp: new Date().toISOString()
+          });
            setToasts(t => [...t, { id: Date.now(), title: `Sold ${amount} ${symbol}`, message: `Earned ${totalCost.toFixed(0)} pts`, icon: StarIcon, type: 'success' }]);
       }
       
       setStats(prev => ({ ...prev, points: newPoints }));
       setPortfolio(newPortfolio);
-      updateUserData(currentUser.username, { stats: { ...stats, points: newPoints }, portfolio: newPortfolio });
+      setStockTransactions(newStockTransactions);
+      updateUserData(currentUser.username, { 
+        stats: { ...stats, points: newPoints }, 
+        portfolio: newPortfolio,
+        stockTransactions: newStockTransactions
+      });
   }
   
   const handleSubmitJingle = (blob: Blob) => {
@@ -770,6 +802,22 @@ const App: React.FC = () => {
       setToasts(t => [...t, { id: Date.now(), title: 'Jingle Submitted!', message: 'Waiting for station manager approval.', icon: FireIcon, type: 'success' }]);
   }
 
+  // Station Claiming Logic
+  const handleClaimStation = useCallback((station: Station, reason: string, claimantUsername: string) => {
+      const updatedStations = allStations.map(s =>
+          s.streamUrl === station.streamUrl
+              ? { ...s, claimRequest: { username: claimantUsername, reason, submittedAt: new Date().toISOString() } }
+              : s
+      );
+      setAllStations(updatedStations);
+      // For mock DB persistence, update defaultStations
+      const defaultIndex = defaultStations.findIndex(s => s.streamUrl === station.streamUrl);
+      if (defaultIndex !== -1) {
+          defaultStations[defaultIndex] = updatedStations.find(s => s.streamUrl === station.streamUrl)!;
+      }
+      setToasts(t => [...t, { id: Date.now(), title: 'Claim Submitted!', message: 'Admin will review your request.', icon: ShieldCheckIcon, type: 'success' }]);
+  }, [allStations]);
+
   // Admin Specific Handlers
   const handleApproveClaim = useCallback(async (stationToUpdate: Station, claimantUsername: string) => {
     const updatedStations = allStations.map(s => 
@@ -778,6 +826,12 @@ const App: React.FC = () => {
         : s
     );
     setAllStations(updatedStations);
+    // For mock DB persistence, update defaultStations
+    const defaultIndex = defaultStations.findIndex(s => s.streamUrl === stationToUpdate.streamUrl);
+    if (defaultIndex !== -1) {
+        defaultStations[defaultIndex] = updatedStations.find(s => s.streamUrl === stationToUpdate.streamUrl)!;
+    }
+
     // Update the claimant's role to 'owner'
     await updateUserData(claimantUsername, { role: 'owner' });
     // This is optimistic, in a real app, we'd refetch user data for the claimant
@@ -794,6 +848,11 @@ const App: React.FC = () => {
         : s
     );
     setAllStations(updatedStations);
+    // For mock DB persistence, update defaultStations
+    const defaultIndex = defaultStations.findIndex(s => s.streamUrl === stationToUpdate.streamUrl);
+    if (defaultIndex !== -1) {
+        defaultStations[defaultIndex] = updatedStations.find(s => s.streamUrl === stationToUpdate.streamUrl)!;
+    }
     setToasts(t => [...t, { id: Date.now(), title: 'Claim Denied', message: `Claim for ${stationToUpdate.name} denied.`, icon: LockIcon, type: 'info' }]);
   }, [allStations]);
 
@@ -867,17 +926,49 @@ const App: React.FC = () => {
       return () => { clearInterval(decay); clearInterval(sim); };
   }, []);
   
-  // Stock Price Simulation
+  // Stock Price & News Simulation
   useEffect(() => {
       const interval = setInterval(() => {
-          setStocks(prev => prev.map(s => {
-              const change = (Math.random() - 0.5) * 2;
+          setStocks(prevStocks => prevStocks.map(s => {
+              const change = (Math.random() - 0.5) * 2; // -1 to +1
               const newPrice = Math.max(10, s.price + change);
-              return { ...s, price: parseFloat(newPrice.toFixed(2)), change: parseFloat(change.toFixed(2)) };
+              const newPriceHistory = [...s.priceHistory, newPrice].slice(-20); // Keep last 20 points
+              return { ...s, price: parseFloat(newPrice.toFixed(2)), change: parseFloat(change.toFixed(2)), priceHistory: newPriceHistory };
           }));
       }, 5000);
-      return () => clearInterval(interval);
-  }, []);
+
+      const newsInterval = setInterval(async () => {
+          if (!isStockMarketOpen || stocks.length === 0) return; // Only generate news when modal is open
+
+          const randomStock = stocks[Math.floor(Math.random() * stocks.length)];
+          if (randomStock) {
+              try {
+                  const news = await generateStockNews(randomStock);
+                  if (news) {
+                      setStockMarketNews(prev => [news, ...prev].slice(0, 50)); // Keep last 50 news items
+                      // Apply a temporary price impact from news
+                      setStocks(prevStocks => prevStocks.map(s => {
+                          if (s.symbol === news.symbol) {
+                              const impact = news.sentiment === 'positive' ? Math.random() * 5 + 1 : -(Math.random() * 5 + 1);
+                              const newPrice = Math.max(10, s.price + impact);
+                              const newPriceHistory = [...s.priceHistory, newPrice].slice(-20);
+                              return { ...s, price: parseFloat(newPrice.toFixed(2)), change: parseFloat(impact.toFixed(2)), priceHistory: newPriceHistory };
+                          }
+                          return s;
+                      }));
+                  }
+              } catch (error) {
+                  console.error("Failed to generate stock news:", error);
+              }
+          }
+      }, 30000); // Generate news every 30 seconds
+
+      return () => { 
+        clearInterval(interval); 
+        clearInterval(newsInterval);
+      };
+  }, [stocks, isStockMarketOpen]);
+
 
   // Friend Notifications Simulation
   useEffect(() => {
@@ -949,13 +1040,14 @@ const App: React.FC = () => {
                  setViewingProfile(null);
                  setIsStockMarketOpen(false);
                  setIsJingleModalOpen(false);
+                 setIsClaimModalOpen(false); // Close claim modal
                  break;
         }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentStation, allStations, handleToggleFavorite]); // Re-bind when stations change for next/prev
+  }, [currentStation, allStations, handleToggleFavorite, handleNextStation, handlePreviousStation, setIsPlaying]); // Re-bind when stations change for next/prev
 
   if (!hasEnteredApp) {
     return <LandingPage onEnter={() => setHasEnteredApp(true)} />;
@@ -1004,7 +1096,7 @@ const App: React.FC = () => {
                 stats={stats} 
                 favoritesCount={favoriteStationUrls.size} 
                 unlockedAchievements={unlockedAchievements} 
-                onOpenSettings={() => setIsSettingsModalOpen(true)}
+                // onOpenSettings={() => setIsSettingsModalOpen(true)} // This prop is removed from DashboardView
               />
           );
       case 'help': // New case for HelpView
@@ -1079,7 +1171,7 @@ const App: React.FC = () => {
                     onRateStation={() => {}} 
                     onEdit={(station) => { setStationToEdit(station); setIsEditModalOpen(true); }} 
                     onOpenMusicSubmissionModal={() => {}} 
-                    onOpenClaimModal={() => {}} 
+                    onOpenClaimModal={(station) => { setStationToClaim(station); setIsClaimModalOpen(true); }} // Pass handleOpenClaimModal
                     onToggleFavorite={handleToggleFavorite}
                     nowPlaying={nowPlaying}
                     bounties={bounties}
@@ -1196,6 +1288,8 @@ const App: React.FC = () => {
           portfolio={portfolio} 
           userPoints={stats.points || 0} 
           onTransaction={handleStockTransaction} 
+          stockTransactions={stockTransactions}
+          stockMarketNews={stockMarketNews}
       />
       <JingleModal 
         isOpen={isJingleModalOpen}
@@ -1220,8 +1314,16 @@ const App: React.FC = () => {
       <EventsModal isOpen={isEventsModalOpen} onClose={() => setIsEventsModal(false)} onSelectStation={(name) => { const s = allStations.find(st=>st.name===name); if(s) handleSelectStation(s); setIsEventsModal(false); }} />
       <SongHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} history={stats.songHistory} />
       <RequestSongModal isOpen={false} onClose={() => {}} stationName="" onSubmit={() => {}} />
+
+      {stationToClaim && currentUser && (
+        <ClaimOwnershipModal
+          isOpen={isClaimModalOpen}
+          onClose={() => setIsClaimModalOpen(false)}
+          onSubmit={handleClaimStation}
+          station={stationToClaim}
+          currentUser={currentUser}
+        />
+      )}
     </div>
   );
 };
-
-export default App;
