@@ -1,6 +1,4 @@
 
-
-
 import React from 'react';
 import type { Station, EQBand, EQPreset, Theme, Achievement, AchievementID, LeaderboardEntry, TranslationLanguage, ListeningEvent, StationReview, CommunityEvent, MusicSubmission, AvatarFrame, FriendActivity, Quest, CollectorCard, PlayerSkin, Bounty, Stock } from './types';
 
@@ -41,6 +39,7 @@ export const ChatBubbleIcon: React.FC<{className?: string}> = ({className = ''})
 export const SendIcon: React.FC<{className?: string}> = ({className}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {d: "M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"}));
 export const AdminIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, fill:"none", viewBox:"0 0 24 24", strokeWidth:1.5, stroke:"currentColor"}, React.createElement('path', {strokeLinecap:"round", strokeLinejoin:"round", d: "M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.39.44 1.052.12 1.45l-.527.737c-.25.35-.272.806-.108 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.11v1.093c0 .55-.398 1.02-.94 1.11l-.893.149c-.425.07-.764.383-.93.78-.164.398-.142.854.108 1.204l.527.738c.32.397.27.96-.12 1.45l-.773.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.93l-.149.894c-.09.542-.56.94-1.11.94h-1.093c-.55 0-1.02-.398-1.11-.94l-.149-.894a1.725 1.725 0 0 1-.93-.78c-.398-.164-.854-.142-1.204.108l-.738.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.39 1.052.44 1.45.12l.527-.737c.25-.35.272-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.11V3.94Z"}));
 const CollectionIcon: React.FC<{className?: string}> = ({className}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"}));
+export const HelpIcon: React.FC<{className?: string}> = ({className}) => React.createElement('svg', {xmlns:"http://www.w3.org/2000/svg", className, fill:"none", viewBox:"0 0 24 24", strokeWidth:1.5, stroke:"currentColor"}, React.createElement('path', {strokeLinecap:"round", strokeLinejoin:"round", d:"M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"}));
 
 
 export const ACHIEVEMENTS: Record<AchievementID, Achievement> = {
@@ -281,4 +280,47 @@ export const MOCK_FRIENDS: FriendActivity[] = [
     { username: 'RhythmRider', stationName: 'Nam Radio', stationStreamUrl: 'https://music-station.live/listen/namradio/radio.mp3', status: 'online', avatarColor: '#fbbf24' },
     { username: 'SoulSister', stationName: 'Offline', stationStreamUrl: '', status: 'offline', avatarColor: '#f472b6', frame: 'gold_chain' },
     { username: 'BassHead', stationName: 'Global Groove Radio', stationStreamUrl: 'https://s2.stationplaylist.com:7094/listen.aac', status: 'online', avatarColor: '#a78bfa', frame: 'fire_aura' },
+];
+
+export const FAQ_DATA = [
+  {
+    question: "What is Music Station Radio?",
+    answer: "Music Station Radio is a next-generation web radio player that offers a diverse collection of live radio stations from around the world. It features AI-powered tools, social interaction, gamification, and tools for artists and station managers."
+  },
+  {
+    question: "How do I listen to a station?",
+    answer: "Navigate to the 'Explore' tab, browse available stations, and click on any station's card or list entry to tune in. The player will appear at the bottom of the screen."
+  },
+  {
+    question: "What is 'Vibe Search'?",
+    answer: "Vibe Search is an AI-powered feature that allows you to find stations by describing a mood, activity, or specific sound you're looking for, rather than just searching by name or genre. For example, try 'chill music for studying' or 'upbeat tracks for a party'."
+  },
+  {
+    question: "How can I earn points?",
+    answer: "You earn points by listening to stations, completing quests, engaging in community activities, and participating in special events. Points can be spent in the Item Shop."
+  },
+  {
+    question: "What are Achievements?",
+    answer: "Achievements are badges you earn for reaching certain milestones, like listening for a set amount of time, favoriting stations, or exploring new genres. You can view your unlocked achievements in your Dashboard."
+  },
+  {
+    question: "Can I submit my own music?",
+    answer: "Yes! If you sign up as an 'Artist', you can submit your music tracks directly to stations that accept submissions. Station managers will then review your submission."
+  },
+  {
+    question: "How do I become a Station Manager?",
+    answer: "You can become a Station Manager by claiming ownership of an existing station. Submit a claim with a detailed reason, and our admin team will review it. Approved claimants gain 'owner' role."
+  },
+  {
+    question: "What is the 'Item Shop'?",
+    answer: "The Item Shop allows you to spend your earned points on cosmetic upgrades like exclusive UI themes, avatar frames for your profile picture, and unique player skins."
+  },
+  {
+    question: "Is there a mobile app?",
+    answer: "Music Station Radio is designed as a Progressive Web App (PWA). You can install it directly from your browser to your home screen on mobile devices for a native app-like experience, including offline access to cached content."
+  },
+  {
+    question: "How do I report an issue or suggest a feature?",
+    answer: "You can reach out to our support team through the 'Help' section or by using the feedback option in the settings. Your input helps us improve the platform!"
+  }
 ];

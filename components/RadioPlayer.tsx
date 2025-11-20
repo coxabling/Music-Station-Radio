@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { Station, NowPlaying, EQSettings, SongVote, SkinID } from '../types';
 import { fetchNowPlaying } from '../services/geminiService';
@@ -293,7 +291,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
         playPromise.then(() => onPlayPause(true)).catch(error => { console.error("Playback failed:", error); onPlayPause(false); });
       }
     }
-  }, [isPlaying]);
+  }, [isPlaying, onPlayPause]);
   
   useEffect(() => { 
       if (gainNodeRef.current) {
@@ -493,48 +491,6 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
             </div>
         </div>
       </div>
-    </div>
-    {/* Minimized Player */}
-    <div className={`fixed bottom-0 left-0 right-0 z-40 bg-gray-800/60 backdrop-blur-xl border-t border-white/10 transition-transform duration-500 ease-in-out ${isExpanded || !isVisible ? 'translate-y-full' : 'translate-y-0'}`} onClick={() => setIsExpanded(true)}>
-        <div className="container mx-auto px-4 flex items-center h-20">
-            <div className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
-                <img src={nowPlaying?.albumArt || station.coverArt} alt={nowPlaying?.title || station.name} className="w-12 h-12 rounded-lg shadow-lg object-cover" onError={handleImageError} />
-                <div className="flex-1 min-w-0">
-                    <Marquee text={nowPlaying?.title || station.name} className="font-bold text-white" />
-                    <Marquee text={nowPlaying?.artist || 'Live Stream'} className="text-sm text-gray-300" />
-                </div>
-            </div>
-            <div className="flex items-center gap-2 ml-4">
-                 <button onClick={(e) => { e.stopPropagation(); onHype(); }} className="relative p-1 rounded-full transition-all duration-200 active:scale-90 text-orange-500 hover:text-orange-300 overflow-hidden" aria-label="Hype">
-                    <div className="absolute bottom-0 left-0 right-0 bg-orange-500/30 transition-all duration-300" style={{height: `${hypeScore}%`}}></div>
-                    <FireIcon className="w-6 h-6 relative z-10"/>
-                </button>
-                 <button onClick={(e) => { e.stopPropagation(); if(isSong) onVote(nowPlaying.songId, 'like'); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} ${userVote === 'like' ? 'text-green-400 drop-shadow-[0_0_4px_rgba(74,222,128,0.8)]' : 'text-gray-400 hover:text-white'}`} aria-label="Like song">
-                    <ThumbUpIcon className="w-6 h-6"/>
-                </button>
-                 <button onClick={(e) => { e.stopPropagation(); if(isSong) onVote(nowPlaying.songId, 'dislike'); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} ${userVote === 'dislike' ? 'text-red-400 drop-shadow-[0_0_4px_rgba(248,113,113,0.8)]' : 'text-gray-400 hover:text-white'}`} aria-label="Dislike song">
-                    <ThumbDownIcon className="w-6 h-6"/>
-                </button>
-                 <button onClick={(e) => { e.stopPropagation(); setIsShareModalOpen(true); }} className="p-1 rounded-full transition-all duration-200 active:scale-90 text-gray-400 hover:text-white" aria-label="Share">
-                    <ShareIcon className="w-6 h-6"/>
-                </button>
-                 <div className="hidden md:flex items-center gap-2">
-                    <button onClick={(e) => { e.stopPropagation(); setVolume(volume > 0 ? 0 : 0.75); }} className="text-gray-400 hover:text-white" aria-label={volume > 0 ? "Mute" : "Unmute"}>
-                        {volume > 0 ? <VolumeUpIcon /> : <VolumeOffIcon />}
-                    </button>
-                    <input type="range" min="0" max="1" step="0.05" value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))} className="w-24 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-[var(--accent-color)]" onClick={e => e.stopPropagation()} />
-                </div>
-                <button onClick={(e) => { e.stopPropagation(); togglePlayPause(); }} className="w-12 h-12 flex items-center justify-center text-white hover:text-[var(--accent-color)] transition-colors" aria-label={isPlaying ? 'Pause' : 'Play'}>
-                  <div className="w-8 h-8">{isPlaying ? <PauseIcon/> : <PlayIcon/>}</div>
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); setIsExpanded(true); }} className="text-gray-400 hover:text-white hidden md:block" aria-label="Expand player">
-                    <ChevronUpIcon />
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); onHidePlayer(); }} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-700/50" aria-label="Hide player">
-                    <ChevronDownIcon />
-                </button>
-            </div>
-        </div>
     </div>
     <style>{`
       @keyframes raid-progress {

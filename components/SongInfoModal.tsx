@@ -189,90 +189,79 @@ export const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose, n
         onClick={() => handleTabChange(tab)}
         disabled={disabled}
         className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors focus:outline-none ${
-            activeTab === tab 
-            ? 'bg-gray-700/50 text-[var(--accent-color)] border-b-2 border-[var(--accent-color)]' 
-            : 'text-gray-400 hover:text-white'
-        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-        aria-label={`Switch to ${label} tab`}
+            activeTab === tab ? 'bg-gray-700/50 text-[var(--accent-color)] border-b-2 border-[var(--accent-color)]' : 'text-gray-400 hover:text-white'
+        }`}
     >
         {label}
     </button>
   );
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in-fast"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="info-modal-title"
+      aria-labelledby="song-info-modal-title"
     >
-      <div 
+      <div
         className="bg-gray-800/80 backdrop-blur-lg border accent-color-border/30 rounded-xl shadow-2xl shadow-black/50 w-full max-w-md max-h-[80vh] flex flex-col animate-slide-up-fast"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="p-4 border-b border-gray-700/50 flex justify-between items-center">
-          <div className="flex-1 min-w-0">
-            <h2 id="info-modal-title" className="text-lg font-bold accent-color-text truncate font-orbitron">
-              {`${nowPlaying?.title}`}
-            </h2>
-            <p className="text-sm text-gray-400 truncate">{nowPlaying?.artist}</p>
-          </div>
+        <header className="p-4 border-b border-gray-700/50 flex justify-between items-center flex-shrink-0">
+          <h2 id="song-info-modal-title" className="text-lg font-bold accent-color-text font-orbitron">
+            {isSong ? nowPlaying.title : 'No song playing'}
+          </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors" aria-label="Close modal">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </header>
-        
-        <div className="border-b border-gray-700/50 px-4">
-            <nav className="flex space-x-2" role="tablist" aria-label="Song Information">
-                <TabButton tab="info" label="Info" disabled={!isSong} />
-                <TabButton tab="lyrics" label="Lyrics" disabled={!isSong} />
-                <TabButton tab="translate" label="Translate" disabled={!isSong} />
+
+        {isSong && (
+          <div className="flex-shrink-0 border-b border-gray-700/50">
+            <nav className="flex space-x-2 px-4" role="tablist">
+              <TabButton tab="info" label="Info" />
+              <TabButton tab="lyrics" label="Lyrics" disabled={!isSong} />
+              <TabButton tab="translate" label="Translate" disabled={!isSong || lyricsContent === 'LYRICS_NOT_FOUND'} />
             </nav>
-        </div>
-        
-        <div className="p-6 overflow-y-auto flex-grow" role="tabpanel">
-          {isSong ? renderContent() : <p className="text-gray-400 text-center">Detailed information is not available for this stream.</p>}
+          </div>
+        )}
+
+        <div className="p-6 overflow-y-auto flex-grow text-gray-300">
+          {isSong ? (
+            renderContent()
+          ) : (
+            <p className="text-center text-gray-400 py-4">Tune into a station to see song information.</p>
+          )}
         </div>
 
         {isSong && (
-          <footer className="p-4 border-t border-gray-700/50 flex items-center gap-2">
+          <footer className="p-4 border-t border-gray-700/50 flex flex-col sm:flex-row justify-between items-center gap-4 flex-shrink-0">
             {activeTab === 'lyrics' && lyricsContent && lyricsContent !== 'LYRICS_NOT_FOUND' && (
-                <button onClick={handleCopyLyrics} className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2.5 px-4 rounded-md transition-colors duration-200">
+                <button
+                    onClick={handleCopyLyrics}
+                    className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm"
+                >
                     {copyButtonText}
                 </button>
             )}
             <button
               onClick={handleBuyNow}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#00A8E1] hover:opacity-90 text-white font-bold py-2.5 px-4 rounded-md transition-opacity duration-300"
+              className={`flex-1 flex items-center justify-center gap-2 bg-[var(--accent-color)] hover:opacity-80 text-black font-bold py-2 px-4 rounded-md transition-opacity duration-300 ${!isSong ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={!isSong}
             >
-              <AmazonIcon className="w-6 h-6"/>
-              Buy on Amazon Music
+              <AmazonIcon className="h-5 w-5" /> Buy on Amazon
             </button>
           </footer>
         )}
       </div>
       <style>{`
-        @keyframes fade-in-fast {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        .animate-fade-in-fast {
-          animation: fade-in-fast 0.3s ease-out;
-        }
-        @keyframes slide-up-fast {
-          from { transform: translateY(20px) scale(0.98); opacity: 0; }
-          to { transform: translateY(0) scale(1); opacity: 1; }
-        }
-        .animate-slide-up-fast {
-          animation: slide-up-fast 0.3s ease-out;
-        }
-        /* Use font-sans for lyrics to override potential global font settings on pre */
-        .font-sans {
-            font-family: 'Poppins', sans-serif;
-        }
+        @keyframes fade-in-fast { from { opacity: 0; } to { opacity: 1; } }
+        .animate-fade-in-fast { animation: fade-in-fast 0.3s ease-out; }
+        @keyframes slide-up-fast { from { transform: translateY(20px) scale(0.98); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+        .animate-slide-up-fast { animation: slide-up-fast 0.3s ease-out; }
       `}</style>
     </div>
   );

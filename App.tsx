@@ -23,6 +23,7 @@ import { AdminDashboardView } from './components/AdminDashboardView';
 import { StationManagerDashboardView } from './components/StationManagerDashboardView';
 import { ArtistDashboardView } from './components/ArtistDashboardView';
 import { RightPanel } from './components/RightPanel';
+import { HelpView } from './components/HelpView'; // New Import
 import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, STOCKS, BOUNTIES } from './constants';
 import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, Quest, CollectorCard, Lounge, UserProfile, AvatarFrame, SkinID, Stock, Bounty, Jingle, PlayerSkin } from './types';
 import { getDominantColor } from './utils/colorExtractor';
@@ -83,14 +84,14 @@ const App: React.FC = () => {
   // --- Modals ---
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isAlarmModalOpen, setIsAlarmModalOpen] = useState(false);
-  const [isSongChartModalOpen, setIsSongChartModalOpen] = useState(false);
-  const [isEventsModalOpen, setIsEventsModalOpen] = useState(false);
+  const [isSongChartModalOpen, setIsSongChartModal] = useState(false);
+  const [isEventsModalOpen, setIsEventsModal] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [tippingModalStation, setTippingModalStation] = useState<Station | null>(null);
   const [genreForSpotlight, setGenreForSpotlight] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [stationToEdit, setStationToEdit] = useState<Station | null>(null);
-  const [isMusicSubmissionModalOpen, setIsMusicSubmissionModalOpen] = useState(false);
+  const [isMusicSubmissionModalOpen, setIsMusicSubmissionModal] = useState(false);
   const [stationForSubmission, setStationForSubmission] = useState<Station | null>(null);
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
   const [stationToClaim, setStationToClaim] = useState<Station | null>(null);
@@ -315,6 +316,16 @@ const App: React.FC = () => {
       });
   }, [currentUser, unlockAchievement]);
 
+  const handleLogout = useCallback(() => {
+    setCurrentStation(null);
+    setStationForDetail(null);
+    setCurrentUser(null);
+    setIsPlaying(false);
+    localStorage.removeItem('currentUser');
+    setIsLoginModalOpen(true);
+    setAllStations(defaultStations);
+  }, []);
+
   const loadUserData = useCallback(async (username: string) => {
     setIsDataLoading(true);
 
@@ -328,14 +339,14 @@ const App: React.FC = () => {
     
     const favUrls = new Set(data.favoriteStationUrls || []);
     const stationsWithFavorites = defaultStations.map(s => ({...s, isFavorite: favUrls.has(s.streamUrl)}));
-    const userStationsWithFavorites = data.userStations.map(s => ({...s, isFavorite: favUrls.has(s.streamUrl)}));
+    const userStationsWithFavorites = (data.userStations || []).map(s => ({...s, isFavorite: favUrls.has(s.streamUrl)}));
     const allKnownStations = [...stationsWithFavorites, ...userStationsWithFavorites];
     
     const user: User = { username, role: data.role };
     setCurrentUser(user);
     
     setAllStations(allKnownStations);
-    setUserStations(data.userStations);
+    setUserStations(data.userStations || []);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
     setUnlockedThemes(new Set(data.unlockedThemes || []));
@@ -347,7 +358,8 @@ const App: React.FC = () => {
     setBets(data.bets || []);
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
-    setUnlockedFrames(data.unlockedFrames || []);
+    // Fix: Ensure `unlockedFrames` is an array of strings when loading user data.
+    setUnlockedFrames(Array.isArray(data.unlockedFrames) ? (data.unlockedFrames as string[]) : []);
     setUserProfile(data.profile || { 
         bio: '', 
         topArtists: [] as string[], 
@@ -357,12 +369,14 @@ const App: React.FC = () => {
     });
     setCustomThemes(data.customThemes || []);
     setActiveSkin(data.activeSkin || 'modern');
-    setUnlockedSkins(data.unlockedSkins || ['modern']);
+    // Fix: Ensure `unlockedSkins` is an array of `SkinID` when loading user data.
+    setUnlockedSkins(Array.isArray(data.unlockedSkins) ? (data.unlockedSkins as SkinID[]) : ['modern']);
     setPortfolio(data.portfolio || {});
     
     // Restore completed bounties
-    if(data.completedBounties) {
-        setBounties(prev => prev.map(b => data.completedBounties.includes(b.id) ? { ...b, completed: true } : b));
+    // Fix: Ensure `data.completedBounties` is an array of strings before using `includes`.
+    if(Array.isArray(data.completedBounties)) {
+        setBounties(prev => prev.map(b => (data.completedBounties as string[]).includes(b.id) ? { ...b, completed: true } : b));
     }
 
     let defaultView: ActiveView = 'dashboard';
@@ -372,7 +386,7 @@ const App: React.FC = () => {
 
     setActiveView(data.activeView || defaultView);
     setIsDataLoading(false);
-  }, []);
+  }, [handleLogout]);
 
   useEffect(() => {
       let storedUser: { username: string } | null = null;
@@ -403,16 +417,6 @@ const App: React.FC = () => {
     setIsLoginModalOpen(false);
     await loadUserData(username);
   }, [loadUserData]);
-
-  const handleLogout = useCallback(() => {
-    setCurrentStation(null);
-    setStationForDetail(null);
-    setCurrentUser(null);
-    setIsPlaying(false);
-    localStorage.removeItem('currentUser');
-    setIsLoginModalOpen(true);
-    setAllStations(defaultStations);
-  }, []);
 
   const handleSelectStation = (station: Station) => { 
       if (currentStation?.streamUrl !== station.streamUrl) {
@@ -528,14 +532,16 @@ const App: React.FC = () => {
     
     if (currentPoints >= frame.cost) {
       const newPoints = currentPoints - frame.cost;
-      const newUnlocked = [...unlockedFrames, frame.id];
+      const newUnlocked = [...unlockedFrames, frame.id]; 
       
       setStats(prev => ({ ...prev, points: newPoints }));
+      // Fix: Explicitly declare `newUnlocked` as `string[]` to ensure type consistency for `setUnlockedFrames`.
       setUnlockedFrames(newUnlocked);
       
+      // Fix: Ensure `unlockedFrames` passed to `updateUserData` is of type `string[]`.
       updateUserData(currentUser.username, {
         stats: { ...stats, points: newPoints },
-        unlockedFrames: newUnlocked
+        unlockedFrames: newUnlocked as string[] // Explicitly cast here for the API service
       });
       
        setToasts(t => [...t, { 
@@ -567,9 +573,10 @@ const App: React.FC = () => {
           setStats(prev => ({ ...prev, points: newPoints }));
           setUnlockedSkins(newUnlocked);
           
+          // Fix: Ensure `unlockedSkins` passed to `updateUserData` is of type `SkinID[]`.
           updateUserData(currentUser.username, {
             stats: { ...stats, points: newPoints },
-            unlockedSkins: newUnlocked
+            unlockedSkins: newUnlocked as SkinID[] // Explicitly cast here for the API service
           });
           
            setToasts(t => [...t, { 
@@ -763,6 +770,84 @@ const App: React.FC = () => {
       setToasts(t => [...t, { id: Date.now(), title: 'Jingle Submitted!', message: 'Waiting for station manager approval.', icon: FireIcon, type: 'success' }]);
   }
 
+  // Admin Specific Handlers
+  const handleApproveClaim = useCallback(async (stationToUpdate: Station, claimantUsername: string) => {
+    const updatedStations = allStations.map(s => 
+      s.streamUrl === stationToUpdate.streamUrl 
+        ? { ...s, owner: claimantUsername, claimRequest: undefined } 
+        : s
+    );
+    setAllStations(updatedStations);
+    // Update the claimant's role to 'owner'
+    await updateUserData(claimantUsername, { role: 'owner' });
+    // This is optimistic, in a real app, we'd refetch user data for the claimant
+    if (currentUser?.username === claimantUsername) {
+        setCurrentUser(prev => prev ? { ...prev, role: 'owner' } : null);
+    }
+    setToasts(t => [...t, { id: Date.now(), title: 'Claim Approved!', message: `${claimantUsername} is now owner of ${stationToUpdate.name}.`, icon: UserIcon, type: 'success' }]);
+  }, [allStations, currentUser]);
+
+  const handleDenyClaim = useCallback((stationToUpdate: Station) => {
+    const updatedStations = allStations.map(s => 
+      s.streamUrl === stationToUpdate.streamUrl 
+        ? { ...s, claimRequest: undefined } 
+        : s
+    );
+    setAllStations(updatedStations);
+    setToasts(t => [...t, { id: Date.now(), title: 'Claim Denied', message: `Claim for ${stationToUpdate.name} denied.`, icon: LockIcon, type: 'info' }]);
+  }, [allStations]);
+
+  const handleUpdateUserRole = useCallback(async (username: string, role: UserData['role']) => {
+    await updateUserData(username, { role });
+    // Optimistically update current user's role if they changed their own.
+    if (currentUser?.username === username) {
+        setCurrentUser(prev => prev ? { ...prev, role } : null);
+    }
+    setToasts(t => [...t, { id: Date.now(), title: 'User Role Updated', message: `${username}'s role set to ${role}.`, icon: UserIcon, type: 'success' }]);
+  }, [currentUser]);
+    
+  const handleAdminEditStation = useCallback((editedStation: Station) => {
+      const updatedStations = allStations.map(s => 
+          s.streamUrl === editedStation.streamUrl ? editedStation : s
+      );
+      setAllStations(updatedStations);
+      // Also update defaultStations (mock DB source)
+      const defaultIndex = defaultStations.findIndex(s => s.streamUrl === editedStation.streamUrl);
+      if (defaultIndex !== -1) {
+          defaultStations[defaultIndex] = editedStation;
+      }
+      // If the edited station is the current one, update currentStation and stationForDetail
+      if (currentStation?.streamUrl === editedStation.streamUrl) {
+          setCurrentStation(editedStation);
+      }
+      if (stationForDetail?.streamUrl === editedStation.streamUrl) {
+          setStationForDetail(editedStation);
+      }
+      setIsEditModalOpen(false); // Close the modal
+      setStationToEdit(null);
+      setToasts(t => [...t, { id: Date.now(), title: 'Station Updated', message: `${editedStation.name} has been updated.`, icon: StarIcon, type: 'success' }]);
+  }, [allStations, currentStation, stationForDetail]);
+
+  const handleAdminDeleteStation = useCallback((stationToDelete: Station) => {
+      const updatedStations = allStations.filter(s => s.streamUrl !== stationToDelete.streamUrl);
+      setAllStations(updatedStations);
+      // Remove from defaultStations (mock DB source)
+      const defaultIndex = defaultStations.findIndex(s => s.streamUrl === stationToDelete.streamUrl);
+      if (defaultIndex !== -1) {
+          defaultStations.splice(defaultIndex, 1);
+      }
+      // If the deleted station was the current one, stop playback and clear info
+      if (currentStation?.streamUrl === stationToDelete.streamUrl) {
+          setCurrentStation(null);
+          setIsPlaying(false);
+      }
+      if (stationForDetail?.streamUrl === stationToDelete.streamUrl) {
+          setStationForDetail(null);
+      }
+      setToasts(t => [...t, { id: Date.now(), title: 'Station Deleted', message: `${stationToDelete.name} has been removed.`, icon: LockIcon, type: 'error' }]);
+  }, [allStations, currentStation, stationForDetail]);
+
+
   // Hype Logic: Decay & Simulation
   useEffect(() => {
       const decay = setInterval(() => {
@@ -881,9 +966,17 @@ const App: React.FC = () => {
       case 'artist_dashboard':
         return <ArtistDashboardView user={currentUser} stats={stats} submissions={[]} setActiveView={setActiveView} />;
       case 'station_manager_dashboard':
-        return <StationManagerDashboardView user={currentUser} allStations={allStations} onReviewSubmission={() => {}} onEditStation={() => {}} />;
+        return <StationManagerDashboardView user={currentUser} allStations={allStations} onReviewSubmission={() => {}} onEditStation={(station) => { setStationToEdit(station); setIsEditModalOpen(true); }} />;
       case 'admin':
-        return <AdminDashboardView stations={allStations} onApproveClaim={()=>{}} onDenyClaim={()=>{}} onUpdateUserRole={()=>{}} onEditStation={()=>{}} onDeleteStation={()=>{}} currentUser={currentUser} />;
+        return <AdminDashboardView 
+                  stations={allStations} 
+                  onApproveClaim={handleApproveClaim} 
+                  onDenyClaim={handleDenyClaim} 
+                  onUpdateUserRole={handleUpdateUserRole} 
+                  onEditStation={(station) => { setStationToEdit(station); setIsEditModalOpen(true); }} 
+                  onDeleteStation={handleAdminDeleteStation} 
+                  currentUser={currentUser} 
+               />;
       case 'store':
         return (
             <StoreView 
@@ -914,6 +1007,8 @@ const App: React.FC = () => {
                 onOpenSettings={() => setIsSettingsModalOpen(true)}
               />
           );
+      case 'help': // New case for HelpView
+        return <HelpView />;
       default:
         return (
              <StationList 
@@ -967,7 +1062,7 @@ const App: React.FC = () => {
 
             <div className={`flex flex-1 overflow-hidden transition-opacity duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                 {/* Sidebar */}
-                {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModalOpen(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} onOpenStockMarket={() => setIsStockMarketOpen(true)} />}
+                {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModal(true)} onOpenEvents={() => setIsEventsModal(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} onOpenStockMarket={() => setIsStockMarketOpen(true)} />}
                 
                 <main id="main-content" className="flex-1 overflow-y-auto pb-24">
                     {renderActiveView()}
@@ -982,7 +1077,7 @@ const App: React.FC = () => {
                     onAddReview={() => {}} 
                     onSelectStation={handleSelectStation}
                     onRateStation={() => {}} 
-                    onEdit={() => {}} 
+                    onEdit={(station) => { setStationToEdit(station); setIsEditModalOpen(true); }} 
                     onOpenMusicSubmissionModal={() => {}} 
                     onOpenClaimModal={() => {}} 
                     onToggleFavorite={handleToggleFavorite}
@@ -1108,12 +1203,21 @@ const App: React.FC = () => {
         onSubmit={handleSubmitJingle}
       />
 
+      {stationToEdit && (
+        <EditStationModal 
+          isOpen={isEditModalOpen} 
+          onClose={() => { setIsEditModalOpen(false); setStationToEdit(null); }} 
+          onSubmit={handleAdminEditStation} // Use admin-specific handler
+          station={stationToEdit} 
+        />
+      )}
+
       <LoginModal isOpen={isLoginModalOpen} onLogin={handleLogin} />
       <SubmitStationModal isOpen={isSubmitModalOpen} onClose={() => setIsSubmitModalOpen(false)} onSubmit={()=>{}} />
       <AlarmModal isOpen={isAlarmModalOpen} onClose={() => setIsAlarmModalOpen(false)} alarm={alarm} onSetAlarm={setAlarm} favoriteStations={userStations} />
       <GenreSpotlightModal isOpen={!!genreForSpotlight} onClose={() => setGenreForSpotlight(null)} genre={genreForSpotlight} />
-      <SongChartModal isOpen={isSongChartModalOpen} onClose={() => setIsSongChartModalOpen(false)} songVotes={songVotes} />
-      <EventsModal isOpen={isEventsModalOpen} onClose={() => setIsEventsModalOpen(false)} onSelectStation={(name) => { const s = allStations.find(st=>st.name===name); if(s) handleSelectStation(s); setIsEventsModalOpen(false); }} />
+      <SongChartModal isOpen={isSongChartModalOpen} onClose={() => setIsSongChartModal(false)} songVotes={songVotes} />
+      <EventsModal isOpen={isEventsModalOpen} onClose={() => setIsEventsModal(false)} onSelectStation={(name) => { const s = allStations.find(st=>st.name===name); if(s) handleSelectStation(s); setIsEventsModal(false); }} />
       <SongHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} history={stats.songHistory} />
       <RequestSongModal isOpen={false} onClose={() => {}} stationName="" onSubmit={() => {}} />
     </div>

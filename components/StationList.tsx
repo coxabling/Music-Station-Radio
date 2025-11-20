@@ -1,8 +1,4 @@
 
-
-
-
-
 import React, { useState, useMemo } from 'react';
 import type { Station, LayoutMode, SongVote, User } from '../types';
 import { StarRating } from './StarRating';
@@ -229,7 +225,7 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
                         <React.Fragment key={station.streamUrl}>
                              <SponsorCard />
                              <div className="relative group flex flex-col station-card-animate" style={{ animationDelay: `${index * 30}ms`}}>
-                                <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-lg overflow-hidden transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-color)] focus-visible:ring-opacity-75 shadow-lg hover:shadow-[var(--accent-color)]/40 hover:scale-[1.03] ${ currentStation?.name === station.name ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/50' : isHighGrade ? 'ring-2 ring-yellow-500/80 hover:ring-yellow-400 shadow-yellow-500/20' : 'ring-2 ring-gray-700/50 hover:ring-[var(--accent-color)]/70' }`} style={{ aspectRatio: '1 / 1' }} aria-label={`Play ${station.name}`} >
+                                <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-lg overflow-hidden transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-color)] focus-visible:ring-opacity-75 shadow-lg hover:shadow-[var(--accent-color)]/40 hover:scale-[1.03] ${ currentStation?.name === station.name ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/50' : isHighGrade ? 'ring-2 ring-yellow-500/80 hover:ring-yellow-400 shadow-yellow-500/20' : 'ring-2 ring-gray-700/50 hover:ring-[var(--accent-color)]/70'}`} style={{ aspectRatio: '1 / 1' }} aria-label={`Play ${station.name}`} >
                                   <img src={station.coverArt} alt={station.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                                   <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-colors duration-300 p-4 flex flex-col justify-end"><h3 className="font-bold text-lg text-white truncate">{station.name}</h3><p className="text-xs text-gray-300 truncate">{station.genre}</p></div>
                                   {isHighGrade && <div className="absolute top-2 left-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Featured</div>}
@@ -247,7 +243,7 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
 
                return (
               <div key={station.streamUrl} className="relative group flex flex-col station-card-animate" style={{ animationDelay: `${index * 30}ms`}}>
-                <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-lg overflow-hidden transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-color)] focus-visible:ring-opacity-75 shadow-lg hover:shadow-[var(--accent-color)]/40 hover:scale-[1.03] ${ currentStation?.name === station.name ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/50' : isHighGrade ? 'ring-2 ring-yellow-500/80 hover:ring-yellow-400 shadow-yellow-500/20' : 'ring-2 ring-gray-700/50 hover:ring-[var(--accent-color)]/70' }`} style={{ aspectRatio: '1 / 1' }} aria-label={`Play ${station.name}`} >
+                <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-lg overflow-hidden transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-color)] focus-visible:ring-opacity-75 shadow-lg hover:shadow-[var(--accent-color)]/40 hover:scale-[1.03] ${ currentStation?.name === station.name ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/50' : isHighGrade ? 'ring-2 ring-yellow-500/80 hover:ring-yellow-400 shadow-yellow-500/20' : 'ring-2 ring-gray-700/50 hover:ring-[var(--accent-color)]/70'}`} style={{ aspectRatio: '1 / 1' }} aria-label={`Play ${station.name}`} >
                   <img src={station.coverArt} alt={station.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                   <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-colors duration-300 p-4 flex flex-col justify-end"><h3 className="font-bold text-lg text-white truncate">{station.name}</h3><p className="text-xs text-gray-300 truncate">{station.genre}</p></div>
                   {isHighGrade && <div className="absolute top-2 left-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Featured</div>}

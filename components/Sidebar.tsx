@@ -1,7 +1,8 @@
 
+
 import React from 'react';
 import type { ActiveView, User } from '../types';
-import { HomeIcon, ExploreIcon, CommunityIcon, StoreIcon, LeaderboardIconSidebar, ChatBubbleIcon, AdminIcon, BriefcaseIcon, MusicNoteIcon } from '../constants';
+import { HomeIcon, ExploreIcon, CommunityIcon, StoreIcon, LeaderboardIconSidebar, ChatBubbleIcon, AdminIcon, BriefcaseIcon, MusicNoteIcon, HelpIcon } from '../constants'; // Added HelpIcon for the help section
 
 interface SidebarProps {
     activeView: ActiveView;
@@ -63,7 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, onO
     }
 
     return (
-        <nav className="hidden md:flex w-20 bg-gray-950/30 p-2 flex-shrink-0 flex-col items-center gap-3 border-r border-white/10">
+        <nav className="hidden md:flex w-20 bg-gray-950/30 p-2 flex-shrink-0 flex-col items-center gap-3 border-r border-white/10 overflow-y-auto custom-scrollbar-sm">
             <NavButton label="Home" icon={getHomeIcon()} isActive={isDashboardActive} onClick={handleDashboardClick} />
             <NavButton label="Explore" icon={<ExploreIcon className="w-6 h-6"/>} isActive={activeView === 'explore'} onClick={() => setActiveView('explore')} />
             
@@ -79,6 +80,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, onO
             <NavButton label="History" icon={<HistoryIcon className="w-6 h-6"/>} isActive={false} onClick={onOpenHistory} />
             <NavButton label="Events" icon={<CalendarIcon className="w-6 h-6"/>} isActive={false} onClick={onOpenEvents} />
             <NavButton label="Alarm" icon={<AlarmIcon className="w-6 h-6"/>} isActive={false} onClick={onOpenAlarm} />
+            {/* Added Help button */}
+            <NavButton label="Help" icon={<HelpIcon className="w-6 h-6"/>} isActive={activeView === 'help'} onClick={() => setActiveView('help')} />
         </nav>
     );
 };

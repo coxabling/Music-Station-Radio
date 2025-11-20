@@ -1,5 +1,4 @@
 
-
 import type * as React from 'react';
 
 export interface User {
@@ -227,7 +226,7 @@ export interface FriendActivity {
     frame?: string;
 }
 
-export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard';
+export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard' | 'help';
 
 export interface Bet {
   id: string;
