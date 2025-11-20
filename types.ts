@@ -1,3 +1,4 @@
+
 import type * as React from 'react';
 
 export interface User {
@@ -256,33 +257,7 @@ export interface Stock {
     price: number;
     change: number; // Percentage change
     owned: number;
-    priceHistory: number[]; // Added for sparkline charts
 }
-
-export interface StockTransaction {
-  id: string;
-  type: 'buy' | 'sell';
-  symbol: string;
-  amount: number;
-  price: number; // Price at time of transaction
-  totalValue: number;
-  timestamp: string;
-}
-
-export interface StockSentiment {
-  symbol: string;
-  sentiment: 'positive' | 'negative' | 'neutral';
-  reason: string;
-}
-
-export interface StockNewsEvent {
-  id: string;
-  symbol: string;
-  text: string;
-  sentiment: 'positive' | 'negative' | 'neutral';
-  timestamp: string;
-}
-
 
 export interface Bounty {
     id: string;
@@ -342,7 +317,7 @@ export interface DirectMessage {
 }
 
 export interface GuestbookEntry {
-    id: string; // Added ID
+    id: string;
     username: string;
     message: string;
     timestamp: string;
@@ -378,7 +353,6 @@ export interface UserData {
     unlockedSkins: SkinID[];
     portfolio: Record<string, number>; // Station URL -> Quantity
     completedBounties: string[];
-    stockTransactions: StockTransaction[]; // New
 }
 
 // For music submissions by artists

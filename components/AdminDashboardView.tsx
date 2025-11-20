@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import type { Station, User, UserData } from '../types';
 import { formatTimeAgo } from '../utils/time';
@@ -113,7 +114,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ stations
     }, [stations, stationSearch]);
 
     // Stats
-    const totalUsers = allUsers.length + (currentUser ? 1 : 0); // +1 for current admin if logged in
+    const totalUsers = allUsers.length + 1; // +1 for current admin
     const totalStations = stations.length;
     const totalArtists = allUsers.filter(u => u.data.role === 'artist').length + (currentUser?.role === 'artist' ? 1 : 0);
     const totalOwners = allUsers.filter(u => u.data.role === 'owner').length + (currentUser?.role === 'owner' ? 1 : 0);
@@ -287,7 +288,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ stations
                                                 </p>
                                             </div>
                                             <div className="bg-gray-900/50 p-3 rounded-md border border-gray-700/30 mb-4">
-                                                <p className="text-sm text-gray-300 italic">"{station.claimRequest?.reason}"</p>
+                                                <p className="text-sm text-gray-300 italic whitespace-pre-wrap font-mono">"{station.claimRequest?.reason}"</p>
                                             </div>
                                             <div className="flex gap-3">
                                                 <button onClick={() => onApproveClaim(station, station.claimRequest!.username)} className="flex-1 bg-green-500/20 hover:bg-green-500/30 text-green-300 font-bold py-2 rounded-md transition-colors">
