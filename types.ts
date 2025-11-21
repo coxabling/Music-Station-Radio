@@ -1,5 +1,4 @@
 
-
 import type * as React from 'react';
 
 export interface User {
@@ -47,6 +46,7 @@ export interface ChatMessage {
   frame?: string; 
   badges?: AchievementID[]; // New
   tier?: 'bronze' | 'silver' | 'gold'; // New
+  avatarUrl?: string; // New: Custom avatar URL
 }
 
 // Types for Visualizer Customization
@@ -225,6 +225,7 @@ export interface FriendActivity {
     status: 'online' | 'offline';
     avatarColor: string;
     frame?: string;
+    customAvatarUrl?: string; // New: Custom avatar URL for friends
 }
 
 export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard' | 'help';
@@ -306,6 +307,7 @@ export interface UserProfile {
     location?: string;
     following: string[];
     followers: string[];
+    customAvatarUrl?: string; // NEW: URL for custom avatar image
 }
 
 export interface DirectMessage {

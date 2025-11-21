@@ -1,3 +1,5 @@
+
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -49,10 +51,17 @@ import { HelpFAQ } from './components/HelpFAQ';
 
 const hexToRgb = (hex: string) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, parseInt(result[3], 16)}` : '103, 232, 249';
+  // Safely return RGB values as strings, defaulting to cyan on invalid input
+  if (result) {
+    const r = parseInt(result[1], 16);
+    const g = parseInt(result[2], 16);
+    const b = parseInt(result[3], 16);
+    return `${r}, ${g}, ${b}`;
+  }
+  return '103, 232, 249'; // Default accent-color-rgb for #67e8f9 (cyan)
 };
 
-const App: React.FC = () => {
+export const App: React.FC = () => {
   const [hasEnteredApp, setHasEnteredApp] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -121,11 +130,11 @@ const App: React.FC = () => {
   // Fix: Initialize quests with the correct type and initial values
   const [quests, setQuests] = useState<Quest[]>(INITIAL_QUESTS);
   const [bets, setBets] = useState<Bet[]>([]);
-  const [collection, setCollection] = useState<CollectorCard[]>([]);
+  const [collection, setCollection] = useState<CollectorCard[]>([] as CollectorCard[]);
   
   // Social State
   const [activeFrame, setActiveFrame] = useState<string | undefined>(undefined);
-  const [unlockedFrames, setUnlockedFrames] = useState<string[]>([]);
+  const [unlockedFrames, setUnlockedFrames] = useState<string[]>([] as string[]);
   const [activeLounge, setActiveLounge] = useState<Lounge | null>(null);
   const [hypeScore, setHypeScore] = useState(0);
   const [isHypeActive, setIsHypeActive] = useState(false);
@@ -133,7 +142,7 @@ const App: React.FC = () => {
   
   // New Feature State
   const [activeSkin, setActiveSkin] = useState<SkinID>('modern');
-  const [unlockedSkins, setUnlockedSkins] = useState<SkinID[]>(['modern']);
+  const [unlockedSkins, setUnlockedSkins] = useState<SkinID[]>(['modern'] as SkinID[]);
   const [stocks, setStocks] = useState<Stock[]>(STOCKS);
   const [portfolio, setPortfolio] = useState<Record<string, number>>({});
   const [bounties, setBounties] = useState<Bounty[]>(BOUNTIES);
@@ -356,26 +365,30 @@ const App: React.FC = () => {
     setUserStations(data.userStations);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
-    setUnlockedThemes(new Set<ThemeName>(data.unlockedThemes || []));
+    // Fix: Explicitly cast the fallback array to ThemeName[] to resolve 'unknown[]' type error
+    setUnlockedThemes(new Set<ThemeName>(data.unlockedThemes ? (data.unlockedThemes as ThemeName[]) : ([] as ThemeName[])));
     setStats(data.stats);
     setAlarm(data.alarm);
     setSongVotes(data.songVotes);
     setUnlockedAchievements(data.unlockedAchievements);
     setQuests((data.quests as Quest[]) || INITIAL_QUESTS);
     setBets(data.bets || []);
-    setCollection(data.collection || []);
+    setCollection((data.collection as CollectorCard[]) || []);
     setActiveFrame(data.activeFrame);
-    setUnlockedFrames(data.unlockedFrames || []);
+    // Fix: Explicitly cast the fallback array to string[] to resolve 'unknown[]' type error
+    setUnlockedFrames(data.unlockedFrames ? (data.unlockedFrames as string[]) : ([] as string[]));
     setUserProfile(data.profile || { 
         bio: '', 
         topArtists: [], 
         favoriteGenres: [], 
         following: [], 
-        followers: [] 
+        followers: [],
+        customAvatarUrl: '', // Ensure customAvatarUrl is initialized
     });
     setCustomThemes(data.customThemes || []);
     setActiveSkin(data.activeSkin || 'modern');
-    setUnlockedSkins(data.unlockedSkins || ['modern']);
+    // Fix: Explicitly cast the fallback array to SkinID[] to resolve 'unknown[]' type error
+    setUnlockedSkins(data.unlockedSkins ? (data.unlockedSkins as SkinID[]) : ['modern']);
     setPortfolio(data.portfolio || {});
     setJingles(data.jingles || []); // Initialize jingles from user data
 
@@ -664,7 +677,9 @@ const App: React.FC = () => {
           setTargetUserProfile(userProfile || undefined);
       } else {
           const data = await getUserData(username);
-          if (data) setTargetUserProfile(data.profile || { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [] });
+          if (data) setTargetUserProfile(data.profile || { 
+            bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [], customAvatarUrl: '' 
+          });
       }
   }, [currentUser, userProfile]);
 
@@ -1065,7 +1080,7 @@ const App: React.FC = () => {
           <AdminDashboardView 
             stations={allStations} 
             onApproveClaim={()=>{}} 
-            onDenyClaim={()=>{}} 
+            onDenyClaim={() => {}} 
             onUpdateUserRole={()=>{}} 
             onEditStation={()=>{}} 
             onDeleteStation={()=>{}} 
@@ -1134,7 +1149,7 @@ const App: React.FC = () => {
   const currentBg = currentThemeObj?.backgroundImage || backgrounds[activeBgIndex];
   
   return (
-    <div className="min-h-screen bg-gray-900" style={{ '--accent-color': accentColor, '--accent-color-rgb': accentColorRgb } as React.CSSProperties}>
+    <div className="min-h-screen bg-gray-900" style={{ '--accent-color': accentColor, '--accent-color-r': hexToRgb(accentColor).split(',')[0].trim(), '--accent-color-g': hexToRgb(accentColor).split(',')[1].trim(), '--accent-color-b': hexToRgb(accentColor).split(',')[2].trim() } as React.CSSProperties}>
       <HypeOverlay isActive={isHypeActive} onComplete={() => setIsHypeActive(false)} />
       <CoinExplosionOverlay isActive={isCoinActive} onComplete={() => setIsCoinActive(false)} />
       <WeatherOverlay lat={currentStation?.location?.lat} lng={currentStation?.location?.lng} />
@@ -1158,7 +1173,14 @@ const App: React.FC = () => {
 
         <div className={`relative text-gray-200 flex flex-col h-full transition-[padding-top] duration-300 ${isHeaderVisible && !isImmersiveMode ? 'pt-16' : 'pt-0'}`}>
             {/* ... Header ... */}
-            <Header currentUser={currentUser} onLogout={handleLogout} points={stats.points || 0} onGoToHome={() => setActiveView('dashboard')} isVisible={isHeaderVisible && !isImmersiveMode} />
+            <Header 
+              currentUser={currentUser} 
+              onLogout={handleLogout} 
+              points={stats.points || 0} 
+              onGoToHome={() => setActiveView('dashboard')} 
+              isVisible={isHeaderVisible && !isImmersiveMode} 
+              customAvatarUrl={currentUser?.profile?.customAvatarUrl} // Pass custom avatar URL
+            />
 
             <div className={`flex flex-1 overflow-hidden transition-opacity duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                 {/* Sidebar */}
@@ -1248,6 +1270,7 @@ const App: React.FC = () => {
                     userPoints={stats.points || 0} 
                     activeFrame={activeFrame}
                     onUserClick={handleOpenProfile}
+                    currentUserAvatarUrl={currentUser?.profile?.customAvatarUrl} // Pass custom avatar URL
                 />
             )}
         </div>
@@ -1338,5 +1361,3 @@ const App: React.FC = () => {
     </div>
   );
 };
-
-export default App;
