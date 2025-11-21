@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -22,8 +23,8 @@ import { AdminDashboardView } from './components/AdminDashboardView';
 import { StationManagerDashboardView } from './components/StationManagerDashboardView';
 import { ArtistDashboardView } from './components/ArtistDashboardView';
 import { RightPanel } from './components/RightPanel';
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, STOCKS, BOUNTIES, ShieldCheckIcon } from './constants';
-import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, Quest, CollectorCard, Lounge, UserProfile, AvatarFrame, SkinID, Stock, Bounty, Jingle, PlayerSkin } from './types';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, STOCKS, BOUNTIES, ShieldCheckIcon, UploadIcon } from './constants';
+import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, Quest, CollectorCard, Lounge, UserProfile, AvatarFrame, SkinID, Stock, Bounty, Jingle, PlayerSkin, GuestbookEntry } from './types';
 import { getDominantColor } from './utils/colorExtractor';
 import { LandingPage } from './components/LandingPage';
 import { getUserData, updateUserData, createUserData, followUser, unfollowUser } from './services/apiService';
@@ -49,7 +50,7 @@ import { HelpFAQ } from './components/HelpFAQ';
 
 const hexToRgb = (hex: string) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '103, 232, 249';
+  return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, parseInt(result[3], 16)}` : '103, 232, 249';
 };
 
 const App: React.FC = () => {
@@ -118,7 +119,7 @@ const App: React.FC = () => {
   const [alarm, setAlarm] = useState<Alarm | null>(null);
   const [songVotes, setSongVotes] = useState<Record<string, SongVote>>({});
   const [unlockedAchievements, setUnlockedAchievements] = useState<Record<string, UnlockedAchievement>>({});
-  const [quests, setQuests] = useState<Quest[]>([]);
+  const [quests, setQuests] = useState([]);
   const [bets, setBets] = useState<Bet[]>([]);
   const [collection, setCollection] = useState<CollectorCard[]>([]);
   
@@ -136,7 +137,7 @@ const App: React.FC = () => {
   const [stocks, setStocks] = useState<Stock[]>(STOCKS);
   const [portfolio, setPortfolio] = useState<Record<string, number>>({});
   const [bounties, setBounties] = useState<Bounty[]>(BOUNTIES);
-  const [jingles, setJingles] = useState<Jingle[]>([]);
+  const [jingles, setJingles] = useState<Jingle[]>([]); // Global Jingle state
 
   
   const [toasts, setToasts] = useState<ToastData[]>([]);
@@ -207,14 +208,14 @@ const App: React.FC = () => {
             clearInterval(statsUpdateInterval.current);
         }
     };
-  }, [currentStation, isPlaying, currentUser]);
+  }, [currentStation, isPlaying, currentUser, unlockedAchievements]);
 
   // Persist Stats Periodically (Every 10s)
   useEffect(() => {
       if (currentUser && stats.totalTime > 0 && stats.totalTime % 10 === 0) {
           updateUserData(currentUser.username, { stats });
       }
-  }, [stats.totalTime, currentUser]);
+  }, [stats.totalTime, currentUser, stats]); // Added stats as dependency
 
   // Check Bounties
   useEffect(() => {
@@ -238,7 +239,7 @@ const App: React.FC = () => {
               setToasts(t => [...t, { id: Date.now(), title: 'Bounty Complete!', message: `Earned ${bounty.reward} pts`, icon: StarIcon, type: 'success' }]);
           }
       });
-  }, [nowPlaying, currentStation, bounties, currentUser]);
+  }, [nowPlaying, currentStation, bounties, currentUser, stats]);
 
   // Dynamic Favicon Logic
   useEffect(() => {
@@ -315,6 +316,17 @@ const App: React.FC = () => {
       });
   }, [currentUser, unlockAchievement]);
 
+  // Moved handleLogout before loadUserData to fix "used before declaration" error
+  const handleLogout = useCallback(() => {
+    setCurrentStation(null);
+    setStationForDetail(null);
+    setCurrentUser(null);
+    setIsPlaying(false);
+    localStorage.removeItem('currentUser');
+    setIsLoginModalOpen(true);
+    setAllStations(defaultStations);
+  }, []);
+
   const loadUserData = useCallback(async (username: string) => {
     setIsDataLoading(true);
 
@@ -322,14 +334,20 @@ const App: React.FC = () => {
     if (!data) {
         console.error("Failed to load user data for", username);
         setIsDataLoading(false);
-        handleLogout();
+        handleLogout(); // `handleLogout` is now declared
         return;
     }
     
     const favUrls = new Set<string>(data.favoriteStationUrls || []);
-    const stationsWithFavorites = defaultStations.map(s => ({...s, isFavorite: favUrls.has(s.streamUrl)}));
-    const userStationsWithFavorites = data.userStations.map(s => ({...s, isFavorite: favUrls.has(s.streamUrl)}));
-    const allKnownStations = [...stationsWithFavorites, ...userStationsWithFavorites];
+    // Ensure allStations are always loaded with default values first, then merge user data
+    const updatedAllStations = defaultStations.map(s => ({...s, isFavorite: favUrls.has(s.streamUrl)}));
+    const userStationsWithFavorites = (data.userStations || []).map(s => ({...s, isFavorite: favUrls.has(s.streamUrl)}));
+
+    // Merge default and user-owned stations, prioritizing user-owned for existing streams
+    const combinedStationsMap = new Map<string, Station>();
+    updatedAllStations.forEach(s => combinedStationsMap.set(s.streamUrl, s));
+    userStationsWithFavorites.forEach(s => combinedStationsMap.set(s.streamUrl, s));
+    const allKnownStations = Array.from(combinedStationsMap.values());
     
     const user: User = { username, role: data.role };
     setCurrentUser(user);
@@ -338,27 +356,32 @@ const App: React.FC = () => {
     setUserStations(data.userStations);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
-    setUnlockedThemes(new Set<ThemeName>(data.unlockedThemes || []));
+    // Fix: Explicitly cast to ThemeName[]
+    setUnlockedThemes(new Set<ThemeName>((data.unlockedThemes || []) as ThemeName[]));
     setStats(data.stats);
     setAlarm(data.alarm);
     setSongVotes(data.songVotes);
     setUnlockedAchievements(data.unlockedAchievements);
-    setQuests(data.quests && data.quests.length > 0 ? data.quests : INITIAL_QUESTS);
+    setQuests((data.quests as Quest[]) || INITIAL_QUESTS);
     setBets(data.bets || []);
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
-    setUnlockedFrames((data.unlockedFrames as string[]) || []);
+    // Fix: Explicitly cast to string[]
+    setUnlockedFrames((data.unlockedFrames || []) as string[]);
     setUserProfile(data.profile || { 
         bio: '', 
-        topArtists: [] as string[], 
-        favoriteGenres: [] as string[], 
-        following: [] as string[], 
-        followers: [] as string[] 
+        topArtists: [], 
+        favoriteGenres: [], 
+        following: [], 
+        followers: [] 
     });
     setCustomThemes(data.customThemes || []);
     setActiveSkin(data.activeSkin || 'modern');
-    setUnlockedSkins(data.unlockedSkins || ['modern']);
+    // Fix: Explicitly cast to SkinID[]
+    setUnlockedSkins((data.unlockedSkins || ['modern']) as SkinID[]);
     setPortfolio(data.portfolio || {});
+    setJingles(data.jingles || []); // Initialize jingles from user data
+
     
     // Restore completed bounties
     if(data.completedBounties) {
@@ -372,7 +395,7 @@ const App: React.FC = () => {
 
     setActiveView(data.activeView || defaultView);
     setIsDataLoading(false);
-  }, []);
+  }, [handleLogout]); // Dependency is fine now because handleLogout is declared above
 
   useEffect(() => {
       let storedUser: { username: string } | null = null;
@@ -403,16 +426,6 @@ const App: React.FC = () => {
     setIsLoginModalOpen(false);
     await loadUserData(username);
   }, [loadUserData]);
-
-  const handleLogout = useCallback(() => {
-    setCurrentStation(null);
-    setStationForDetail(null);
-    setCurrentUser(null);
-    setIsPlaying(false);
-    localStorage.removeItem('currentUser');
-    setIsLoginModalOpen(true);
-    setAllStations(defaultStations);
-  }, []);
 
   const handleSelectStation = (station: Station) => { 
       if (currentStation?.streamUrl !== station.streamUrl) {
@@ -482,7 +495,7 @@ const App: React.FC = () => {
       // Persist to backend
       updateUserData(currentUser.username, { 
           customThemes: updatedCustomThemes, 
-          unlockedThemes: Array.from(updatedUnlockedThemesSet) as ThemeName[],
+          unlockedThemes: Array.from(updatedUnlockedThemesSet),
           stats: { ...stats, points: newPoints } 
         });
   };
@@ -501,7 +514,7 @@ const App: React.FC = () => {
       
       updateUserData(currentUser.username, {
         stats: { ...stats, points: newPoints },
-        unlockedThemes: Array.from(newUnlocked) as ThemeName[]
+        unlockedThemes: Array.from(newUnlocked)
       });
       
       setToasts(t => [...t, { 
@@ -562,7 +575,7 @@ const App: React.FC = () => {
       
       if (currentPoints >= skin.cost) {
           const newPoints = currentPoints - skin.cost;
-          const newUnlocked = [...unlockedSkins, skin.id];
+          const newUnlocked: SkinID[] = [...unlockedSkins, skin.id];
           
           setStats(prev => ({ ...prev, points: newPoints }));
           setUnlockedSkins(newUnlocked);
@@ -720,6 +733,88 @@ const App: React.FC = () => {
       setIsClaimModalOpen(false);
       setStationToClaim(null);
   }, [currentUser]);
+
+  const handleAddMusicSubmission = useCallback((stationStreamUrl: string, submission: Omit<MusicSubmission, 'id' | 'submittedAt' | 'status' | 'submittedBy' | 'stationStreamUrl' | 'stationName'>) => {
+    if (!currentUser || !stationForSubmission) return;
+
+    const newSubmission: MusicSubmission = {
+        id: `sub_${Date.now()}`,
+        submittedAt: new Date().toISOString(),
+        status: 'pending',
+        submittedBy: currentUser.username,
+        stationStreamUrl,
+        stationName: stationForSubmission.name,
+        ...submission,
+    };
+
+    setAllStations(prevStations => prevStations.map(s => {
+        if (s.streamUrl === stationStreamUrl) {
+            return { ...s, submissions: [...(s.submissions || []), newSubmission] };
+        }
+        return s;
+    }));
+
+    setStats(prev => ({ ...prev, points: (prev.points || 0) - (500) })); // Assuming a cost, 500 for now
+
+    setToasts(t => [...t, {
+        id: Date.now(),
+        title: 'Music Submission Sent!',
+        message: 'Station manager will review your track.',
+        icon: UploadIcon,
+        type: 'success',
+    }]);
+
+    setIsMusicSubmissionModalOpen(false);
+    setStationForSubmission(null);
+  }, [currentUser, stationForSubmission, stats.points]);
+
+  const handleReviewMusicSubmission = useCallback((stationStreamUrl: string, submissionId: string, status: 'approved' | 'rejected', managerComment?: string) => {
+    if (!currentUser) return;
+    setAllStations(prevStations => prevStations.map(s => {
+        if (s.streamUrl === stationStreamUrl) {
+            const updatedSubmissions = (s.submissions || []).map(sub => {
+                if (sub.id === submissionId) {
+                    return { ...sub, status, managerComment, reviewedAt: new Date().toISOString() };
+                }
+                return sub;
+            });
+            return { ...s, submissions: updatedSubmissions };
+        }
+        return s;
+    }));
+    // In a real app, this would trigger a backend update for the station owner
+    // For this demo, we're relying on allStations update and periodic user data saves.
+  }, [currentUser]);
+
+  const handleAddGuestbookEntry = useCallback((stationStreamUrl: string, message: string) => {
+      if (!currentUser) return;
+      const newEntry: GuestbookEntry = {
+          id: `guest_${Date.now()}`,
+          username: currentUser.username,
+          message,
+          timestamp: new Date().toISOString(),
+          stationUrl: stationStreamUrl,
+          stationName: allStations.find(s => s.streamUrl === stationStreamUrl)?.name || 'Unknown Station'
+      };
+      setAllStations(prevStations => prevStations.map(s => {
+          if (s.streamUrl === stationStreamUrl) {
+              return { ...s, guestbook: [...(s.guestbook || []), newEntry] };
+          }
+          return s;
+      }));
+       // In a real app, this would trigger a backend update for the station owner
+  }, [currentUser, allStations]);
+
+  const handleDeleteGuestbookEntry = useCallback((stationStreamUrl: string, entryId: string) => {
+      setAllStations(prevStations => prevStations.map(s => {
+          if (s.streamUrl === stationStreamUrl) {
+              const updatedGuestbook = (s.guestbook || []).filter(entry => entry.id !== entryId);
+              return { ...s, guestbook: updatedGuestbook };
+          }
+          return s;
+      }));
+      // In a real app, this would trigger a backend update for the station owner
+  }, []);
   
   const handleHype = useCallback(() => {
       setHypeScore(prev => {
@@ -779,18 +874,31 @@ const App: React.FC = () => {
   
   const handleSubmitJingle = (blob: Blob) => {
       // In a real app, this would upload the blob. Here we just mock it.
-      if (!currentUser) return;
+      if (!currentUser || !currentStation) return;
       const newJingle: Jingle = {
           id: `jingle_${Date.now()}`,
           url: URL.createObjectURL(blob),
-          stationUrl: currentStation?.streamUrl || '',
+          stationUrl: currentStation?.streamUrl, // Link jingle to current station
           creator: currentUser.username,
           status: 'pending',
           timestamp: new Date().toISOString()
       };
-      setJingles(prev => [...prev, newJingle]);
+      setJingles(prev => [...prev, newJingle]); // Add to global jingles state
+      updateUserData(currentUser.username, { jingles: [...jingles, newJingle] }); // Persist global jingles state
       setToasts(t => [...t, { id: Date.now(), title: 'Jingle Submitted!', message: 'Waiting for station manager approval.', icon: FireIcon, type: 'success' }]);
   }
+
+  const handleReviewJingle = useCallback((jingleId: string, status: 'approved' | 'rejected') => {
+      if (!currentUser) return;
+      setJingles(prevJingles => prevJingles.map(j => {
+          if (j.id === jingleId) {
+              return { ...j, status };
+          }
+          return j;
+      }));
+      // In a real app, this would trigger a backend update for the jingle state.
+      // For this demo, we're relying on allStations update and periodic user data saves.
+  }, [currentUser]);
 
   // Hype Logic: Decay & Simulation
   useEffect(() => {
@@ -899,7 +1007,15 @@ const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentStation, allStations, handleToggleFavorite]); // Re-bind when stations change for next/prev
+  }, [currentStation, allStations, handleToggleFavorite, handleNextStation, handlePreviousStation]); // Re-bind when stations change for next/prev
+
+  // Fix: Define allMusicSubmissions for ArtistDashboardView
+  const allMusicSubmissions = useMemo(() => 
+    allStations.flatMap(station => 
+      (station.submissions || []).map(sub => ({ ...sub, stationName: station.name, stationStreamUrl: station.streamUrl }))
+    ),
+    [allStations]
+  );
 
   if (!hasEnteredApp) {
     return <LandingPage onEnter={() => setHasEnteredApp(true)} />;
@@ -908,11 +1024,26 @@ const App: React.FC = () => {
   const renderActiveView = () => {
       switch (activeView) {
       case 'artist_dashboard':
-        return <ArtistDashboardView user={currentUser} stats={stats} submissions={[]} setActiveView={setActiveView} />;
+        return <ArtistDashboardView user={currentUser} stats={stats} submissions={allMusicSubmissions.filter(s => s.submittedBy === currentUser?.username)} setActiveView={setActiveView} />;
       case 'station_manager_dashboard':
-        return <StationManagerDashboardView user={currentUser} allStations={allStations} onReviewSubmission={() => {}} onEditStation={() => {}} />;
+        return <StationManagerDashboardView user={currentUser} allStations={allStations} onReviewSubmission={handleReviewMusicSubmission} onEditStation={() => {}} />;
       case 'admin':
-        return <AdminDashboardView stations={allStations} onApproveClaim={()=>{}} onDenyClaim={()=>{}} onUpdateUserRole={()=>{}} onEditStation={()=>{}} onDeleteStation={()=>{}} currentUser={currentUser} />;
+        return (
+          <AdminDashboardView 
+            stations={allStations} 
+            onApproveClaim={()=>{}} 
+            onDenyClaim={()=>{}} 
+            onUpdateUserRole={()=>{}} 
+            onEditStation={()=>{}} 
+            onDeleteStation={()=>{}} 
+            currentUser={currentUser} 
+            onOpenProfile={handleOpenProfile} // Passed to AdminDashboardView
+            onReviewSubmission={handleReviewMusicSubmission}
+            jingles={jingles} // Passed global jingles
+            onReviewJingle={handleReviewJingle}
+            onDeleteGuestbookEntry={handleDeleteGuestbookEntry}
+          />
+        );
       case 'store':
         return (
             <StoreView 
@@ -940,7 +1071,7 @@ const App: React.FC = () => {
                 stats={stats} 
                 favoritesCount={favoriteStationUrls.size} 
                 unlockedAchievements={unlockedAchievements} 
-                onOpenSettings={() => setIsSettingsModalOpen(true)}
+                // onOpenSettings={() => setIsSettingsModalOpen(true)} // Removed to open settings from sidebar
               />
           );
       case 'help':
@@ -1014,12 +1145,13 @@ const App: React.FC = () => {
                     onSelectStation={handleSelectStation}
                     onRateStation={() => {}} 
                     onEdit={() => {}} 
-                    onOpenMusicSubmissionModal={() => {}} 
+                    onOpenMusicSubmissionModal={(s) => { setStationForSubmission(s); setIsMusicSubmissionModalOpen(true); }} 
                     onOpenClaimModal={(s) => { setStationToClaim(s); setIsClaimModalOpen(true); }} 
                     onToggleFavorite={handleToggleFavorite}
                     nowPlaying={nowPlaying}
                     bounties={bounties}
                     onOpenJingleModal={() => setIsJingleModalOpen(true)}
+                    onAddGuestbookEntry={handleAddGuestbookEntry} // Pass new handler
                 />
             </div>
             
@@ -1154,6 +1286,13 @@ const App: React.FC = () => {
       <EventsModal isOpen={isEventsModalOpen} onClose={() => setIsEventsModalOpen(false)} onSelectStation={(name) => { const s = allStations.find(st=>st.name===name); if(s) handleSelectStation(s); setIsEventsModalOpen(false); }} />
       <SongHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} history={stats.songHistory} />
       <RequestSongModal isOpen={false} onClose={() => {}} stationName="" onSubmit={() => {}} />
+      <MusicSubmissionModal 
+        isOpen={isMusicSubmissionModalOpen} 
+        onClose={() => setIsMusicSubmissionModalOpen(false)} 
+        onSubmit={handleAddMusicSubmission} 
+        station={stationForSubmission} 
+        userPoints={stats.points || 0} 
+      />
     </div>
   );
 };

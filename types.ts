@@ -1,4 +1,5 @@
 
+
 import type * as React from 'react';
 
 export interface User {
@@ -173,7 +174,7 @@ export interface ToastData {
   title: string;
   message?: string;
   icon: React.FC<{className?: string}>;
-  type?: 'achievement' | 'points' | 'milestone' | 'theme_unlocked' | 'login' | 'error' | 'raid' | 'success' | 'hype';
+  type?: 'achievement' | 'points' | 'milestone' | 'theme_unlocked' | 'login' | 'error' | 'raid' | 'success' | 'hype' | 'info';
 }
 
 // Type for Leaderboard
@@ -322,6 +323,8 @@ export interface GuestbookEntry {
     message: string;
     timestamp: string;
     reply?: string; // Station manager reply
+    stationUrl: string; // NEW
+    stationName: string; // NEW
 }
 
 export interface UserData {
@@ -353,6 +356,7 @@ export interface UserData {
     unlockedSkins: SkinID[];
     portfolio: Record<string, number>; // Station URL -> Quantity
     completedBounties: string[];
+    jingles?: Jingle[]; // NEW
 }
 
 // For music submissions by artists

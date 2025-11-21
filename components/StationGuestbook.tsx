@@ -1,21 +1,23 @@
 
+
 import React, { useState } from 'react';
 import type { GuestbookEntry, User } from '../types';
 import { formatTimeAgo } from '../utils/time';
 
 interface StationGuestbookProps {
     entries: GuestbookEntry[];
-    onAddEntry: (message: string) => void;
+    onAddEntry: (stationStreamUrl: string, message: string) => void; // Modified signature
     currentUser: User | null;
+    stationStreamUrl: string; // New prop
 }
 
-export const StationGuestbook: React.FC<StationGuestbookProps> = ({ entries, onAddEntry, currentUser }) => {
+export const StationGuestbook: React.FC<StationGuestbookProps> = ({ entries, onAddEntry, currentUser, stationStreamUrl }) => {
     const [message, setMessage] = useState('');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (message.trim()) {
-            onAddEntry(message);
+            onAddEntry(stationStreamUrl, message); // Pass stationStreamUrl
             setMessage('');
         }
     }
