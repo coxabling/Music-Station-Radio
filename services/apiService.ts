@@ -7,7 +7,8 @@ const SIMULATED_LATENCY = 50; // ms
 const getDb = (username: string): UserData | null => {
     try {
         const data = localStorage.getItem(`user_db_${username}`);
-        return data ? JSON.parse(data) : null;
+        // DO: Explicitly cast the result of JSON.parse to UserData to ensure type safety.
+        return data ? JSON.parse(data) as UserData : null;
     } catch (e) {
         console.error("Failed to read from mock DB", e);
         return null;
@@ -38,11 +39,11 @@ const createDefaultUserData = (): Omit<UserData, 'role'> => ({
     quests: [],
     bets: [],
     collection: [],
-    profile: { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [] },
+    profile: { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [], customAvatarUrl: '' }, // Initialized customAvatarUrl
     // New Features
     activeSkin: 'modern',
     unlockedSkins: ['modern'],
-    portfolio: {},
+    portfolio: {}, // Ensure portfolio is an empty object
     completedBounties: []
 });
 
@@ -114,6 +115,14 @@ export const updateUserData = (username: string, partialData: Partial<UserData>)
                     if (partialData.stats) {
                         mergedData.stats = { ...currentData.stats, ...partialData.stats };
                     }
+                    // Ensure profile and portfolio are merged, not overwritten if they exist
+                    if (partialData.profile) {
+                         mergedData.profile = { ...currentData.profile, ...partialData.profile };
+                    }
+                    if (partialData.portfolio) {
+                         mergedData.portfolio = { ...currentData.portfolio, ...partialData.portfolio };
+                    }
+
                     setDb(username, mergedData);
                 } else {
                     console.error(`Attempted to update data for non-existent user: ${username}`);
@@ -140,8 +149,8 @@ export const followUser = async (followerUsername: string, targetUsername: strin
 
                 if (follower && target) {
                     // Initialize profiles if missing
-                    if (!follower.profile) follower.profile = { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [] };
-                    if (!target.profile) target.profile = { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [] };
+                    if (!follower.profile) follower.profile = { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [], customAvatarUrl: '' };
+                    if (!target.profile) target.profile = { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [], customAvatarUrl: '' };
 
                     // Add to following
                     if (!follower.profile.following.includes(targetUsername)) {

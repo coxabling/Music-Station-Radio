@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -117,7 +115,7 @@ export const App: React.FC = () => {
   const [viewingProfile, setViewingProfile] = useState<string | null>(null);
   const [targetUserProfile, setTargetUserProfile] = useState<UserProfile | undefined>(undefined);
 
-  const [favoriteStationUrls, setFavoriteStationUrls] = useState<Set<string>>(new Set());
+  const [favoriteStationUrls, setFavoriteStationUrls] = useState<Set<string>>(new Set<string>());
   const [unlockedThemes, setUnlockedThemes] = useState<Set<ThemeName>>(new Set(['dynamic']));
 
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -211,7 +209,7 @@ export const App: React.FC = () => {
         if (statsUpdateInterval.current) {
             clearInterval(statsUpdateInterval.current);
         }
-    }
+    };
     return () => {
         if (statsUpdateInterval.current) {
             clearInterval(statsUpdateInterval.current);
@@ -388,7 +386,7 @@ export const App: React.FC = () => {
     setCustomThemes(data.customThemes || []);
     setActiveSkin(data.activeSkin || 'modern');
     // Fix: Explicitly cast the fallback array to SkinID[] to resolve 'unknown[]' type error
-    setUnlockedSkins(data.unlockedSkins ? (data.unlockedSkins as SkinID[]) : ['modern']);
+    setUnlockedSkins(data.unlockedSkins ? (data.unlockedSkins as SkinID[]) : ([] as SkinID[]));
     setPortfolio(data.portfolio || {});
     setJingles(data.jingles || []); // Initialize jingles from user data
 
@@ -431,11 +429,11 @@ export const App: React.FC = () => {
         await loadUserData(username);
         return;
     }
-    let userData = await getUserData(username);
-    if (!userData) await createUserData(username, role);
-    localStorage.setItem('currentUser', JSON.stringify({ username }));
+    let userData = await getUserData(username.trim());
+    if (!userData) await createUserData(username.trim(), role);
+    localStorage.setItem('currentUser', JSON.stringify({ username: username.trim() }));
     setIsLoginModalOpen(false);
-    await loadUserData(username);
+    await loadUserData(username.trim());
   }, [loadUserData]);
 
   const handleSelectStation = (station: Station) => { 
@@ -858,27 +856,27 @@ export const App: React.FC = () => {
       const stock = stocks.find(s => s.symbol === symbol);
       if (!stock) return;
       
-      const totalCost = stock.price * amount;
+      const transactionValue = stock.price * amount; // This is the total cost or total revenue
       let newPoints = stats.points || 0;
       let newPortfolio = { ...portfolio };
       
       if (type === 'buy') {
-          if (newPoints < totalCost) {
+          if (newPoints < transactionValue) {
               setToasts(t => [...t, { id: Date.now(), title: 'Insufficient Points', icon: LockIcon, type: 'error' }]);
               return;
           }
-          newPoints -= totalCost;
+          newPoints -= transactionValue;
           newPortfolio[symbol] = (newPortfolio[symbol] || 0) + amount;
-           setToasts(t => [...t, { id: Date.now(), title: `Bought ${amount} ${symbol}`, message: `Spent ${totalCost.toFixed(0)} pts`, icon: StarIcon, type: 'success' }]);
-      } else {
+           setToasts(t => [...t, { id: Date.now(), title: `Bought ${amount} ${symbol}`, message: `Spent ${transactionValue.toFixed(0)} pts`, icon: StarIcon, type: 'success' }]);
+      } else { // sell
           if ((newPortfolio[symbol] || 0) < amount) {
               setToasts(t => [...t, { id: Date.now(), title: 'Insufficient Stock', icon: LockIcon, type: 'error' }]);
               return;
           }
-          newPoints += totalCost;
+          newPoints += transactionValue;
           newPortfolio[symbol] -= amount;
           if (newPortfolio[symbol] === 0) delete newPortfolio[symbol];
-           setToasts(t => [...t, { id: Date.now(), title: `Sold ${amount} ${symbol}`, message: `Earned ${totalCost.toFixed(0)} pts`, icon: StarIcon, type: 'success' }]);
+           setToasts(t => [...t, { id: Date.now(), title: `Sold ${amount} ${symbol}`, message: `Earned ${transactionValue.toFixed(0)} pts`, icon: StarIcon, type: 'success' }]);
       }
       
       setStats(prev => ({ ...prev, points: newPoints }));
@@ -960,11 +958,18 @@ export const App: React.FC = () => {
   useEffect(() => {
       const interval = setInterval(() => {
           setStocks(prev => prev.map(s => {
-              const change = (Math.random() - 0.5) * 2;
-              const newPrice = Math.max(10, s.price + change);
-              return { ...s, price: parseFloat(newPrice.toFixed(2)), change: parseFloat(change.toFixed(2)) };
+              // Generate a random daily percentage change between -5% and +5%
+              const percentageChange = (Math.random() * 0.1) - 0.05; // -0.05 to +0.05
+              const newPrice = Math.max(10, s.price * (1 + percentageChange)); // Ensure price doesn't go below 10
+
+              return {
+                  ...s,
+                  price: parseFloat(newPrice.toFixed(2)),
+                  // Store the actual percentage change for display
+                  change: parseFloat((percentageChange * 100).toFixed(2))
+              };
           }));
-      }, 5000);
+      }, 5000); // Update every 5 seconds
       return () => clearInterval(interval);
   }, []);
 

@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import type { Stock } from '../types';
 import { StarIcon } from '../constants';
@@ -21,12 +22,25 @@ export const StockMarketModal: React.FC<StockMarketModalProps> = ({ isOpen, onCl
 
     if (!isOpen) return null;
 
+    const totalPortfolioValue = stocks.reduce((sum, stock) => {
+        const ownedShares = portfolio[stock.symbol] || 0;
+        return sum + (ownedShares * stock.price);
+    }, 0);
+
+    const transactionValue = selectedStock ? amount * selectedStock.price : 0;
+
     const handleBuy = () => {
-        if (selectedStock) onTransaction(selectedStock.symbol, amount, 'buy');
+        if (selectedStock) {
+            onTransaction(selectedStock.symbol, amount, 'buy');
+            setAmount(1); // Reset amount after transaction
+        }
     };
 
     const handleSell = () => {
-        if (selectedStock) onTransaction(selectedStock.symbol, amount, 'sell');
+        if (selectedStock) {
+            onTransaction(selectedStock.symbol, amount, 'sell');
+            setAmount(1); // Reset amount after transaction
+        }
     };
 
     return (
@@ -67,10 +81,10 @@ export const StockMarketModal: React.FC<StockMarketModalProps> = ({ isOpen, onCl
                                         <p className="text-xs text-gray-400">{stock.stationName}</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-mono text-white">{stock.price.toFixed(2)}</p>
+                                        <p className="font-mono text-white text-lg">{stock.price.toFixed(2)}</p>
                                         <div className="flex items-center justify-end gap-1 text-xs">
                                             {stock.change >= 0 ? <TrendingUpIcon /> : <TrendingDownIcon />}
-                                            <span className={stock.change >= 0 ? 'text-green-400' : 'text-red-400'}>{stock.change}%</span>
+                                            <span className={stock.change >= 0 ? 'text-green-400' : 'text-red-400'}>{stock.change.toFixed(2)}%</span>
                                         </div>
                                     </div>
                                 </div>
@@ -83,15 +97,36 @@ export const StockMarketModal: React.FC<StockMarketModalProps> = ({ isOpen, onCl
                         {selectedStock ? (
                             <>
                                 <div className="mb-6">
-                                    <h3 className="text-2xl font-bold text-white mb-1">{selectedStock.stationName} ({selectedStock.symbol})</h3>
-                                    <p className="text-3xl font-mono text-[var(--accent-color)]">{selectedStock.price.toFixed(2)} <span className="text-sm text-gray-400">pts</span></p>
+                                    <h3 className="text-xl font-bold text-white mb-1">{selectedStock.stationName} ({selectedStock.symbol})</h3>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-3xl font-mono text-[var(--accent-color)]">{selectedStock.price.toFixed(2)}</p>
+                                        <span className="text-sm text-gray-400">pts</span>
+                                        <div className="flex items-center justify-end gap-1 text-base ml-2">
+                                            {selectedStock.change >= 0 ? <TrendingUpIcon className="h-6 w-6"/> : <TrendingDownIcon className="h-6 w-6"/>}
+                                            <span className={selectedStock.change >= 0 ? 'text-green-400' : 'text-red-400'}>{selectedStock.change.toFixed(2)}%</span>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div className="bg-gray-900 p-4 rounded-lg mb-6">
-                                    <p className="text-sm text-gray-400 mb-2">Your Portfolio</p>
+                                <div className="bg-gray-900 p-4 rounded-lg mb-6 border border-gray-700/50">
+                                    <p className="text-sm text-gray-400 mb-2">Your Portfolio Value</p>
+                                    <p className="text-2xl font-bold text-white">{totalPortfolioValue.toFixed(2)} <span className="text-sm text-gray-500">pts</span></p>
+                                </div>
+
+                                <div className="bg-gray-900 p-4 rounded-lg mb-6 border border-gray-700/50">
+                                    <p className="text-sm text-gray-400 mb-2">Your Holdings in {selectedStock.symbol}</p>
                                     <p className="text-xl font-bold text-white">{portfolio[selectedStock.symbol] || 0} shares</p>
                                     <p className="text-xs text-gray-500">Value: {((portfolio[selectedStock.symbol] || 0) * selectedStock.price).toFixed(2)} pts</p>
                                 </div>
+
+                                {/* Price History Chart Placeholder */}
+                                <div className="bg-gray-900 p-4 rounded-lg mb-6 border border-gray-700/50 flex-grow-0">
+                                    <h4 className="text-sm font-bold text-gray-300 mb-2">Price History Chart</h4>
+                                    <div className="h-24 bg-gray-800 rounded flex items-center justify-center text-gray-500 text-xs">
+                                        Coming Soon! (Interactive Chart)
+                                    </div>
+                                </div>
+
 
                                 <div className="flex-grow">
                                     <label className="block text-sm text-gray-400 mb-2">Amount to Trade</label>
@@ -99,23 +134,23 @@ export const StockMarketModal: React.FC<StockMarketModalProps> = ({ isOpen, onCl
                                         type="number" 
                                         min="1" 
                                         value={amount} 
-                                        onChange={e => setAmount(Math.max(1, parseInt(e.target.value)))}
+                                        onChange={e => setAmount(Math.max(1, parseInt(e.target.value) || 0))}
                                         className="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white text-lg focus:border-[var(--accent-color)] outline-none mb-2"
                                     />
-                                    <p className="text-right text-xs text-gray-400">Total: {(amount * selectedStock.price).toFixed(2)} pts</p>
+                                    <p className="text-right text-xs text-gray-400">Total: {transactionValue.toFixed(2)} pts</p>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4 mt-4">
                                     <button 
                                         onClick={handleBuy}
-                                        disabled={userPoints < amount * selectedStock.price}
+                                        disabled={userPoints < transactionValue || amount <= 0}
                                         className="bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-lg transition-colors"
                                     >
                                         Buy
                                     </button>
                                     <button 
                                         onClick={handleSell}
-                                        disabled={(portfolio[selectedStock.symbol] || 0) < amount}
+                                        disabled={(portfolio[selectedStock.symbol] || 0) < amount || amount <= 0}
                                         className="bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-lg transition-colors"
                                     >
                                         Sell
