@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -84,7 +83,7 @@ const App: React.FC = () => {
   // --- Modals ---
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isAlarmModalOpen, setIsAlarmModalOpen] = useState(false);
-  const [isSongChartModalOpen, setIsSongChartModalOpen] = useState(false);
+  const [isSongChartModalOpen, setIsSongChartModal] = useState(false);
   const [isEventsModalOpen, setIsEventsModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [tippingModalStation, setTippingModalStation] = useState<Station | null>(null);
@@ -119,7 +118,8 @@ const App: React.FC = () => {
   const [alarm, setAlarm] = useState<Alarm | null>(null);
   const [songVotes, setSongVotes] = useState<Record<string, SongVote>>({});
   const [unlockedAchievements, setUnlockedAchievements] = useState<Record<string, UnlockedAchievement>>({});
-  const [quests, setQuests] = useState([]);
+  // Fix: Initialize quests with the correct type and initial values
+  const [quests, setQuests] = useState<Quest[]>(INITIAL_QUESTS);
   const [bets, setBets] = useState<Bet[]>([]);
   const [collection, setCollection] = useState<CollectorCard[]>([]);
   
@@ -356,8 +356,7 @@ const App: React.FC = () => {
     setUserStations(data.userStations);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
-    // Fix: Explicitly cast to ThemeName[]
-    setUnlockedThemes(new Set<ThemeName>((data.unlockedThemes || []) as ThemeName[]));
+    setUnlockedThemes(new Set<ThemeName>(data.unlockedThemes || []));
     setStats(data.stats);
     setAlarm(data.alarm);
     setSongVotes(data.songVotes);
@@ -366,8 +365,7 @@ const App: React.FC = () => {
     setBets(data.bets || []);
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
-    // Fix: Explicitly cast to string[]
-    setUnlockedFrames((data.unlockedFrames || []) as string[]);
+    setUnlockedFrames(data.unlockedFrames || []);
     setUserProfile(data.profile || { 
         bio: '', 
         topArtists: [], 
@@ -377,14 +375,14 @@ const App: React.FC = () => {
     });
     setCustomThemes(data.customThemes || []);
     setActiveSkin(data.activeSkin || 'modern');
-    // Fix: Explicitly cast to SkinID[]
-    setUnlockedSkins((data.unlockedSkins || ['modern']) as SkinID[]);
+    setUnlockedSkins(data.unlockedSkins || ['modern']);
     setPortfolio(data.portfolio || {});
     setJingles(data.jingles || []); // Initialize jingles from user data
 
     
     // Restore completed bounties
     if(data.completedBounties) {
+        // Fix: Corrected typo 'completedBouted' to 'completedBounties'
         setBounties(prev => prev.map(b => data.completedBounties.includes(b.id) ? { ...b, completed: true } : b));
     }
 
@@ -541,7 +539,8 @@ const App: React.FC = () => {
     
     if (currentPoints >= frame.cost) {
       const newPoints = currentPoints - frame.cost;
-      const newUnlocked = [...unlockedFrames, frame.id];
+      // Fix: Explicitly type newUnlocked as string[] to match useState<string[]>([])
+      const newUnlocked: string[] = [...unlockedFrames, frame.id];
       
       setStats(prev => ({ ...prev, points: newPoints }));
       setUnlockedFrames(newUnlocked);
@@ -900,6 +899,29 @@ const App: React.FC = () => {
       // For this demo, we're relying on allStations update and periodic user data saves.
   }, [currentUser]);
 
+  const handleEditStation = useCallback((station: Station) => {
+      setStationToEdit(station);
+      setIsEditModalOpen(true);
+  }, []);
+
+  const handleUpdateStation = useCallback((updatedStation: Station) => {
+      setAllStations(prevStations => 
+          prevStations.map(s => (s.streamUrl === updatedStation.streamUrl ? updatedStation : s))
+      );
+      // Update userStations if the updated station is one of them
+      setUserStations(prevUserStations => 
+          prevUserStations.map(s => (s.streamUrl === updatedStation.streamUrl ? updatedStation : s))
+      );
+      if (currentUser) {
+          updateUserData(currentUser.username, {
+              userStations: userStations.map(s => (s.streamUrl === updatedStation.streamUrl ? updatedStation : s))
+          });
+      }
+      setIsEditModalOpen(false);
+      setStationToEdit(null);
+      setToasts(t => [...t, { id: Date.now(), title: 'Station Updated!', message: `${updatedStation.name} has been updated.`, icon: ShieldCheckIcon, type: 'success' }]);
+  }, [currentUser, userStations]);
+
   // Hype Logic: Decay & Simulation
   useEffect(() => {
       const decay = setInterval(() => {
@@ -1001,6 +1023,7 @@ const App: React.FC = () => {
                  setViewingProfile(null);
                  setIsStockMarketOpen(false);
                  setIsJingleModalOpen(false);
+                 setIsEditModalOpen(false); // Close EditStationModal
                  break;
         }
     };
@@ -1026,7 +1049,17 @@ const App: React.FC = () => {
       case 'artist_dashboard':
         return <ArtistDashboardView user={currentUser} stats={stats} submissions={allMusicSubmissions.filter(s => s.submittedBy === currentUser?.username)} setActiveView={setActiveView} />;
       case 'station_manager_dashboard':
-        return <StationManagerDashboardView user={currentUser} allStations={allStations} onReviewSubmission={handleReviewMusicSubmission} onEditStation={() => {}} />;
+        return (
+            <StationManagerDashboardView 
+                user={currentUser} 
+                allStations={allStations} 
+                onReviewSubmission={handleReviewMusicSubmission} 
+                onEditStation={handleEditStation} // Use the actual handler
+                jingles={jingles} // Pass jingles
+                onReviewJingle={handleReviewJingle} // Pass jingle review handler
+                onDeleteGuestbookEntry={handleDeleteGuestbookEntry} // Pass guestbook delete handler
+            />
+        );
       case 'admin':
         return (
           <AdminDashboardView 
@@ -1129,7 +1162,7 @@ const App: React.FC = () => {
 
             <div className={`flex flex-1 overflow-hidden transition-opacity duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                 {/* Sidebar */}
-                {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModalOpen(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} onOpenStockMarket={() => setIsStockMarketOpen(true)} />}
+                {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModal(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} onOpenStockMarket={() => setIsStockMarketOpen(true)} />}
                 
                 <main id="main-content" className="flex-1 overflow-y-auto pb-24">
                     {renderActiveView()}
@@ -1144,7 +1177,7 @@ const App: React.FC = () => {
                     onAddReview={() => {}} 
                     onSelectStation={handleSelectStation}
                     onRateStation={() => {}} 
-                    onEdit={() => {}} 
+                    onEdit={handleEditStation} 
                     onOpenMusicSubmissionModal={(s) => { setStationForSubmission(s); setIsMusicSubmissionModalOpen(true); }} 
                     onOpenClaimModal={(s) => { setStationToClaim(s); setIsClaimModalOpen(true); }} 
                     onToggleFavorite={handleToggleFavorite}
@@ -1278,14 +1311,23 @@ const App: React.FC = () => {
           onSubmit={handleClaimStation} 
       />
 
+      <EditStationModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleUpdateStation}
+        station={stationToEdit}
+      />
+
       <LoginModal isOpen={isLoginModalOpen} onLogin={handleLogin} />
+      {/* Fix: Corrected typo 'setIsSubmitModalModal' to 'setIsSubmitModalOpen' */}
       <SubmitStationModal isOpen={isSubmitModalOpen} onClose={() => setIsSubmitModalOpen(false)} onSubmit={()=>{}} />
       <AlarmModal isOpen={isAlarmModalOpen} onClose={() => setIsAlarmModalOpen(false)} alarm={alarm} onSetAlarm={setAlarm} favoriteStations={userStations} />
       <GenreSpotlightModal isOpen={!!genreForSpotlight} onClose={() => setGenreForSpotlight(null)} genre={genreForSpotlight} />
-      <SongChartModal isOpen={isSongChartModalOpen} onClose={() => setIsSongChartModalOpen(false)} songVotes={songVotes} />
+      <SongChartModal isOpen={isSongChartModalOpen} onClose={() => setIsSongChartModal(false)} songVotes={songVotes} />
       <EventsModal isOpen={isEventsModalOpen} onClose={() => setIsEventsModalOpen(false)} onSelectStation={(name) => { const s = allStations.find(st=>st.name===name); if(s) handleSelectStation(s); setIsEventsModalOpen(false); }} />
       <SongHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} history={stats.songHistory} />
       <RequestSongModal isOpen={false} onClose={() => {}} stationName="" onSubmit={() => {}} />
+      {/* Fix: Corrected typo 'setIsMusicSubmissionModal' to 'setIsMusicSubmissionModalOpen' */}
       <MusicSubmissionModal 
         isOpen={isMusicSubmissionModalOpen} 
         onClose={() => setIsMusicSubmissionModalOpen(false)} 

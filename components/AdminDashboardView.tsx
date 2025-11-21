@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Station, User, UserData, MusicSubmission, Jingle, GuestbookEntry } from '../types';
 import { formatTimeAgo } from '../utils/time';
@@ -171,7 +170,8 @@ const SubmissionCard: React.FC<{
     );
 };
 
-const JingleCard: React.FC<{
+// Fix: Export JingleCard to make it accessible for StationManagerDashboardView
+export const JingleCard: React.FC<{
     jingle: Jingle & { stationName: string };
     onReview: (jingleId: string, status: 'approved' | 'rejected') => void;
     onDelete: (jingleId: string) => void;
@@ -208,7 +208,8 @@ const JingleCard: React.FC<{
     );
 };
 
-const GuestbookEntryCard: React.FC<{
+// Fix: Export GuestbookEntryCard to make it accessible for StationManagerDashboardView
+export const GuestbookEntryCard: React.FC<{
     entry: GuestbookEntry;
     onDelete: (stationStreamUrl: string, entryId: string) => void;
 }> = ({ entry, onDelete }) => {
