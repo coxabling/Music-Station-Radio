@@ -117,7 +117,7 @@ export const App: React.FC = () => {
   
   const [activeFrame, setActiveFrame] = useState<string | undefined>(undefined);
   // Correctly initialized state as string[] to ensure consistency throughout the app
-  const [unlockedFrames, setUnlockedFrames] = useState<string[]>([]);
+  const [unlockedFrames, setUnlockedFrames] = useState<string[]>([] as string[]);
   const [hypeScore, setHypeScore] = useState(0);
   const [isHypeActive, setIsHypeActive] = useState(false);
   const [isCoinActive, setIsCoinActive] = useState(false);
@@ -284,10 +284,11 @@ export const App: React.FC = () => {
     setQuests((data.quests as Quest[]) || INITIAL_QUESTS);
     setCollection((data.collection as CollectorCard[]) || []);
     setActiveFrame(data.activeFrame);
-    // Fix: Explicitly cast to string[] to resolve inference mismatch with unknown[] from local storage data
-    const framesData = (data.unlockedFrames || []) as string[];
+    // Fix inference mismatch by providing an explicit cast to string[] for data.unlockedFrames
+    const framesData = (data.unlockedFrames || [] as string[]) as string[];
     setUnlockedFrames(framesData);
-    setUserProfile(data.profile || { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' });
+    // Fix: Explicitly cast to UserProfile and ensure nested arrays are cast to string[] to prevent unknown[] errors
+    setUserProfile((data.profile as UserProfile) || { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' });
     setCustomThemes(data.customThemes || []);
     setActiveSkin(data.activeSkin || 'modern');
     setUnlockedSkins(data.unlockedSkins ? (data.unlockedSkins as SkinID[]) : ([] as SkinID[]));
@@ -502,8 +503,8 @@ export const App: React.FC = () => {
                 unlockedThemes={unlockedThemes} 
                 currentPoints={stats.points || 0} 
                 activeFrame={activeFrame} 
-                // Fix: Cast explicitly to string[]
-                unlockedFrames={unlockedFrames} 
+                // Fix line 378: Explicitly cast to string[] to satisfy component prop requirements
+                unlockedFrames={unlockedFrames as string[]} 
                 onSetFrame={(f) => { setActiveFrame(f); if(currentUser) updateUserData(currentUser.username, { activeFrame: f }); }} 
                 onUnlockFrame={()=>{}} 
                 activeSkin={activeSkin} 
