@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef } from 'react';
 import type { User, Station, MusicSubmission, Jingle, GuestbookEntry } from '../types';
 import { formatTimeAgo } from '../utils/time';
@@ -308,7 +309,7 @@ export const StationManagerDashboardView: React.FC<StationManagerDashboardViewPr
                     </div>
                 )}
             </div>
-             <style jsx>{`
+             <style>{`
                 .custom-tab-scrollbar::-webkit-scrollbar {
                     height: 4px;
                 }

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -22,7 +23,7 @@ import { AdminDashboardView } from './components/AdminDashboardView';
 import { StationManagerDashboardView } from './components/StationManagerDashboardView';
 import { ArtistDashboardView } from './components/ArtistDashboardView';
 import { RightPanel } from './components/RightPanel';
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, BOUNTIES, ShieldCheckIcon, UploadIcon } from './constants';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, BOUNTIES, ShieldCheckIcon, UploadIcon, CheckCircleIcon } from './constants';
 import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, CollectorCard, Lounge, UserProfile, AvatarFrame, SkinID, Bounty, Jingle, PlayerSkin, GuestbookEntry, Quest } from './types';
 import { getDominantColor } from './utils/colorExtractor';
 import { LandingPage } from './components/LandingPage';
@@ -45,6 +46,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { RequestSongModal } from './components/RequestSongModal';
 import { JingleModal } from './components/JingleModal';
 import { HelpFAQ } from './components/HelpFAQ';
+import { ContactUsView } from './components/ContactUsView';
 
 const hexToRgb = (hex: string) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -82,7 +84,7 @@ export const App: React.FC = () => {
   const [activeTheme, setActiveTheme] = useState<ThemeName>('dynamic');
 
   const [allStations, setAllStations] = useState<Station[]>(defaultStations);
-  const [userStations, setUserStations] = useState<Station[]>([]);
+  const [userStations, setUserStations] = useState<Station[]>(defaultStations);
   
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isAlarmModalOpen, setIsAlarmModalOpen] = useState(false);
@@ -115,7 +117,6 @@ export const App: React.FC = () => {
   const [collection, setCollection] = useState<CollectorCard[]>([] as CollectorCard[]);
   
   const [activeFrame, setActiveFrame] = useState<string | undefined>(undefined);
-  // Correctly initialized state as string[] to ensure consistency throughout the app
   const [unlockedFrames, setUnlockedFrames] = useState<string[]>([]);
   const [hypeScore, setHypeScore] = useState(0);
   const [isHypeActive, setIsHypeActive] = useState(false);
@@ -157,7 +158,6 @@ export const App: React.FC = () => {
       };
   }, [accentColor]);
 
-  // Load Radio Browser stations with mirror fallbacks
   useEffect(() => {
     const initStations = async () => {
         const browserStations = await fetchRadioBrowserStations(100);
@@ -275,29 +275,30 @@ export const App: React.FC = () => {
     setCurrentUser(user);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
-    setUnlockedThemes(new Set<ThemeName>(data.unlockedThemes || []));
-    setStats(data.stats);
+    // Fix: Use unknown cast to avoid assignment issues from data source
+    setUnlockedThemes(new Set<ThemeName>((data.unlockedThemes as unknown as ThemeName[]) || []));
+    // Fix: Cast stats to ListeningStats
+    setStats(data.stats as ListeningStats);
     setAlarm(data.alarm);
     setSongVotes(data.songVotes);
     setUnlockedAchievements(data.unlockedAchievements);
     setQuests(data.quests || INITIAL_QUESTS);
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
-
-    // Fix: Explicitly cast data.unlockedFrames to string[] to satisfy inferred requirements and fix unknown[] assignment error
-    setUnlockedFrames((data.unlockedFrames as string[]) || []);
-
-    const profileData: UserProfile = data.profile || { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [], customAvatarUrl: '' };
+    // Fix: Explicitly cast to string[] via unknown to satisfy compiler
+    setUnlockedFrames((data.unlockedFrames as unknown as string[]) || []);
+    const profileData: UserProfile = (data.profile as UserProfile) || { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' };
     setUserProfile(profileData);
-
     setCustomThemes(data.customThemes || []);
     setActiveSkin(data.activeSkin || 'modern');
     setUnlockedSkins(data.unlockedSkins || ['modern']);
     setPortfolio(data.portfolio || {});
     setJingles(data.jingles || []);
-    if(data.completedBounties) setBounties(prev => prev.map(b => (data.completedBounties as string[]).includes(b.id) ? { ...b, completed: true } : b));
-    
-    // Set 'explore' as the default landing view after login to prioritize station discovery
+    // Fix: Cast completedBounties to string[] via unknown and handle properly
+    const completedBounties = (data.completedBounties as unknown as string[]) || [];
+    if(completedBounties.length > 0) {
+        setBounties(prev => prev.map(b => completedBounties.includes(b.id) ? { ...b, completed: true } : b));
+    }
     setActiveView('explore');
     setIsDataLoading(false);
   }, [handleLogout]);
@@ -380,6 +381,32 @@ export const App: React.FC = () => {
     } else setToasts(t => [...t, { id: Date.now(), title: 'Insufficient Points', message: `Need ${theme.cost - currentPoints} more points.`, icon: LockIcon, type: 'error' }]);
   };
 
+  const handleUnlockFrame = useCallback((frame: AvatarFrame) => {
+    if (!currentUser || !frame.cost) return;
+    const currentPoints = stats.points || 0;
+    if (currentPoints >= frame.cost) {
+      const newPoints = currentPoints - frame.cost;
+      const newUnlocked = [...unlockedFrames, frame.id];
+      setStats(prev => ({ ...prev, points: newPoints }));
+      setUnlockedFrames(newUnlocked);
+      updateUserData(currentUser.username, { stats: { ...stats, points: newPoints }, unlockedFrames: newUnlocked });
+      setToasts(t => [...t, { id: Date.now(), title: 'Frame Unlocked!', message: `You purchased ${frame.name}`, icon: UserIcon, type: 'success' }]);
+    } else setToasts(t => [...t, { id: Date.now(), title: 'Insufficient Points', message: `Need ${frame.cost - currentPoints} more points.`, icon: LockIcon, type: 'error' }]);
+  }, [currentUser, stats, unlockedFrames]);
+
+  const handleUnlockSkin = useCallback((skin: PlayerSkin) => {
+    if (!currentUser || !skin.cost) return;
+    const currentPoints = stats.points || 0;
+    if (currentPoints >= skin.cost) {
+      const newPoints = currentPoints - skin.cost;
+      const newUnlocked = [...unlockedSkins, skin.id];
+      setStats(prev => ({ ...prev, points: newPoints }));
+      setUnlockedSkins(newUnlocked);
+      updateUserData(currentUser.username, { stats: { ...stats, points: newPoints }, unlockedSkins: newUnlocked });
+      setToasts(t => [...t, { id: Date.now(), title: 'Skin Unlocked!', message: `You purchased ${skin.name}`, icon: StarIcon, type: 'success' }]);
+    } else setToasts(t => [...t, { id: Date.now(), title: 'Insufficient Points', message: `Need ${skin.cost - currentPoints} more points.`, icon: LockIcon, type: 'error' }]);
+  }, [currentUser, stats, unlockedSkins]);
+
   const handleSongVote = (songId: string, voteType: 'like' | 'dislike') => {
     if (!currentUser || !nowPlaying || nowPlaying.songId !== songId) return;
     const currentVote = stats.songUserVotes?.[songId];
@@ -414,7 +441,8 @@ export const App: React.FC = () => {
       if (currentUser && username === currentUser.username) setTargetUserProfile(userProfile || undefined);
       else {
           const data = await getUserData(username);
-          if (data) setTargetUserProfile(data.profile || { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [], customAvatarUrl: '' });
+          // Fix: Explicitly cast profile data to UserProfile
+          if (data) setTargetUserProfile((data.profile as UserProfile) || { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' });
       }
   }, [currentUser, userProfile]);
 
@@ -481,8 +509,13 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentStation, allStations, handleToggleFavorite]);
 
+  // Fix: Explicitly cast the mapped object to MusicSubmission to resolve unknown type issues during flatMap/map
   const allMusicSubmissions = useMemo<MusicSubmission[]>(() => 
-    allStations.flatMap(station => (station.submissions || []).map(sub => ({ ...sub, stationName: station.name, stationStreamUrl: station.streamUrl }))) as MusicSubmission[]
+    allStations.flatMap(station => (station.submissions || []).map(sub => ({ 
+        ...sub, 
+        stationName: station.name, 
+        stationStreamUrl: station.streamUrl 
+    } as MusicSubmission)))
   , [allStations]);
 
   const renderActiveView = () => {
@@ -502,14 +535,13 @@ export const App: React.FC = () => {
                 unlockedThemes={unlockedThemes} 
                 currentPoints={stats.points || 0} 
                 activeFrame={activeFrame} 
-                // Fix line 377: Explicitly cast unlockedFrames state to string[] to satisfy the prop requirement and fix unknown[] assignment error
-                unlockedFrames={unlockedFrames as string[]} 
+                unlockedFrames={unlockedFrames} 
                 onSetFrame={(f) => { setActiveFrame(f); if(currentUser) updateUserData(currentUser.username, { activeFrame: f }); }} 
-                onUnlockFrame={()=>{}} 
+                onUnlockFrame={handleUnlockFrame} 
                 activeSkin={activeSkin} 
                 unlockedSkins={unlockedSkins} 
                 onSetSkin={(s) => { setActiveSkin(s); if(currentUser) updateUserData(currentUser.username, { activeSkin: s }); }} 
-                onUnlockSkin={()=>{}} 
+                onUnlockSkin={handleUnlockSkin} 
             />
         );
       case 'leaderboard': 
@@ -517,7 +549,9 @@ export const App: React.FC = () => {
       case 'dashboard': 
         return <DashboardView user={currentUser} stats={stats} favoritesCount={favoriteStationUrls.size} unlockedAchievements={unlockedAchievements} />;
       case 'help': 
-        return <HelpFAQ />;
+        return <HelpFAQ onContactClick={() => setActiveView('contact')} />;
+      case 'contact':
+        return <ContactUsView onSuccess={(msg) => setToasts(t => [...t, { id: Date.now(), title: 'Ticket Sent', message: msg, icon: CheckCircleIcon, type: 'success' }])} />;
       default: 
         return (
             <StationList 

@@ -228,7 +228,7 @@ export interface FriendActivity {
     customAvatarUrl?: string; // New: Custom avatar URL for friends
 }
 
-export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard' | 'help';
+export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard' | 'help' | 'contact';
 
 export interface Bet {
   id: string;

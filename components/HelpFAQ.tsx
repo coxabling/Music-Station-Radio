@@ -1,6 +1,10 @@
 
 import React from 'react';
 
+interface HelpFAQProps {
+    onContactClick?: () => void;
+}
+
 const faqs = [
   {
     question: "How do I tune in to a station?",
@@ -28,7 +32,7 @@ const faqs = [
   }
 ];
 
-export const HelpFAQ: React.FC = () => {
+export const HelpFAQ: React.FC<HelpFAQProps> = ({ onContactClick }) => {
   return (
     <div className="p-4 md:p-8 animate-fade-in h-full overflow-y-auto">
       <div className="max-w-4xl mx-auto">
@@ -51,7 +55,10 @@ export const HelpFAQ: React.FC = () => {
         <div className="p-8 bg-gradient-to-br from-indigo-900/20 to-purple-900/20 rounded-2xl border border-white/10 text-center">
           <h3 className="text-xl font-bold text-white mb-2">Still have questions?</h3>
           <p className="text-gray-400 mb-6 max-w-lg mx-auto">Our support team is always ready to help you with any issues or inquiries you might have.</p>
-          <button className="px-8 py-3 bg-[var(--accent-color)] text-black font-bold rounded-full hover:opacity-90 transition-transform transform hover:scale-105 shadow-lg shadow-[var(--accent-color)]/20">
+          <button 
+            onClick={onContactClick}
+            className="px-8 py-3 bg-[var(--accent-color)] text-black font-bold rounded-full hover:opacity-90 transition-transform transform hover:scale-105 shadow-lg shadow-[var(--accent-color)]/20"
+          >
             Contact Support
           </button>
         </div>
