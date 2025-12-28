@@ -29,13 +29,38 @@ const ListIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-
 const RadioIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" /></svg>;
 const SortIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9M3 12h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" /></svg>;
 const InfoIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>;
-const SparklesIcon: React.FC<{className?: string}> = ({className}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {fillRule: "evenodd", d: "M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z", clipRule: "evenodd"}));
+const SparklesIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clipRule="evenodd"/></svg>;
 const XIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>;
-
 
 const TabButton: React.FC<{label: string; isActive: boolean; onClick: () => void}> = ({ label, isActive, onClick }) => (
     <button onClick={onClick} className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors focus:outline-none ${ isActive ? 'bg-gray-800/50 text-[var(--accent-color)] border-b-2 accent-color-border' : 'text-gray-400 hover:text-white' }`}>{label}</button>
 );
+
+const TagPill: React.FC<{ tag: string; isSelected?: boolean; onClick?: (tag: string) => void; className?: string }> = ({ tag, isSelected, onClick, className = '' }) => {
+    // Determine color based on tag name for some visual flair
+    const getTagColor = (t: string) => {
+        const colors = [
+            'bg-blue-500/20 text-blue-300 border-blue-500/30',
+            'bg-purple-500/20 text-purple-300 border-purple-500/30',
+            'bg-pink-500/20 text-pink-300 border-pink-500/30',
+            'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+            'bg-orange-500/20 text-orange-300 border-orange-500/30',
+            'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+        ];
+        let hash = 0;
+        for (let i = 0; i < t.length; i++) hash = t.charCodeAt(i) + ((hash << 5) - hash);
+        return colors[Math.abs(hash) % colors.length];
+    };
+
+    return (
+        <button
+            onClick={(e) => { e.stopPropagation(); onClick?.(tag); }}
+            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all duration-200 ${isSelected ? 'bg-[var(--accent-color)] text-black border-[var(--accent-color)]' : `${getTagColor(tag)} hover:scale-105 active:scale-95`} ${className}`}
+        >
+            {tag}
+        </button>
+    );
+};
 
 const SponsorCard: React.FC = () => (
     <div className="relative group flex flex-col rounded-lg overflow-hidden bg-gradient-to-br from-yellow-900/20 to-gray-900 border border-yellow-500/30 shadow-lg animate-fade-in" style={{ aspectRatio: '1 / 1' }}>
@@ -56,20 +81,30 @@ type SortMode = 'name' | 'rating';
 export const StationList: React.FC<StationListProps> = ({ stations, allStations, currentStation, onSelectStation, searchQuery, onSearchChange, onOpenSubmitModal, onToggleFavorite, songVotes, onOpenGenreSpotlight, onShowDetails, onPlayFromCommunity, currentUser }) => {
   const [viewMode, setViewMode] = useState<LayoutMode>('grid');
   const [activeTab, setActiveTab] = useState<'all' | 'favorites' | 'community'>('all');
-  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>('rating');
   
   const [aiSearchResults, setAiSearchResults] = useState<{ urls: string[], prompt: string } | null>(null);
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [aiError, setAiError] = useState('');
 
-  const genres = useMemo(() => {
-    const allGenres = allStations.map(s => s.genre.split('/')[0].trim());
-    return ['All', ...Array.from(new Set(allGenres))];
+  const trendingTags = useMemo(() => {
+    const counts: Record<string, number> = {};
+    allStations.forEach(s => {
+      const tags = s.genre.split(',').map(t => t.trim());
+      tags.forEach(t => {
+          if (t && t !== 'Various') counts[t] = (counts[t] || 0) + 1;
+      });
+    });
+    return Object.entries(counts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 15)
+      .map(([name]) => name);
   }, [allStations]);
 
-  const handleGenreSelect = (genre: string) => {
-    setSelectedGenre(genre === 'All' ? null : genre);
+  const handleTagToggle = (tag: string) => {
+    setSelectedTag(prev => prev === tag ? null : tag);
+    setAiSearchResults(null); // Clear AI results if manually filtering
   };
   
   const handleVibeSearch = async () => {
@@ -105,8 +140,8 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
         return aiList;
     } else {
         let list = activeTab === 'favorites' ? stations.filter(s => s.isFavorite) : stations;
-        if (selectedGenre) {
-          list = list.filter(s => s.genre.toLowerCase().includes(selectedGenre.toLowerCase()));
+        if (selectedTag) {
+          list = list.filter(s => s.genre.toLowerCase().includes(selectedTag.toLowerCase()));
         }
         
         return [...list].sort((a, b) => {
@@ -119,7 +154,7 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
           return 0;
         });
     }
-  }, [activeTab, stations, allStations, selectedGenre, sortMode, aiSearchResults]);
+  }, [activeTab, stations, allStations, selectedTag, sortMode, aiSearchResults]);
 
 
   return (
@@ -155,15 +190,35 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
         </div>
       )}
 
+      {/* Trending Tags Section */}
+      {!aiSearchResults && activeTab === 'all' && (
+        <div className="mb-8 overflow-hidden">
+          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <span className="w-8 h-px bg-gray-800"></span> Trending Genres
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {trendingTags.map(tag => (
+                <TagPill 
+                    key={tag} 
+                    tag={tag} 
+                    isSelected={selectedTag === tag} 
+                    onClick={handleTagToggle} 
+                    className="px-4 py-1 text-xs"
+                />
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-4">
-        <div className="border-b border-gray-700/50">
+        <div className="border-b border-gray-700/50 flex overflow-x-auto custom-scrollbar-hide">
             <TabButton label="All Stations" isActive={activeTab === 'all'} onClick={() => setActiveTab('all')} />
             <TabButton label="Favorites" isActive={activeTab === 'favorites'} onClick={() => setActiveTab('favorites')} />
             <TabButton label="Community Hits" isActive={activeTab === 'community'} onClick={() => setActiveTab('community')} />
         </div>
         <div className="flex items-center gap-2">
             {!aiSearchResults && activeTab === 'all' && (
-                <div className="relative">
+                <div className="relative hidden sm:block">
                     <select value={sortMode} onChange={e => setSortMode(e.target.value as SortMode)} className="bg-gray-800/50 border border-gray-700 rounded-full py-2 pl-8 pr-4 text-sm text-white appearance-none focus:outline-none focus:ring-1 focus:ring-[var(--accent-color)]">
                         <option value="rating">Sort by Rating</option>
                         <option value="name">Sort by Name</option>
@@ -171,30 +226,11 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
                     <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"><SortIcon/></div>
                 </div>
             )}
-            {activeTab !== 'favorites' && activeTab !== 'community' && (
-                <div className="flex items-center gap-1 p-1 bg-gray-800/50 rounded-full border border-gray-700"><button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-full transition-colors ${viewMode === 'grid' ? 'bg-[var(--accent-color)] text-black' : 'text-gray-400 hover:bg-gray-700'}`}><GridIcon /></button><button onClick={() => setViewMode('list')} className={`p-1.5 rounded-full transition-colors ${viewMode === 'list' ? 'bg-[var(--accent-color)] text-black' : 'text-gray-400 hover:bg-gray-700'}`}><ListIcon /></button></div>
+            {activeTab !== 'community' && (
+                <div className="flex items-center gap-1 p-1 bg-gray-800/50 rounded-full border border-gray-700"><button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-full transition-colors ${viewMode === 'grid' ? 'bg-[var(--accent-color)] text-black' : 'text-gray-400 hover:text-white'}`}><GridIcon /></button><button onClick={() => setViewMode('list')} className={`p-1.5 rounded-full transition-colors ${viewMode === 'list' ? 'bg-[var(--accent-color)] text-black' : 'text-gray-400 hover:text-white'}`}><ListIcon /></button></div>
             )}
         </div>
       </div>
-      
-      {!aiSearchResults && activeTab === 'all' && (
-        <div className="mb-6 flex flex-wrap items-center gap-2">
-          {genres.map(genre => {
-              const isActive = (!selectedGenre && genre === 'All') || selectedGenre === genre;
-              return (
-              <div key={genre} className="flex items-center">
-                  <button onClick={() => handleGenreSelect(genre)} className={`px-3 py-1 text-xs font-semibold border transition-colors ${ isActive ? 'bg-[var(--accent-color)]/20 border-[var(--accent-color)] text-[var(--accent-color)] rounded-l-full' : 'bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-700 rounded-full'}`}>
-                      {genre}
-                  </button>
-                  {isActive && genre !== 'All' && (
-                      <button onClick={() => onOpenGenreSpotlight(genre)} className="px-2 py-1 bg-[var(--accent-color)]/20 border-y border-r border-[var(--accent-color)] text-[var(--accent-color)] rounded-r-full hover:bg-[var(--accent-color)]/30" title={`Learn about ${genre}`}>
-                          <InfoIcon className="h-4 w-4"/>
-                      </button>
-                  )}
-              </div>
-          )})}
-        </div>
-      )}
       
       {activeTab === 'community' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
@@ -218,24 +254,32 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {displayedStations.map((station, index) => {
                const isHighGrade = station.name === "High Grade Radio";
+               const tags = station.genre.split(',').map(t => t.trim()).slice(0, 3);
                
                // Insert Sponsor Card after the 4th item (index 3)
-               if (index === 3 && activeTab === 'all' && !aiSearchResults) {
+               if (index === 3 && activeTab === 'all' && !aiSearchResults && !selectedTag) {
                     return (
                         <React.Fragment key={station.streamUrl}>
                              <SponsorCard />
                              <div className="relative group flex flex-col station-card-animate" style={{ animationDelay: `${index * 30}ms`}}>
-                                <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-lg overflow-hidden transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-color)] focus-visible:ring-opacity-75 shadow-lg hover:shadow-[var(--accent-color)]/40 hover:scale-[1.03] ${ currentStation?.name === station.name ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/50' : isHighGrade ? 'ring-2 ring-yellow-500/80 hover:ring-yellow-400 shadow-yellow-500/20' : 'ring-2 ring-gray-700/50 hover:ring-[var(--accent-color)]/70' }`} style={{ aspectRatio: '1 / 1' }} aria-label={`Play ${station.name}`} >
-                                  <img src={station.coverArt} alt={station.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                  <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-colors duration-300 p-4 flex flex-col justify-end"><h3 className="font-bold text-lg text-white truncate">{station.name}</h3><p className="text-xs text-gray-300 truncate">{station.genre}</p></div>
-                                  {isHighGrade && <div className="absolute top-2 left-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Featured</div>}
-                                </button>
+                                <div className="relative">
+                                    <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-lg overflow-hidden transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-color)] focus-visible:ring-opacity-75 shadow-lg hover:shadow-[var(--accent-color)]/40 hover:scale-[1.03] ${ currentStation?.streamUrl === station.streamUrl ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/50' : isHighGrade ? 'ring-2 ring-yellow-500/80 hover:ring-yellow-400 shadow-yellow-500/20' : 'ring-2 ring-gray-700/50 hover:ring-[var(--accent-color)]/70' }`} style={{ aspectRatio: '1 / 1' }} aria-label={`Play ${station.name}`} >
+                                        <img src={station.coverArt} alt={station.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                        <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-colors duration-300 p-4 flex flex-col justify-end">
+                                            <h3 className="font-bold text-lg text-white truncate">{station.name}</h3>
+                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                {tags.map(t => <TagPill key={t} tag={t} onClick={handleTagToggle} isSelected={selectedTag === t} />)}
+                                            </div>
+                                        </div>
+                                        {isHighGrade && <div className="absolute top-2 left-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Featured</div>}
+                                    </button>
+                                    <button onClick={() => onToggleFavorite(station)} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full transition-opacity opacity-0 group-hover:opacity-100 hover:!opacity-100 hover:bg-black/70"><HeartIcon isFavorite={!!station.isFavorite} className="h-5 w-5" /></button>
+                                </div>
                                 <div className="flex items-center justify-between mt-2">
                                     <button onClick={() => onShowDetails(station)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-white" title="View details"><InfoIcon className="h-4 w-4" /> Details</button>
                                     <StarRating rating={station.rating || 0} readOnly={true} starClassName="h-4 w-4" />
                                 </div>
-                                <button onClick={() => onToggleFavorite(station)} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full transition-opacity opacity-0 group-hover:opacity-100 hover:!opacity-100 hover:bg-black/70"><HeartIcon isFavorite={!!station.isFavorite} /></button>
-                                {currentStation?.name === station.name && <PlayIndicator />}
+                                {currentStation?.streamUrl === station.streamUrl && <PlayIndicator />}
                               </div>
                         </React.Fragment>
                     )
@@ -243,17 +287,24 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
 
                return (
               <div key={station.streamUrl} className="relative group flex flex-col station-card-animate" style={{ animationDelay: `${index * 30}ms`}}>
-                <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-lg overflow-hidden transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-color)] focus-visible:ring-opacity-75 shadow-lg hover:shadow-[var(--accent-color)]/40 hover:scale-[1.03] ${ currentStation?.name === station.name ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/50' : isHighGrade ? 'ring-2 ring-yellow-500/80 hover:ring-yellow-400 shadow-yellow-500/20' : 'ring-2 ring-gray-700/50 hover:ring-[var(--accent-color)]/70' }`} style={{ aspectRatio: '1 / 1' }} aria-label={`Play ${station.name}`} >
-                  <img src={station.coverArt} alt={station.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-colors duration-300 p-4 flex flex-col justify-end"><h3 className="font-bold text-lg text-white truncate">{station.name}</h3><p className="text-xs text-gray-300 truncate">{station.genre}</p></div>
-                  {isHighGrade && <div className="absolute top-2 left-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Featured</div>}
-                </button>
+                <div className="relative">
+                    <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-lg overflow-hidden transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-color)] focus-visible:ring-opacity-75 shadow-lg hover:shadow-[var(--accent-color)]/40 hover:scale-[1.03] ${ currentStation?.streamUrl === station.streamUrl ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/50' : isHighGrade ? 'ring-2 ring-yellow-500/80 hover:ring-yellow-400 shadow-yellow-500/20' : 'ring-2 ring-gray-700/50 hover:ring-[var(--accent-color)]/70' }`} style={{ aspectRatio: '1 / 1' }} aria-label={`Play ${station.name}`} >
+                        <img src={station.coverArt} alt={station.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                        <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-colors duration-300 p-4 flex flex-col justify-end">
+                            <h3 className="font-bold text-lg text-white truncate">{station.name}</h3>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                                {tags.map(t => <TagPill key={t} tag={t} onClick={handleTagToggle} isSelected={selectedTag === t} />)}
+                            </div>
+                        </div>
+                        {isHighGrade && <div className="absolute top-2 left-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Featured</div>}
+                    </button>
+                    <button onClick={() => onToggleFavorite(station)} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full transition-opacity opacity-0 group-hover:opacity-100 hover:!opacity-100 hover:bg-black/70"><HeartIcon isFavorite={!!station.isFavorite} className="h-5 w-5" /></button>
+                </div>
                 <div className="flex items-center justify-between mt-2">
                     <button onClick={() => onShowDetails(station)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-white" title="View details"><InfoIcon className="h-4 w-4" /> Details</button>
                     <StarRating rating={station.rating || 0} readOnly={true} starClassName="h-4 w-4" />
                 </div>
-                <button onClick={() => onToggleFavorite(station)} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full transition-opacity opacity-0 group-hover:opacity-100 hover:!opacity-100 hover:bg-black/70"><HeartIcon isFavorite={!!station.isFavorite} /></button>
-                {currentStation?.name === station.name && <PlayIndicator />}
+                {currentStation?.streamUrl === station.streamUrl && <PlayIndicator />}
               </div>
             )})}
           </div>
@@ -262,13 +313,18 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
             {displayedStations.map((station, index) => (
               <div key={station.streamUrl} className={`flex items-center p-3 rounded-lg transition-colors duration-200 station-card-animate ${currentStation?.streamUrl === station.streamUrl ? 'bg-gray-700/50' : 'bg-gray-800/30 hover:bg-gray-800/60'}`} style={{ animationDelay: `${index * 30}ms`}}>
                 <img src={station.coverArt} alt={station.name} className="w-12 h-12 rounded-md object-cover mr-4" />
-                <div className="flex-1 cursor-pointer" onClick={() => onSelectStation(station)}>
-                    <h3 className="font-semibold text-white">{station.name} {station.name === "High Grade Radio" && <span className="text-[10px] text-yellow-400 ml-2 border border-yellow-500/50 px-1 rounded">FEATURED</span>}</h3>
-                    <p className="text-sm text-gray-400">{station.genre}</p>
+                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onSelectStation(station)}>
+                    <h3 className="font-semibold text-white truncate flex items-center gap-2">
+                        {station.name} 
+                        {station.name === "High Grade Radio" && <span className="text-[10px] text-yellow-400 border border-yellow-500/50 px-1 rounded">FEATURED</span>}
+                    </h3>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                        {station.genre.split(',').map(t => t.trim()).slice(0, 4).map(t => <TagPill key={t} tag={t} onClick={handleTagToggle} isSelected={selectedTag === t} />)}
+                    </div>
                 </div>
                  <div className="flex items-center gap-2">
                     <button onClick={() => onShowDetails(station)} className="p-2 text-gray-400 hover:text-white rounded-full" title="View details"><InfoIcon className="h-5 w-5"/></button>
-                    <button onClick={() => onToggleFavorite(station)} className="p-2 text-gray-400 hover:text-pink-500 rounded-full"><HeartIcon isFavorite={!!station.isFavorite} /></button>
+                    <button onClick={() => onToggleFavorite(station)} className="p-2 text-gray-400 hover:text-pink-500 rounded-full"><HeartIcon isFavorite={!!station.isFavorite} className="h-5 w-5" /></button>
                     {currentStation?.streamUrl === station.streamUrl && ( <div className="w-6 h-6 rounded-full bg-[var(--accent-color)] animate-pulse"></div> )}
                 </div>
               </div>
@@ -286,6 +342,9 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
                 : `Try adjusting your search or selecting a different genre.`
             }
           </p>
+          {(selectedTag || searchQuery) && (
+              <button onClick={() => { setSelectedTag(null); onSearchChange(''); setAiSearchResults(null); }} className="mt-4 text-[var(--accent-color)] hover:underline font-bold text-sm">Clear all filters</button>
+          )}
         </div>
       )}
     </div>

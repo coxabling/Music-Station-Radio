@@ -1,5 +1,7 @@
 {
   "name": "Music Station Radio",
   "description": "Stream your favorite genres with our modern web radio player. Discover new music and enjoy high-fidelity sound.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }

@@ -7,6 +7,7 @@ let ai: GoogleGenAI;
 
 const getAi = () => {
     if (!ai) {
+        // Initialize Gemini AI with the API key from environment variables.
         ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
     }
     return ai;
@@ -51,12 +52,13 @@ const getSongInfo = async (artist: string, title: string): Promise<string> => {
   try {
     const prompt = `Provide a short, interesting fact or brief bio about the song "${title}" by the artist "${artist}". Focus on the creation of the song, its impact, or a unique detail about the artist related to this track. Keep it concise and engaging for a radio listener.`;
     
+    // Updated to gemini-3-flash-preview for basic text task.
     const response = await getAi().models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
     });
 
-    return response.text;
+    return response.text || '';
   } catch (error) {
     console.error("Error getting song info from Gemini:", error);
     throw error;
@@ -67,12 +69,13 @@ const fetchLyrics = async (artist: string, title: string): Promise<string> => {
   try {
     const prompt = `Find the full lyrics for the song "${title}" by "${artist}". Output only the lyrics. If you cannot find the lyrics, respond with the exact text 'LYRICS_NOT_FOUND'.`;
     
+    // Updated to gemini-3-flash-preview for basic text task.
     const response = await getAi().models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
     });
 
-    return response.text;
+    return response.text || '';
   } catch (error) {
     console.error("Error getting lyrics from Gemini:", error);
     throw error;
@@ -83,12 +86,13 @@ const getGenreInfo = async (genre: string): Promise<string> => {
   try {
     const prompt = `Give me a fun, short summary of the "${genre}" music genre. Highlight its key characteristics, origins, and some notable artists. Keep it engaging and concise (2-3 paragraphs) for a radio listener discovering new music.`;
     
+    // Updated to gemini-3-flash-preview for basic text task.
     const response = await getAi().models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
     });
 
-    return response.text;
+    return response.text || '';
   } catch (error) {
     console.error("Error getting genre info from Gemini:", error);
     throw error;
@@ -99,12 +103,13 @@ const translateLyrics = async (lyrics: string, language: string): Promise<string
   try {
     const prompt = `Translate the following song lyrics into ${language}. Preserve the line breaks and poetic structure. Output only the translated lyrics. If you cannot perform the translation, respond with the exact text 'TRANSLATION_FAILED'.\n\nLyrics:\n${lyrics}`;
     
+    // Updated to gemini-3-flash-preview for basic text task.
     const response = await getAi().models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
     });
 
-    return response.text;
+    return response.text || '';
   } catch (error) {
     console.error(`Error translating lyrics to ${language} from Gemini:`, error);
     throw error;
@@ -124,12 +129,13 @@ const getCommunityHitsSummary = async (songs: SongVote[]): Promise<string> => {
 
     const prompt = `You are a charismatic radio DJ. Look at this list of top songs voted on by our community. Write a short, engaging summary (2-3 sentences) about the vibe of the chart. Mention a couple of key genres or the general mood. Don't just list the songs. Here is the list of songs (Artist - Title): \n\n${songList}`;
 
+    // Updated to gemini-3-flash-preview for basic text task.
     const response = await getAi().models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
     });
 
-    return response.text;
+    return response.text || '';
   } catch (error) {
     console.error("Error getting community hits summary from Gemini:", error);
     throw error;
@@ -160,8 +166,9 @@ Station List:
 ${JSON.stringify(stationDataForPrompt, null, 2)}
 `;
 
+    // Updated to gemini-3-flash-preview for structural task.
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: fullPrompt,
       config: {
         responseMimeType: "application/json",
@@ -180,7 +187,7 @@ ${JSON.stringify(stationDataForPrompt, null, 2)}
       }
     });
 
-    const jsonString = response.text.trim();
+    const jsonString = response.text?.trim() || '{}';
     const result = JSON.parse(jsonString);
 
     if (result && Array.isArray(result.urls)) {

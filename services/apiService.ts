@@ -1,5 +1,5 @@
 
-import type { UserData } from '../types';
+import type { UserData, Station } from '../types';
 
 const SIMULATED_LATENCY = 50; // ms
 
@@ -7,7 +7,6 @@ const SIMULATED_LATENCY = 50; // ms
 const getDb = (username: string): UserData | null => {
     try {
         const data = localStorage.getItem(`user_db_${username}`);
-        // DO: Explicitly cast the result of JSON.parse to UserData to ensure type safety.
         return data ? JSON.parse(data) as UserData : null;
     } catch (e) {
         console.error("Failed to read from mock DB", e);
@@ -39,20 +38,13 @@ const createDefaultUserData = (): Omit<UserData, 'role'> => ({
     quests: [],
     bets: [],
     collection: [],
-    profile: { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [], customAvatarUrl: '' }, // Initialized customAvatarUrl
-    // New Features
+    profile: { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [], customAvatarUrl: '' },
     activeSkin: 'modern',
     unlockedSkins: ['modern'],
-    portfolio: {}, // Ensure portfolio is an empty object
+    portfolio: {},
     completedBounties: []
 });
 
-
-/**
- * Fetches all data for a given user.
- * @param username The username to fetch data for.
- * @returns A promise that resolves with the user's complete data, or null if they don't exist.
- */
 export const getUserData = async (username: string): Promise<UserData | null> => {
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -61,12 +53,6 @@ export const getUserData = async (username: string): Promise<UserData | null> =>
     });
 };
 
-/**
- * Creates a new user entry in the mock database.
- * @param username The new user's username.
- * @param role The role to assign to the new user.
- * @returns A promise that resolves with the new user's data.
- */
 export const createUserData = async (username: string, role: UserData['role']): Promise<UserData> => {
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -80,8 +66,6 @@ export const createUserData = async (username: string, role: UserData['role']): 
     });
 };
 
-
-// --- Robust Update Queue to prevent race conditions ---
 let updateQueue: (() => Promise<void>)[] = [];
 let isProcessingQueue = false;
 
@@ -96,36 +80,23 @@ const processUpdateQueue = async () => {
     processUpdateQueue();
 };
 
-/**
- * Updates a part of the user's data. It fetches the current data,
- * merges the update, and saves it back to the mock database.
- * This function is queued to prevent race conditions.
- * @param username The user whose data is to be updated.
- * @param partialData An object containing the fields to update.
- * @returns A promise that resolves when the update is complete.
- */
 export const updateUserData = (username: string, partialData: Partial<UserData>): Promise<void> => {
     return new Promise((resolve) => {
         const task = () => new Promise<void>((taskResolve) => {
             setTimeout(() => {
                 const currentData = getDb(username);
                 if (currentData) {
-                    // Special handling for nested objects to merge them correctly
                     const mergedData = { ...currentData, ...partialData };
                     if (partialData.stats) {
                         mergedData.stats = { ...currentData.stats, ...partialData.stats };
                     }
-                    // Ensure profile and portfolio are merged, not overwritten if they exist
                     if (partialData.profile) {
                          mergedData.profile = { ...currentData.profile, ...partialData.profile };
                     }
                     if (partialData.portfolio) {
                          mergedData.portfolio = { ...currentData.portfolio, ...partialData.portfolio };
                     }
-
                     setDb(username, mergedData);
-                } else {
-                    console.error(`Attempted to update data for non-existent user: ${username}`);
                 }
                 taskResolve();
             }, SIMULATED_LATENCY);
@@ -148,20 +119,15 @@ export const followUser = async (followerUsername: string, targetUsername: strin
                 const target = getDb(targetUsername);
 
                 if (follower && target) {
-                    // Initialize profiles if missing
                     if (!follower.profile) follower.profile = { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [], customAvatarUrl: '' };
                     if (!target.profile) target.profile = { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [], customAvatarUrl: '' };
 
-                    // Add to following
                     if (!follower.profile.following.includes(targetUsername)) {
                         follower.profile.following.push(targetUsername);
                     }
-
-                    // Add to followers
                     if (!target.profile.followers.includes(followerUsername)) {
                         target.profile.followers.push(followerUsername);
                     }
-
                     setDb(followerUsername, follower);
                     setDb(targetUsername, target);
                 }
@@ -183,7 +149,6 @@ export const unfollowUser = async (followerUsername: string, targetUsername: str
                 if (follower && target && follower.profile && target.profile) {
                     follower.profile.following = follower.profile.following.filter(u => u !== targetUsername);
                     target.profile.followers = target.profile.followers.filter(u => u !== followerUsername);
-                    
                     setDb(followerUsername, follower);
                     setDb(targetUsername, target);
                 }
@@ -195,11 +160,6 @@ export const unfollowUser = async (followerUsername: string, targetUsername: str
     });
 };
 
-/**
- * Fetches data for all users in the mock database.
- * NOTE: This is an inefficient operation for a real DB, but acceptable for localStorage.
- * @returns A promise that resolves with an array of all users and their data.
- */
 export const getAllUsersData = async (): Promise<{ username: string, data: UserData }[]> => {
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -221,4 +181,129 @@ export const getAllUsersData = async (): Promise<{ username: string, data: UserD
             resolve(allUsers);
         }, SIMULATED_LATENCY);
     });
+};
+
+/**
+ * Helper to fetch with a timeout.
+ */
+async function fetchWithTimeout(resource: string, options: any = {}) {
+    const { timeout = 5000 } = options;
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+    try {
+        const response = await fetch(resource, {
+            ...options,
+            signal: controller.signal
+        });
+        clearTimeout(id);
+        return response;
+    } catch (error) {
+        clearTimeout(id);
+        throw error;
+    }
+}
+
+/**
+ * Normalizes tags from Radio Browser into a clean, comma-separated string of unique genres.
+ */
+const normalizeTags = (rawTags: string): string => {
+    if (!rawTags) return 'Various';
+    // Radio browser tags can be comma-separated, space-separated, or both.
+    const tags = rawTags
+        .split(/[,;\s]+/)
+        .map(t => t.trim().toLowerCase())
+        .filter(t => t.length > 2 && t.length < 20) // Filter out noise
+        .filter((val, index, self) => self.indexOf(val) === index); // Unique
+    
+    // Take top 5 meaningful tags
+    const relevant = tags.slice(0, 5).map(t => t.charAt(0).toUpperCase() + t.slice(1));
+    return relevant.length > 0 ? relevant.join(', ') : 'Various';
+};
+
+/**
+ * Fetches radio stations from Radio Browser API.
+ * Uses multiple mirrors as fallbacks and multiple CORS proxies to ensure reliability.
+ */
+export const fetchRadioBrowserStations = async (limit: number = 100): Promise<Station[]> => {
+    const query = `limit=${limit}&hidebroken=true&order=clickcount&reverse=true`;
+    
+    // Official mirrors - de1 and at1 are usually the most stable
+    const mirrors = [
+        'de1.api.radio-browser.info',
+        'at1.api.radio-browser.info',
+        'fr1.api.radio-browser.info',
+        'nl1.api.radio-browser.info'
+    ];
+
+    const mapItem = (item: any): Station => ({
+        name: item.name,
+        genre: normalizeTags(item.tags),
+        description: `Broadcasting from ${item.country}${item.state ? ', ' + item.state : ''}.`,
+        streamUrl: item.url_resolved || item.url,
+        coverArt: item.favicon || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(item.name)}&backgroundColor=030712`,
+        rating: Math.min(5, (item.votes / 1000) + 3),
+        ratingsCount: item.votes,
+        location: (item.geo_lat && item.geo_long) ? { lat: item.geo_lat, lng: item.geo_long } : undefined,
+        owner: undefined,
+        acceptsSubmissions: false,
+        submissions: [],
+        guestbook: []
+    });
+
+    // Strategy 1: Direct fetch from mirrors with 2.5s timeout per mirror
+    for (const mirror of mirrors) {
+        try {
+            const response = await fetchWithTimeout(`https://${mirror}/json/stations/search?${query}`, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                timeout: 2500
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    return data.map(mapItem);
+                }
+            }
+        } catch (error) {
+            // Silently continue
+        }
+    }
+
+    // Strategy 2: Fetch via allorigins (Highly reliable CORS proxy)
+    for (const targetMirror of mirrors.slice(0, 2)) {
+        try {
+            const targetUrl = `https://${targetMirror}/json/stations/search?${query}`;
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+            const response = await fetchWithTimeout(proxyUrl, { timeout: 7000 });
+            
+            if (response.ok) {
+                const result = await response.json();
+                const rawData = typeof result.contents === 'string' ? JSON.parse(result.contents) : result.contents;
+                if (Array.isArray(rawData) && rawData.length > 0) {
+                    return rawData.map(mapItem);
+                }
+            }
+        } catch (error) {
+            // Silently continue
+        }
+    }
+
+    // Strategy 3: Fetch via corsproxy.io
+    try {
+        const targetUrl = `https://de1.api.radio-browser.info/json/stations/search?${query}`;
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+        const response = await fetchWithTimeout(proxyUrl, { timeout: 7000 });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (Array.isArray(data) && data.length > 0) {
+                return data.map(mapItem);
+            }
+        }
+    } catch (error) {
+        console.warn("All fetching strategies failed.");
+    }
+
+    return [];
 };
