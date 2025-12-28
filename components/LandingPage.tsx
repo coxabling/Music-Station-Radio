@@ -1,12 +1,11 @@
-
 import React, { useMemo, useState, useEffect } from 'react';
-import { stations, TrophyIcon, MusicNoteIcon, BriefcaseIcon, UserIcon, ChatBubbleIcon, RocketIcon, StarIcon, ExploreIcon, UploadIcon, ClockIcon, DeviceIcon, HomeIcon } from '../constants';
+import { stations, TrophyIcon, MusicNoteIcon, BriefcaseIcon, UserIcon, ChatBubbleIcon, RocketIcon, StarIcon, ExploreIcon, UploadIcon, ClockIcon, DeviceIcon, HomeIcon, UserGroupIcon } from '../constants';
 
 interface LandingPageProps {
   onEnter: () => void;
 }
 
-// Custom Icons for High Grade Identity
+// Custom Icons for Branding Identity
 const HighFiIcon = ({className = "h-6 w-6"}) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 11-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V7.5A2.25 2.25 0 009 5.25v1.5" />
@@ -16,12 +15,6 @@ const HighFiIcon = ({className = "h-6 w-6"}) => (
 const AIIcon = ({className = "h-6 w-6"}) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.456-2.455L18 2.25l.259 1.036a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.456 2.455zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
-    </svg>
-);
-
-const WorldIcon = ({className = "h-6 w-6"}) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582" />
     </svg>
 );
 
@@ -171,11 +164,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
                 </span>
-                High Grade Audio Culture
+                Global Audio Culture
              </div>
 
              <h1 className="text-7xl md:text-9xl lg:text-[11rem] font-black font-orbitron tracking-tighter leading-none mb-4 text-white drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-                HIGH GRADE
+                MUSIC STATION
              </h1>
              <p className="text-3xl md:text-5xl font-light text-yellow-500 font-orbitron tracking-[0.4em] uppercase mb-12 drop-shadow-[0_0_20px_rgba(234,179,8,0.4)]">
                  RADIO
@@ -248,7 +241,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
           <FeatureSection 
             id="feat-ai"
             title="AI Integration"
-            description="High Grade Radio uses Gemini AI to bridge cultures. Translate lyrics instantly, learn song history, and discover new vibes through our intuitive 'AI Search'."
+            description="Music Station Radio uses Gemini AI to bridge cultures. Translate lyrics instantly, learn song history, and discover new vibes through our intuitive 'AI Search'."
             icon={<AIIcon className="w-8 h-8"/>}
             align="right"
             color="purple"
@@ -271,8 +264,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
          <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(234,179,8,0.05),_transparent)] pointer-events-none"></div>
          <div className="container mx-auto max-w-6xl relative z-10">
             <div className="text-center mb-24">
-                <h2 className="text-5xl md:text-7xl font-black font-orbitron mb-8 tracking-tighter">JOIN THE SOUND</h2>
-                <p className="text-gray-500 max-w-xl mx-auto text-xl font-medium">Choose your role in the High Grade ecosystem.</p>
+                <h2 className="text-5xl md:text-7xl font-black font-orbitron mb-8 tracking-tighter uppercase">Join the sound</h2>
+                <p className="text-gray-500 max-w-xl mx-auto text-xl font-medium">Choose your role in the Music Station ecosystem.</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
@@ -304,7 +297,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
               
               <div className="relative z-10 space-y-4">
                   <h2 className="text-4xl md:text-6xl font-black font-orbitron text-white tracking-tight">UPGRADE YOUR SOUND</h2>
-                  <p className="text-gray-400 text-lg max-w-2xl mx-auto font-medium">Install the High Grade Radio web app for low-latency streaming and offline control.</p>
+                  <p className="text-gray-400 text-lg max-w-2xl mx-auto font-medium">Install the Music Station Radio web app for low-latency streaming and offline control.</p>
               </div>
 
               <div className="relative z-10 flex flex-col sm:flex-row gap-6">
@@ -328,8 +321,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
       <footer className="bg-black text-center py-20 border-t border-white/5">
         <div className="container mx-auto px-4">
             <div className="flex flex-col items-center justify-center gap-6 mb-12">
-               <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-2xl flex items-center justify-center text-black font-black text-2xl shadow-2xl shadow-yellow-900/20 font-orbitron">H</div>
-               <span className="font-orbitron font-bold text-2xl tracking-[0.5em] text-white">HIGH GRADE</span>
+               <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-2xl flex items-center justify-center text-black font-black text-2xl shadow-2xl shadow-yellow-900/20 font-orbitron">M</div>
+               <span className="font-orbitron font-bold text-2xl tracking-[0.5em] text-white">MUSIC STATION</span>
             </div>
             <div className="flex flex-wrap justify-center gap-10 mb-12 text-xs font-black tracking-widest text-gray-600 uppercase">
                 <button onClick={onEnter} className="hover:text-yellow-500 transition-colors">Stations</button>
@@ -339,7 +332,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
                 <button onClick={onEnter} className="hover:text-yellow-500 transition-colors">Help</button>
             </div>
             <p className="text-[10px] text-gray-800 font-bold tracking-widest uppercase">
-                &copy; {new Date().getFullYear()} High Grade Audio Syndicate. All Rights Reserved.
+                &copy; {new Date().getFullYear()} Music Station Audio Syndicate. All Rights Reserved.
             </p>
         </div>
       </footer>

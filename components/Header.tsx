@@ -1,4 +1,3 @@
-
 import React from 'react';
 import type { User } from '../types';
 import { StarIcon, UserIcon } from '../constants';
@@ -51,8 +50,8 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, points, o
           aria-label="Go to home dashboard"
         >
           <MusicIcon />
-          <h1 className="ml-3 text-xl font-bold font-orbitron tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-color)] to-purple-500">
-            MS RADIO
+          <h1 className="ml-3 text-xl font-bold font-orbitron tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-color)] to-purple-500 uppercase">
+            Music Station
           </h1>
         </button>
         <div className="flex-1 flex items-center justify-end gap-2 sm:gap-4 text-gray-400">

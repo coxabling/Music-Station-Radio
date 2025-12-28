@@ -117,13 +117,13 @@ export const App: React.FC = () => {
   
   const [activeFrame, setActiveFrame] = useState<string | undefined>(undefined);
   // Correctly initialized state as string[] to ensure consistency throughout the app
-  const [unlockedFrames, setUnlockedFrames] = useState<string[]>([] as string[]);
+  const [unlockedFrames, setUnlockedFrames] = useState<string[]>([]);
   const [hypeScore, setHypeScore] = useState(0);
   const [isHypeActive, setIsHypeActive] = useState(false);
   const [isCoinActive, setIsCoinActive] = useState(false);
   
   const [activeSkin, setActiveSkin] = useState<SkinID>('modern');
-  const [unlockedSkins, setUnlockedSkins] = useState<SkinID[]>(['modern'] as SkinID[]);
+  const [unlockedSkins, setUnlockedSkins] = useState<SkinID[]>(['modern']);
   const [portfolio, setPortfolio] = useState<Record<string, number>>({});
   const [bounties, setBounties] = useState<Bounty[]>(BOUNTIES);
   const [jingles, setJingles] = useState<Jingle[]>([]);
@@ -194,7 +194,7 @@ export const App: React.FC = () => {
     return () => {
         if (statsUpdateInterval.current) clearInterval(statsUpdateInterval.current);
     };
-  }, [currentStation, isPlaying, currentUser, unlockedAchievements]);
+  }, [currentStation, isPlaying, currentUser]);
 
   useEffect(() => {
       if (currentUser && stats.totalTime > 0 && stats.totalTime % 10 === 0) {
@@ -276,22 +276,25 @@ export const App: React.FC = () => {
     setCurrentUser(user);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
-    setUnlockedThemes(new Set<ThemeName>(data.unlockedThemes ? (data.unlockedThemes as ThemeName[]) : ([] as ThemeName[])));
+    setUnlockedThemes(new Set<ThemeName>(data.unlockedThemes || []));
     setStats(data.stats);
     setAlarm(data.alarm);
     setSongVotes(data.songVotes);
     setUnlockedAchievements(data.unlockedAchievements);
-    setQuests((data.quests as Quest[]) || INITIAL_QUESTS);
-    setCollection((data.collection as CollectorCard[]) || []);
+    setQuests(data.quests || INITIAL_QUESTS);
+    setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
-    // Fix inference mismatch by providing an explicit cast to string[] for data.unlockedFrames
-    const framesData = (data.unlockedFrames || [] as string[]) as string[];
-    setUnlockedFrames(framesData);
-    // Fix: Explicitly cast to UserProfile and ensure nested arrays are cast to string[] to prevent unknown[] errors
-    setUserProfile((data.profile as UserProfile) || { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' });
+
+    // Fix: Explicitly ensure state is updated with correctly typed data to avoid 'unknown[]' errors
+    setUnlockedFrames(data.unlockedFrames || []);
+
+    // Fix: Explicitly set user profile with default values if undefined
+    const profileData: UserProfile = data.profile || { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [], customAvatarUrl: '' };
+    setUserProfile(profileData);
+
     setCustomThemes(data.customThemes || []);
     setActiveSkin(data.activeSkin || 'modern');
-    setUnlockedSkins(data.unlockedSkins ? (data.unlockedSkins as SkinID[]) : ([] as SkinID[]));
+    setUnlockedSkins(data.unlockedSkins || ['modern']);
     setPortfolio(data.portfolio || {});
     setJingles(data.jingles || []);
     if(data.completedBounties) setBounties(prev => prev.map(b => (data.completedBounties as string[]).includes(b.id) ? { ...b, completed: true } : b));
@@ -415,7 +418,7 @@ export const App: React.FC = () => {
       if (currentUser && username === currentUser.username) setTargetUserProfile(userProfile || undefined);
       else {
           const data = await getUserData(username);
-          if (data) setTargetUserProfile(data.profile || { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' });
+          if (data) setTargetUserProfile(data.profile || { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [], customAvatarUrl: '' });
       }
   }, [currentUser, userProfile]);
 
@@ -503,12 +506,11 @@ export const App: React.FC = () => {
                 unlockedThemes={unlockedThemes} 
                 currentPoints={stats.points || 0} 
                 activeFrame={activeFrame} 
-                // Fix line 378: Explicitly cast to string[] to satisfy component prop requirements
-                unlockedFrames={unlockedFrames as string[]} 
+                unlockedFrames={unlockedFrames} 
                 onSetFrame={(f) => { setActiveFrame(f); if(currentUser) updateUserData(currentUser.username, { activeFrame: f }); }} 
                 onUnlockFrame={()=>{}} 
                 activeSkin={activeSkin} 
-                unlockedSkins={unlockedSkins as SkinID[]} 
+                unlockedSkins={unlockedSkins} 
                 onSetSkin={(s) => { setActiveSkin(s); if(currentUser) updateUserData(currentUser.username, { activeSkin: s }); }} 
                 onUnlockSkin={()=>{}} 
             />
@@ -540,6 +542,10 @@ export const App: React.FC = () => {
     }
   };
   
+  if (!hasEnteredApp) {
+      return <LandingPage onEnter={() => setHasEnteredApp(true)} />;
+  }
+
   const isVideoBg = (url: string | undefined) => url?.endsWith('.mp4') || url?.endsWith('.webm');
   const currentBg = currentThemeObj?.backgroundImage || backgrounds[activeBgIndex];
   
