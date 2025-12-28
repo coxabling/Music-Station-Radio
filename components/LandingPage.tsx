@@ -1,6 +1,6 @@
 
-import React, { useMemo } from 'react';
-import { stations, TrophyIcon, MusicNoteIcon, BriefcaseIcon, UserIcon, ChatBubbleIcon, RocketIcon, StarIcon, ExploreIcon, UploadIcon, ClockIcon, DeviceIcon } from '../constants';
+import React, { useMemo, useState, useEffect } from 'react';
+import { stations, TrophyIcon, MusicNoteIcon, BriefcaseIcon, UserIcon, ChatBubbleIcon, RocketIcon, StarIcon, ExploreIcon, UploadIcon, ClockIcon, DeviceIcon, HomeIcon } from '../constants';
 
 interface LandingPageProps {
   onEnter: () => void;
@@ -52,14 +52,15 @@ const FeaturedStationCard: React.FC<{station: typeof stations[0], index: number}
 );
 
 const FeatureSection: React.FC<{
+    id: string;
     title: string;
     description: string;
     icon: React.ReactNode;
     align?: 'left' | 'right';
     features: string[];
     color: string;
-}> = ({ title, description, icon, align = 'left', features, color }) => (
-    <div className="py-24 container mx-auto px-4">
+}> = ({ id, title, description, icon, align = 'left', features, color }) => (
+    <div id={id} className="py-24 container mx-auto px-4">
         <div className={`flex flex-col lg:flex-row items-center gap-16 ${align === 'right' ? 'lg:flex-row-reverse' : ''}`}>
             <div className="flex-1 space-y-8">
                 <div className={`inline-flex p-4 rounded-2xl bg-${color}-500/10 text-${color}-400 border border-${color}-500/20 shadow-xl shadow-${color}-900/10 animate-pulse`}>
@@ -98,14 +99,55 @@ const FeatureSection: React.FC<{
     </div>
 );
 
+const NavItem: React.FC<{ icon: React.ReactNode; label: string; href: string; active: boolean }> = ({ icon, label, href, active }) => (
+    <a 
+        href={href} 
+        className={`group relative flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${active ? 'bg-yellow-500 text-black shadow-[0_0_20px_rgba(234,179,8,0.4)]' : 'bg-white/5 text-gray-500 hover:bg-white/10 hover:text-white'}`}
+    >
+        {icon}
+        <span className="absolute left-20 px-3 py-1.5 bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-white/10 shadow-2xl whitespace-nowrap z-50">
+            {label}
+        </span>
+    </a>
+);
+
 export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
     const backgroundStations = useMemo(() => [...stations].sort(() => 0.5 - Math.random()).slice(0, 16), []);
+    const [activeSection, setActiveSection] = useState('hero');
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const sections = ['hero', 'signature', 'features', 'roles', 'upgrade'];
+            const scrollPos = window.scrollY + 200;
+            for (const sectionId of sections) {
+                const element = document.getElementById(sectionId);
+                if (element && element.offsetTop <= scrollPos && (element.offsetTop + element.offsetHeight) > scrollPos) {
+                    setActiveSection(sectionId);
+                    break;
+                }
+            }
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
   return (
     <div className="min-h-screen bg-[#030712] text-white font-poppins selection:bg-yellow-500 selection:text-black overflow-x-hidden">
       
+      {/* LEFT NAVIGATION MENU */}
+      <nav className="fixed left-6 top-1/2 -translate-y-1/2 z-[100] hidden xl:flex flex-col gap-4 animate-fade-in-left">
+          <div className="flex flex-col gap-4 p-2 bg-black/40 backdrop-blur-2xl rounded-[2rem] border border-white/5 shadow-2xl">
+              <NavItem icon={<HomeIcon className="w-6 h-6"/>} label="Home" href="#hero" active={activeSection === 'hero'} />
+              <NavItem icon={<MusicNoteIcon className="w-6 h-6"/>} label="Signature" href="#signature" active={activeSection === 'signature'} />
+              <NavItem icon={<HighFiIcon className="w-6 h-6"/>} label="Features" href="#features" active={activeSection === 'features'} />
+              <NavItem icon={<UserGroupIcon className="w-6 h-6"/>} label="Join" href="#roles" active={activeSection === 'roles'} />
+              <NavItem icon={<RocketIcon className="w-6 h-6"/>} label="Upgrade" href="#upgrade" active={activeSection === 'upgrade'} />
+          </div>
+          <div className="h-20 w-[1px] bg-gradient-to-b from-white/10 to-transparent mx-auto"></div>
+      </nav>
+
       {/* HERO SECTION */}
-      <header className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
+      <header id="hero" className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
         {/* Obsidian Grid Background */}
         <div className="absolute inset-0 grid grid-cols-4 md:grid-cols-8 opacity-20" id="landing-grid-overlay">
             {[...Array(32)].map((_, i) => (
@@ -177,7 +219,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
       </header>
 
       {/* HORIZONTAL STATION STRIP */}
-      <section className="bg-black py-24 relative z-20 overflow-hidden border-b border-white/5">
+      <section id="signature" className="bg-black py-24 relative z-20 overflow-hidden border-b border-white/5">
           <div className="container mx-auto px-4 mb-12 flex items-center justify-between">
               <h3 className="text-xs font-black font-orbitron text-gray-500 tracking-[0.3em] uppercase">Signature Sounds</h3>
               <div className="h-[1px] flex-1 bg-white/10 ml-8"></div>
@@ -192,8 +234,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
       </section>
 
       {/* FEATURE SHOWCASE */}
-      <section className="bg-[#030712] relative z-20">
+      <section id="features" className="bg-[#030712] relative z-20">
           <FeatureSection 
+            id="feat-visual"
             title="Premium Visualizer"
             description="Experience sound in 3D. Our WebGL-powered visualizer engine renders your music in real-time with stunning accuracy and high-fidelity aesthetics."
             icon={<HighFiIcon className="w-8 h-8"/>}
@@ -203,6 +246,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
           />
           
           <FeatureSection 
+            id="feat-ai"
             title="AI Integration"
             description="High Grade Radio uses Gemini AI to bridge cultures. Translate lyrics instantly, learn song history, and discover new vibes through our intuitive 'AI Search'."
             icon={<AIIcon className="w-8 h-8"/>}
@@ -212,6 +256,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
           />
 
           <FeatureSection 
+            id="feat-market"
             title="Global Market"
             description="The first-of-its-kind station stock market. Invest your points in the sounds you love and watch your portfolio grow as stations gain listeners."
             icon={<TrophyIcon className="w-8 h-8"/>}
@@ -222,7 +267,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
       </section>
 
       {/* ROLE SELECTION - CARDS */}
-      <section className="py-40 px-4 relative overflow-hidden bg-black">
+      <section id="roles" className="py-40 px-4 relative overflow-hidden bg-black">
          <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(234,179,8,0.05),_transparent)] pointer-events-none"></div>
          <div className="container mx-auto max-w-6xl relative z-10">
             <div className="text-center mb-24">
@@ -252,7 +297,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
       </section>
       
       {/* FINAL CTA */}
-      <section className="py-32 px-4 bg-[#030712]">
+      <section id="upgrade" className="py-32 px-4 bg-[#030712]">
           <div className="container mx-auto max-w-5xl bg-gradient-to-br from-gray-900 to-black rounded-[3rem] border border-white/5 p-12 md:p-20 flex flex-col items-center text-center gap-12 relative overflow-hidden shadow-[0_20px_100px_rgba(0,0,0,0.8)]">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-500 via-orange-500 to-red-600 opacity-50"></div>
               <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
@@ -338,9 +383,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
             animation: fade-in-up 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         
+        @keyframes fade-in-left {
+            from { opacity: 0; transform: translate(-20px, -50%); }
+            to { opacity: 1; transform: translate(0, -50%); }
+        }
+        .animate-fade-in-left {
+            animation: fade-in-left 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
         .perspective-1000 { perspective: 1000px; }
         .rotate-y-6 { transform: rotateY(6deg); }
         .rotate-x-2 { transform: rotateX(2deg); }
+        
+        html {
+            scroll-behavior: smooth;
+        }
       `}</style>
     </div>
   );
