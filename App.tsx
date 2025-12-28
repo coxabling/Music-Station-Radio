@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -285,7 +284,7 @@ export const App: React.FC = () => {
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
 
-    // Fix: Explicitly cast data.unlockedFrames as string[] to resolve assignment error on line 250
+    // Fix: Explicitly cast data.unlockedFrames to string[] to satisfy inferred requirements and fix unknown[] assignment error
     setUnlockedFrames((data.unlockedFrames as string[]) || []);
 
     const profileData: UserProfile = data.profile || { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [], customAvatarUrl: '' };
@@ -298,8 +297,8 @@ export const App: React.FC = () => {
     setJingles(data.jingles || []);
     if(data.completedBounties) setBounties(prev => prev.map(b => (data.completedBounties as string[]).includes(b.id) ? { ...b, completed: true } : b));
     
-    // Updated default view to 'explore' to prioritize discovery
-    setActiveView(data.activeView || 'explore');
+    // Set 'explore' as the default landing view after login to prioritize station discovery
+    setActiveView('explore');
     setIsDataLoading(false);
   }, [handleLogout]);
 
@@ -457,7 +456,7 @@ export const App: React.FC = () => {
 
   const handleUpdateStation = useCallback((updatedStation: Station) => {
       setAllStations(prev => prev.map(s => s.streamUrl === updatedStation.streamUrl ? updatedStation : s));
-      if (currentUser) updateUserData(currentUser.username, { userStations: userStations.map(s => s.streamUrl === updatedStation.stationStreamUrl ? updatedStation : s) });
+      if (currentUser) updateUserData(currentUser.username, { userStations: userStations.map(s => s.streamUrl === updatedStation.streamUrl ? updatedStation : s) });
       setIsEditModalOpen(false);
       setToasts(t => [...t, { id: Date.now(), title: 'Station Updated!', icon: ShieldCheckIcon, type: 'success' }]);
   }, [currentUser, userStations]);
@@ -503,7 +502,7 @@ export const App: React.FC = () => {
                 unlockedThemes={unlockedThemes} 
                 currentPoints={stats.points || 0} 
                 activeFrame={activeFrame} 
-                // Fix: Explicitly cast unlockedFrames as string[] to resolve prop assignment error on line 378
+                // Fix line 377: Explicitly cast unlockedFrames state to string[] to satisfy the prop requirement and fix unknown[] assignment error
                 unlockedFrames={unlockedFrames as string[]} 
                 onSetFrame={(f) => { setActiveFrame(f); if(currentUser) updateUserData(currentUser.username, { activeFrame: f }); }} 
                 onUnlockFrame={()=>{}} 

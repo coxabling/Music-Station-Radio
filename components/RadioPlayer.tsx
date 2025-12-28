@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { Station, NowPlaying, EQSettings, SongVote, SkinID } from '../types';
 import { fetchNowPlaying } from '../services/geminiService';
@@ -127,6 +128,10 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
   const wobbleGainRef = useRef<GainNode | null>(null);
   const noiseGainRef = useRef<GainNode | null>(null);
   const noiseSourceRef = useRef<AudioBufferSourceNode | null>(null);
+
+  // Favicon dynamic rendering refs
+  const faviconCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const originalFaviconHref = useRef<string | null>(null);
   
   const [eqSettings, setEqSettings] = useState<EQSettings>({ on: false, values: EQ_PRESETS[0].values, preamp: 1 });
   
@@ -218,6 +223,81 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
           analyser.connect(context.destination);
       }
   }, []); 
+
+  // Pulse Favicon Logic
+  useEffect(() => {
+      if (!isPlaying || !analyserRef.current) {
+          // Restore original favicon if playback stops
+          if (originalFaviconHref.current) {
+              const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
+              if (link) link.href = originalFaviconHref.current;
+          }
+          return;
+      }
+
+      if (!faviconCanvasRef.current) {
+          faviconCanvasRef.current = document.createElement('canvas');
+          faviconCanvasRef.current.width = 32;
+          faviconCanvasRef.current.height = 32;
+          const initialLink = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
+          if (initialLink) originalFaviconHref.current = initialLink.href;
+      }
+
+      const canvas = faviconCanvasRef.current;
+      const ctx = canvas.getContext('2d');
+      const analyser = analyserRef.current;
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      
+      let lastUpdate = 0;
+      const fpsLimit = 1000 / 20; // Throttled for tab performance
+
+      const animateFavicon = (time: number) => {
+          if (!isPlaying) return;
+          
+          if (time - lastUpdate > fpsLimit) {
+              lastUpdate = time;
+              analyser.getByteFrequencyData(dataArray);
+              
+              // Calculate bass intensity (average of first 10 bins)
+              let sum = 0;
+              for (let i = 0; i < 10; i++) sum += dataArray[i];
+              const intensity = (sum / 10) / 255;
+
+              if (ctx) {
+                  ctx.clearRect(0, 0, 32, 32);
+                  
+                  // Brand colors: Cyan to Purple shift
+                  const hue = 180 + (intensity * 100); 
+                  const radius = 8 + (intensity * 12);
+                  
+                  // Radial gradient for "High Grade" glow
+                  const grad = ctx.createRadialGradient(16, 16, 2, 16, 16, 16);
+                  grad.addColorStop(0, `hsl(${hue}, 100%, 70%)`);
+                  grad.addColorStop(0.6, `hsl(${hue}, 80%, 40%)`);
+                  grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+                  ctx.beginPath();
+                  ctx.arc(16, 16, radius, 0, Math.PI * 2);
+                  ctx.fillStyle = grad;
+                  ctx.fill();
+
+                  // Simple white letter 'M' overlay for branding
+                  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                  ctx.font = 'bold 16px sans-serif';
+                  ctx.textAlign = 'center';
+                  ctx.textBaseline = 'middle';
+                  ctx.fillText('M', 16, 17);
+
+                  const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
+                  if (link) link.href = canvas.toDataURL('image/png');
+              }
+          }
+          requestAnimationFrame(animateFavicon);
+      };
+
+      const handle = requestAnimationFrame(animateFavicon);
+      return () => cancelAnimationFrame(handle);
+  }, [isPlaying]);
 
   useEffect(() => {
       if (!audioContextRef.current) return;
