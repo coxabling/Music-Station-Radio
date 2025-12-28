@@ -285,10 +285,9 @@ export const App: React.FC = () => {
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
 
-    // Fix: Explicitly ensure state is updated with correctly typed data to avoid 'unknown[]' errors
-    setUnlockedFrames(data.unlockedFrames || []);
+    // Fix: Explicitly cast data.unlockedFrames as string[] to resolve assignment error on line 250
+    setUnlockedFrames((data.unlockedFrames as string[]) || []);
 
-    // Fix: Explicitly set user profile with default values if undefined
     const profileData: UserProfile = data.profile || { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [], customAvatarUrl: '' };
     setUserProfile(profileData);
 
@@ -298,11 +297,9 @@ export const App: React.FC = () => {
     setPortfolio(data.portfolio || {});
     setJingles(data.jingles || []);
     if(data.completedBounties) setBounties(prev => prev.map(b => (data.completedBounties as string[]).includes(b.id) ? { ...b, completed: true } : b));
-    let defaultView: ActiveView = 'dashboard';
-    if (user.role === 'admin') defaultView = 'admin';
-    else if (user.role === 'owner') defaultView = 'station_manager_dashboard';
-    else if (user.role === 'artist') defaultView = 'artist_dashboard';
-    setActiveView(data.activeView || defaultView);
+    
+    // Updated default view to 'explore' to prioritize discovery
+    setActiveView(data.activeView || 'explore');
     setIsDataLoading(false);
   }, [handleLogout]);
 
@@ -460,7 +457,7 @@ export const App: React.FC = () => {
 
   const handleUpdateStation = useCallback((updatedStation: Station) => {
       setAllStations(prev => prev.map(s => s.streamUrl === updatedStation.streamUrl ? updatedStation : s));
-      if (currentUser) updateUserData(currentUser.username, { userStations: userStations.map(s => s.streamUrl === updatedStation.streamUrl ? updatedStation : s) });
+      if (currentUser) updateUserData(currentUser.username, { userStations: userStations.map(s => s.streamUrl === updatedStation.stationStreamUrl ? updatedStation : s) });
       setIsEditModalOpen(false);
       setToasts(t => [...t, { id: Date.now(), title: 'Station Updated!', icon: ShieldCheckIcon, type: 'success' }]);
   }, [currentUser, userStations]);
@@ -506,7 +503,8 @@ export const App: React.FC = () => {
                 unlockedThemes={unlockedThemes} 
                 currentPoints={stats.points || 0} 
                 activeFrame={activeFrame} 
-                unlockedFrames={unlockedFrames} 
+                // Fix: Explicitly cast unlockedFrames as string[] to resolve prop assignment error on line 378
+                unlockedFrames={unlockedFrames as string[]} 
                 onSetFrame={(f) => { setActiveFrame(f); if(currentUser) updateUserData(currentUser.username, { activeFrame: f }); }} 
                 onUnlockFrame={()=>{}} 
                 activeSkin={activeSkin} 
