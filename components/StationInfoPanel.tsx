@@ -33,8 +33,23 @@ const EditIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="ht
 const RequestIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25L12 12m0 0l-5.25 3.75M12 12V21" /></svg>;
 const JingleIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" /></svg>;
 
+const getTagColor = (t: string) => {
+    const colors = [
+        'bg-blue-500/20 text-blue-300 border-blue-500/30',
+        'bg-purple-500/20 text-purple-300 border-purple-500/30',
+        'bg-pink-500/20 text-pink-300 border-pink-500/30',
+        'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+        'bg-orange-500/20 text-orange-300 border-orange-500/30',
+        'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+        'bg-rose-500/20 text-rose-300 border-rose-500/30',
+    ];
+    let hash = 0;
+    for (let i = 0; i < t.length; i++) hash = t.charCodeAt(i) + ((hash << 5) - hash);
+    return colors[Math.abs(hash) % colors.length];
+};
+
 const TagPill: React.FC<{ tag: string }> = ({ tag }) => (
-    <span className="px-2 py-0.5 rounded bg-gray-800 border border-gray-700 text-gray-400 text-[10px] font-bold uppercase tracking-wider">
+    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border shadow-sm ${getTagColor(tag)}`}>
         {tag}
     </span>
 );
@@ -61,21 +76,21 @@ const ReviewForm: React.FC<{ onSubmit: (rating: number, text: string) => void }>
     };
 
     return (
-        <form onSubmit={handleSubmit} className="p-4 bg-gray-900/50 rounded-lg border border-gray-700/50">
-            <h4 className="font-semibold mb-2 text-white">Leave a Review</h4>
-            <div className="mb-2">
-                <StarRating rating={rating} onRate={setRating} starClassName="h-6 w-6" />
+        <form onSubmit={handleSubmit} className="p-4 bg-gray-900/50 rounded-lg border border-gray-700/50 shadow-inner">
+            <h4 className="font-bold mb-3 text-white text-sm">Leave a Review</h4>
+            <div className="mb-4">
+                <StarRating rating={rating} onRate={setRating} starClassName="h-7 w-7" />
             </div>
             <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Share your thoughts..."
+                placeholder="What do you think of the vibes?"
                 rows={3}
-                className="w-full bg-gray-800/50 border border-gray-600 rounded-md py-2 px-3 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[var(--accent-color)] transition-all"
+                className="w-full bg-gray-900 border border-gray-700 rounded-lg py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[var(--accent-color)] transition-all text-sm"
             />
-            {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
-            <button type="submit" className="mt-2 w-full bg-[var(--accent-color)] hover:opacity-80 text-black font-bold py-2 px-4 rounded-md transition-opacity">
-                Submit Review
+            {error && <p className="text-xs text-red-400 mt-2 font-semibold">{error}</p>}
+            <button type="submit" className="mt-4 w-full bg-[var(--accent-color)] hover:opacity-90 text-black font-bold py-2.5 px-4 rounded-lg transition-all transform active:scale-95 shadow-lg shadow-[var(--accent-color)]/20">
+                Post Review
             </button>
         </form>
     );
@@ -106,9 +121,10 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
   
   if (!station) {
     return (
-      <div className="p-4 h-full flex flex-col items-center justify-center text-center text-gray-500">
-        <RadioIcon className="w-12 h-12 mb-4 opacity-20" />
-        <p>Select a station from the list to view its information, reviews, and guestbook.</p>
+      <div className="p-4 h-full flex flex-col items-center justify-center text-center text-gray-500 animate-pulse">
+        <RadioIcon className="w-20 h-20 mb-6 opacity-10" />
+        <p className="font-bold text-lg">Pick Your Vibe</p>
+        <p className="text-sm mt-1 max-w-[200px]">Select a station to explore details, reviews, and community talk.</p>
       </div>
     );
   }
@@ -116,7 +132,7 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
   const TabButton: React.FC<{label: string; tab: ActiveTab}> = ({ label, tab }) => (
     <button 
         onClick={() => setActiveTab(tab)} 
-        className={`flex-1 py-2 text-sm font-semibold transition-colors focus:outline-none ${activeTab === tab ? 'text-[var(--accent-color)] border-b-2 border-[var(--accent-color)]' : 'text-gray-400 hover:text-white border-b-2 border-transparent'}`}
+        className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all focus:outline-none border-b-2 ${activeTab === tab ? 'text-[var(--accent-color)] border-[var(--accent-color)] bg-[var(--accent-color)]/5' : 'text-gray-500 hover:text-gray-300 border-transparent'}`}
     >
         {label}
     </button>
@@ -127,102 +143,105 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
   const tags = station.genre.split(',').map(t => t.trim()).filter(t => t !== '');
 
   return (
-    <div className="h-full flex flex-col p-4 animate-fade-in">
-      <div className="flex-shrink-0 flex items-start gap-4 mb-4">
+    <div className="h-full flex flex-col p-5 animate-fade-in bg-gray-950/20">
+      <div className="flex-shrink-0 flex items-start gap-5 mb-6">
         <div className="relative group">
-            <img src={station.coverArt} alt={station.name} className="w-24 h-24 rounded-lg object-cover shadow-lg border border-white/5 transition-transform duration-300 group-hover:scale-105" />
+            <img src={station.coverArt} alt={station.name} className="w-28 h-28 rounded-xl object-cover shadow-2xl border border-white/5 transition-transform duration-500 group-hover:scale-105" />
             <button 
                 onClick={() => onToggleFavorite(station)} 
-                className="absolute -top-2 -right-2 p-1.5 bg-black/70 rounded-full transition-all hover:scale-110 hover:bg-black/90 shadow-lg"
+                className="absolute -top-3 -right-3 p-2 bg-black/60 backdrop-blur-md rounded-full transition-all hover:scale-125 hover:bg-black/80 shadow-xl border border-white/10"
                 aria-label={station.isFavorite ? "Remove from favorites" : "Add to favorites"}
             >
-                <HeartIcon isFavorite={!!station.isFavorite} className="h-5 w-5"/>
+                <HeartIcon isFavorite={!!station.isFavorite} className="h-6 w-6"/>
             </button>
         </div>
-        <div className="flex-1 min-w-0">
-          <h2 className="text-xl font-bold text-white font-orbitron truncate">{station.name}</h2>
-          <div className="flex flex-wrap gap-1 mt-1 mb-2">
+        <div className="flex-1 min-w-0 pt-1">
+          <h2 className="text-2xl font-black text-white font-orbitron truncate leading-tight tracking-tight">{station.name}</h2>
+          <div className="flex flex-wrap gap-1.5 mt-3 mb-3">
             {tags.map(t => <TagPill key={t} tag={t} />)}
           </div>
-          <div className="flex items-center">
-            <StarRating rating={station.rating || 0} readOnly starClassName="h-4 w-4" />
-            <span className="text-xs text-gray-500 ml-2">({(station.ratingsCount || 0).toLocaleString()} votes)</span>
+          <div className="flex items-center gap-2">
+            <StarRating rating={station.rating || 0} readOnly starClassName="h-3.5 w-3.5" />
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">({(station.ratingsCount || 0).toLocaleString()} global votes)</span>
           </div>
         </div>
       </div>
       
       {relevantBounties.length > 0 && (
-          <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-300 text-sm flex items-center gap-2 animate-fade-in shadow-[0_0_15px_rgba(234,179,8,0.1)]">
-              <FireIcon className="h-5 w-5 animate-pulse"/>
+          <div className="mb-6 p-4 bg-gradient-to-r from-yellow-500/20 to-orange-500/10 border border-yellow-500/30 rounded-xl text-yellow-300 text-sm flex items-center gap-3 animate-fade-in shadow-lg shadow-yellow-900/10">
+              <div className="p-2 bg-yellow-500/20 rounded-lg"><FireIcon className="h-6 w-6 animate-bounce"/></div>
               <div>
-                  <p className="font-semibold text-xs">ACTIVE BOUNTY</p>
-                  <p className="text-[10px] text-yellow-200/70">Earn {relevantBounties[0].reward} pts for listening.</p>
+                  <p className="font-black text-xs uppercase tracking-widest">Active Station Bounty</p>
+                  <p className="text-[11px] text-yellow-200/80 font-medium">Earn {relevantBounties[0].reward} pts just for listening today.</p>
               </div>
           </div>
       )}
 
-      <div className="flex-shrink-0 flex flex-wrap gap-2 mb-4">
-        <button onClick={() => onSelectStation(station)} className="flex-1 min-w-[120px] flex items-center justify-center gap-2 bg-[var(--accent-color)] hover:brightness-110 text-black font-bold py-2 px-4 rounded-md transition-all text-sm shadow-lg shadow-[var(--accent-color)]/20">
+      <div className="flex-shrink-0 flex flex-wrap gap-3 mb-6">
+        <button onClick={() => onSelectStation(station)} className="flex-1 min-w-[140px] flex items-center justify-center gap-2 bg-[var(--accent-color)] hover:brightness-110 text-black font-black py-3 px-4 rounded-xl transition-all text-sm shadow-xl shadow-[var(--accent-color)]/20 uppercase tracking-widest">
             <PlayIcon className="h-5 w-5"/>
             Tune In
         </button>
         {isOwner && onEdit && (
-            <button onClick={() => onEdit(station)} className="flex-1 min-w-[120px] flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm">
+            <button onClick={() => onEdit(station)} className="flex-1 min-w-[140px] flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-xl transition-colors text-sm uppercase tracking-widest border border-gray-700">
                 <EditIcon className="h-5 w-5"/>
                 Edit
             </button>
         )}
         {currentUser?.role === 'artist' && station.acceptsSubmissions && (
-            <button onClick={() => onOpenMusicSubmissionModal(station)} className="flex-1 min-w-[120px] flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm shadow-lg shadow-purple-500/10">
+            <button onClick={() => onOpenMusicSubmissionModal(station)} className="flex-1 min-w-[140px] flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded-xl transition-colors text-sm shadow-lg shadow-purple-500/10 uppercase tracking-widest">
                 <UploadIcon className="h-5 w-5"/>
                 Submit
             </button>
         )}
         {isOwner && (
-            <button onClick={onOpenJingleModal} className="flex-1 min-w-[120px] flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm">
+            <button onClick={onOpenJingleModal} className="flex-1 min-w-[140px] flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-xl transition-colors text-sm uppercase tracking-widest border border-gray-700">
                 <JingleIcon className="h-5 w-5"/>
                 Jingle
             </button>
         )}
         {!station.owner && !claimPendingForCurrentUser && currentUser && (
-            <button onClick={() => onOpenClaimModal(station)} className="flex-1 min-w-[120px] flex items-center justify-center gap-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 font-bold py-2 px-4 rounded-md transition-colors text-sm border border-yellow-500/20">
+            <button onClick={() => onOpenClaimModal(station)} className="flex-1 min-w-[140px] flex items-center justify-center gap-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-300 font-bold py-3 px-4 rounded-xl transition-colors text-sm border border-yellow-500/30 uppercase tracking-widest">
                 <ShieldCheckIcon className="h-5 w-5"/>
                 Claim
             </button>
         )}
       </div>
 
-      <div className="flex-shrink-0 border-b border-gray-700/50 mb-4">
+      <div className="flex-shrink-0 border-b border-gray-800 mb-6">
         <nav className="flex items-center" role="tablist">
-          <TabButton label="Info" tab="info" />
+          <TabButton label="Overview" tab="info" />
           <TabButton label={`Reviews (${allReviewsForStation.length})`} tab="reviews" />
           <TabButton label="Guestbook" tab="guestbook" />
         </nav>
       </div>
 
-      <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
+      <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar space-y-6">
         {activeTab === 'info' && (
-            <div className="space-y-4 animate-fade-in">
-                <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700/50">
-                    <p className="text-sm text-gray-300 leading-relaxed italic">"{station.description}"</p>
+            <div className="space-y-6 animate-fade-in">
+                <div className="bg-gray-900/40 p-5 rounded-2xl border border-gray-800/50 shadow-inner">
+                    <p className="text-sm text-gray-300 leading-relaxed italic font-medium">"{station.description}"</p>
                 </div>
                 {station.owner && (
-                    <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700/50 flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center font-bold text-xs text-white border border-white/10">
+                    <div className="bg-gray-900/40 p-4 rounded-2xl border border-gray-800/50 flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center font-black text-lg text-white border-2 border-white/10 shadow-lg">
                             {station.owner.charAt(0).toUpperCase()}
                         </div>
-                        <p className="text-sm text-gray-400">Station managed by <span className="font-bold text-white flex items-center gap-1">{station.owner} <RoleBadge role="owner" /></span></p>
+                        <div>
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Station Managed By</p>
+                            <p className="text-sm font-bold text-white flex items-center gap-2">{station.owner} <RoleBadge role="owner" /></p>
+                        </div>
                     </div>
                 )}
                 
-                <div className="flex flex-col gap-2 mt-4">
-                     <button onClick={() => setIsRequestSongModalOpen(true)} className="w-full flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm border border-white/5">
-                        <RequestIcon className="h-5 w-5 text-cyan-400"/>
-                        Request a Track
+                <div className="flex flex-col gap-3">
+                     <button onClick={() => setIsRequestSongModalOpen(true)} className="w-full flex items-center justify-center gap-3 bg-gray-900 hover:bg-gray-800 text-white font-black py-4 px-4 rounded-2xl transition-all text-xs uppercase tracking-widest border border-white/5 shadow-xl group">
+                        <RequestIcon className="h-5 w-5 text-cyan-400 transition-transform group-hover:scale-110"/>
+                        Request Track
                     </button>
                     {station.tippingUrl && (
-                        <a href={station.tippingUrl} target="_blank" rel="noopener noreferrer" className="block text-center text-sm font-bold text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 py-2 rounded-md transition-all border border-cyan-500/20">
-                            💰 Support Station
+                        <a href={station.tippingUrl} target="_blank" rel="noopener noreferrer" className="block text-center text-xs font-black text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 py-4 rounded-2xl transition-all border border-cyan-500/30 uppercase tracking-widest shadow-xl">
+                            💰 Support Global Radio
                         </a>
                     )}
                 </div>
@@ -230,21 +249,28 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
         )}
 
         {activeTab === 'reviews' && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-6 animate-fade-in pb-4">
                 <ReviewForm onSubmit={(rating, text) => onAddReview(station.streamUrl, { rating, text, author: currentUser?.username || 'Guest', authorRole: currentUser?.role })} />
-                <div className="space-y-3">
-                    {allReviewsForStation.length === 0 && <p className="text-gray-500 text-center text-sm py-8">No reviews yet. Be the first to share your vibes!</p>}
+                <div className="space-y-4">
+                    {allReviewsForStation.length === 0 && (
+                        <div className="py-12 text-center">
+                            <p className="text-gray-600 font-bold">No vibes shared yet.</p>
+                            <p className="text-xs text-gray-700 mt-1 uppercase tracking-tighter">Be the first to rate this station.</p>
+                        </div>
+                    )}
                     {allReviewsForStation.map((review, index) => (
-                        <div key={index} className="p-3 bg-gray-700/30 rounded-lg border border-white/5">
-                            <div className="flex justify-between items-start mb-1">
-                                <span className="font-semibold text-sm text-white flex items-center gap-1.5">
-                                    {review.author}
-                                    {review.authorRole && <RoleBadge role={review.authorRole} />}
-                                </span>
+                        <div key={index} className="p-4 bg-gray-900/30 rounded-2xl border border-white/5 hover:border-white/10 transition-colors shadow-sm">
+                            <div className="flex justify-between items-start mb-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-sm text-white">
+                                        {review.author}
+                                    </span>
+                                    {review.authorRole && <RoleBadge role={review.authorRole} className="h-3 w-3" />}
+                                </div>
                                 <StarRating rating={review.rating} readOnly starClassName="h-3 w-3" />
                             </div>
-                            <p className="text-sm text-gray-400 leading-relaxed">{review.text}</p>
-                            <p className="text-[10px] text-gray-600 text-right mt-1">{formatTimeAgo(review.createdAt)}</p>
+                            <p className="text-sm text-gray-400 leading-relaxed font-medium">"{review.text}"</p>
+                            <p className="text-[10px] text-gray-600 font-bold uppercase tracking-tighter text-right mt-3 opacity-60">{formatTimeAgo(review.createdAt)}</p>
                         </div>
                     ))}
                 </div>
@@ -252,7 +278,7 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
         )}
 
         {activeTab === 'guestbook' && (
-            <div className="animate-fade-in">
+            <div className="animate-fade-in pb-4">
                 <StationGuestbook 
                     entries={station.guestbook || []} 
                     onAddEntry={onAddGuestbookEntry} 

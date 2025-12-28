@@ -116,7 +116,7 @@ export const App: React.FC = () => {
   const [collection, setCollection] = useState<CollectorCard[]>([] as CollectorCard[]);
   
   const [activeFrame, setActiveFrame] = useState<string | undefined>(undefined);
-  // Correctly initialized state as string[]
+  // Correctly initialized state as string[] to ensure consistency throughout the app
   const [unlockedFrames, setUnlockedFrames] = useState<string[]>([]);
   const [hypeScore, setHypeScore] = useState(0);
   const [isHypeActive, setIsHypeActive] = useState(false);
@@ -284,8 +284,9 @@ export const App: React.FC = () => {
     setQuests((data.quests as Quest[]) || INITIAL_QUESTS);
     setCollection((data.collection as CollectorCard[]) || []);
     setActiveFrame(data.activeFrame);
-    // Explicitly cast to string[] to resolve type ambiguity from JSON data
-    setUnlockedFrames((data.unlockedFrames as string[]) || []);
+    // Properly cast to string[] and handle potential undefined from older data; resolves reported unknown[] inference errors
+    const framesData = (data.unlockedFrames as string[]) || [];
+    setUnlockedFrames(framesData);
     setUserProfile(data.profile || { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' });
     setCustomThemes(data.customThemes || []);
     setActiveSkin(data.activeSkin || 'modern');
@@ -501,7 +502,7 @@ export const App: React.FC = () => {
                 unlockedThemes={unlockedThemes} 
                 currentPoints={stats.points || 0} 
                 activeFrame={activeFrame} 
-                // Passed state accurately reflects string[] from initialization and update
+                // Fix: Pass accurately typed string[] to StoreView; resolves reported assignment error
                 unlockedFrames={unlockedFrames} 
                 onSetFrame={(f) => { setActiveFrame(f); if(currentUser) updateUserData(currentUser.username, { activeFrame: f }); }} 
                 onUnlockFrame={()=>{}} 

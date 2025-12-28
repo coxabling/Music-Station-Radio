@@ -36,26 +36,27 @@ const TabButton: React.FC<{label: string; isActive: boolean; onClick: () => void
     <button onClick={onClick} className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors focus:outline-none ${ isActive ? 'bg-gray-800/50 text-[var(--accent-color)] border-b-2 accent-color-border' : 'text-gray-400 hover:text-white' }`}>{label}</button>
 );
 
-const TagPill: React.FC<{ tag: string; isSelected?: boolean; onClick?: (tag: string) => void; className?: string }> = ({ tag, isSelected, onClick, className = '' }) => {
-    // Determine color based on tag name for some visual flair
-    const getTagColor = (t: string) => {
-        const colors = [
-            'bg-blue-500/20 text-blue-300 border-blue-500/30',
-            'bg-purple-500/20 text-purple-300 border-purple-500/30',
-            'bg-pink-500/20 text-pink-300 border-pink-500/30',
-            'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-            'bg-orange-500/20 text-orange-300 border-orange-500/30',
-            'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
-        ];
-        let hash = 0;
-        for (let i = 0; i < t.length; i++) hash = t.charCodeAt(i) + ((hash << 5) - hash);
-        return colors[Math.abs(hash) % colors.length];
-    };
+const getTagColor = (t: string) => {
+    const colors = [
+        'bg-blue-500/20 text-blue-300 border-blue-500/30',
+        'bg-purple-500/20 text-purple-300 border-purple-500/30',
+        'bg-pink-500/20 text-pink-300 border-pink-500/30',
+        'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+        'bg-orange-500/20 text-orange-300 border-orange-500/30',
+        'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+        'bg-rose-500/20 text-rose-300 border-rose-500/30',
+        'bg-amber-500/20 text-amber-300 border-amber-500/30',
+    ];
+    let hash = 0;
+    for (let i = 0; i < t.length; i++) hash = t.charCodeAt(i) + ((hash << 5) - hash);
+    return colors[Math.abs(hash) % colors.length];
+};
 
+const TagPill: React.FC<{ tag: string; isSelected?: boolean; onClick?: (tag: string) => void; className?: string }> = ({ tag, isSelected, onClick, className = '' }) => {
     return (
         <button
             onClick={(e) => { e.stopPropagation(); onClick?.(tag); }}
-            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all duration-200 ${isSelected ? 'bg-[var(--accent-color)] text-black border-[var(--accent-color)]' : `${getTagColor(tag)} hover:scale-105 active:scale-95`} ${className}`}
+            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all duration-200 shadow-sm ${isSelected ? 'bg-[var(--accent-color)] text-black border-[var(--accent-color)] ring-2 ring-[var(--accent-color)]/20' : `${getTagColor(tag)} hover:scale-105 active:scale-95`} ${className}`}
         >
             {tag}
         </button>
@@ -65,12 +66,12 @@ const TagPill: React.FC<{ tag: string; isSelected?: boolean; onClick?: (tag: str
 const SponsorCard: React.FC = () => (
     <div className="relative group flex flex-col rounded-lg overflow-hidden bg-gradient-to-br from-yellow-900/20 to-gray-900 border border-yellow-500/30 shadow-lg animate-fade-in" style={{ aspectRatio: '1 / 1' }}>
          <div className="absolute top-2 left-2 bg-yellow-500/90 text-black text-[10px] font-bold px-2 py-0.5 rounded uppercase z-10">Sponsored</div>
-         <img src="https://picsum.photos/seed/sponsor1/300" alt="Sponsor" className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-500 group-hover:scale-105 grayscale group-hover:grayscale-0" />
+         <img src="https://picsum.photos/seed/audio_gear/300" alt="Sponsor" className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-500 group-hover:scale-105 grayscale group-hover:grayscale-0" />
          <div className="absolute inset-0 bg-black/30 p-4 flex flex-col justify-center items-center text-center">
-             <h3 className="font-bold text-xl text-white mb-2">Premium Audio Gear</h3>
-             <p className="text-xs text-gray-200 mb-4">Upgrade your listening experience today.</p>
+             <h3 className="font-bold text-xl text-white mb-2">High Grade Audio</h3>
+             <p className="text-xs text-gray-200 mb-4">Upgrade your listening gear.</p>
              <button className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2 px-4 rounded-full text-xs transition-colors">
-                 Shop Now
+                 Learn More
              </button>
          </div>
     </div>
@@ -98,13 +99,13 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
     });
     return Object.entries(counts)
       .sort(([, a], [, b]) => b - a)
-      .slice(0, 15)
+      .slice(0, 18)
       .map(([name]) => name);
   }, [allStations]);
 
   const handleTagToggle = (tag: string) => {
     setSelectedTag(prev => prev === tag ? null : tag);
-    setAiSearchResults(null); // Clear AI results if manually filtering
+    setAiSearchResults(null);
   };
   
   const handleVibeSearch = async () => {
@@ -117,7 +118,7 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
       setAiSearchResults({ urls: resultUrls, prompt: searchQuery });
     } catch (error) {
       console.error(error);
-      setAiError('AI search failed. Please try again.');
+      setAiError('Vibe search failed. Try describing the mood.');
     } finally {
       setIsAiSearching(false);
     }
@@ -134,9 +135,7 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
         const urlMap = new Map(allStations.map(s => [s.streamUrl, s]));
         const aiList = aiSearchResults.urls.map(url => urlMap.get(url)).filter((s): s is Station => !!s);
         
-        if (activeTab === 'favorites') {
-            return aiList.filter(s => s.isFavorite);
-        }
+        if (activeTab === 'favorites') return aiList.filter(s => s.isFavorite);
         return aiList;
     } else {
         let list = activeTab === 'favorites' ? stations.filter(s => s.isFavorite) : stations;
@@ -145,12 +144,8 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
         }
         
         return [...list].sort((a, b) => {
-          if (sortMode === 'rating') {
-            return (b.rating || 0) - (a.rating || 0);
-          }
-          if (sortMode === 'name') {
-            return a.name.localeCompare(b.name);
-          }
+          if (sortMode === 'rating') return (b.rating || 0) - (a.rating || 0);
+          if (sortMode === 'name') return a.name.localeCompare(b.name);
           return 0;
         });
     }
@@ -159,91 +154,99 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
 
   return (
     <div className="bg-transparent rounded-lg p-4 md:p-6">
-      <h2 className="text-3xl font-bold font-orbitron mb-6 text-center accent-color-text">Explore Stations</h2>
+      <h2 className="text-3xl font-bold font-orbitron mb-6 text-center accent-color-text">Global Soundwave</h2>
       
-      <div className="mb-6 max-w-2xl mx-auto flex flex-col sm:flex-row items-center gap-4">
+      <div className="mb-8 max-w-2xl mx-auto flex flex-col sm:flex-row items-center gap-4">
         <div className="relative flex-grow w-full">
-            <input type="text" placeholder="Search by name/genre, or describe a vibe..." value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} className="w-full bg-gray-800/50 border border-gray-700 rounded-full py-2.5 pl-10 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] transition-all duration-300" aria-label="Search for a station or describe a vibe" />
-            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500"><SearchIcon /></div>
+            <input type="text" placeholder="Genre, mood, or station name..." value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} className="w-full bg-gray-800/40 border border-gray-700/50 rounded-full py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] transition-all duration-300" aria-label="Search station" />
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"><SearchIcon /></div>
         </div>
         <div className="flex-shrink-0 w-full sm:w-auto flex items-center justify-center gap-2">
-            <button onClick={handleVibeSearch} disabled={isAiSearching || !searchQuery.trim()} className="w-full sm:w-auto flex items-center justify-center bg-purple-500/20 hover:bg-purple-500/40 text-purple-200 border border-purple-500/50 rounded-full py-2.5 px-5 transition-colors duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+            <button onClick={handleVibeSearch} disabled={isAiSearching || !searchQuery.trim()} className="w-full sm:w-auto flex items-center justify-center bg-purple-500/20 hover:bg-purple-500/40 text-purple-200 border border-purple-500/50 rounded-full py-3 px-6 transition-colors duration-300 font-bold disabled:opacity-50">
                 {isAiSearching ? <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-purple-200"></div> : <SparklesIcon className="h-5 w-5" />}
-                <span className="ml-2">Vibe Search</span>
+                <span className="ml-2 whitespace-nowrap">AI Vibe</span>
             </button>
             {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
-            <button onClick={onOpenSubmitModal} className="flex-shrink-0 flex items-center justify-center bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-200 border border-cyan-500/50 rounded-full py-2.5 px-5 transition-colors duration-300 font-semibold" aria-label="Suggest a new station"><AddIcon />Suggest</button>
+            <button onClick={onOpenSubmitModal} className="flex-shrink-0 flex items-center justify-center bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-200 border border-cyan-500/50 rounded-full py-3 px-6 transition-colors duration-300 font-bold" aria-label="Add station"><AddIcon />Add</button>
             )}
         </div>
       </div>
 
-      {aiError && <div className="text-center text-red-400 mb-4">{aiError}</div>}
+      {aiError && <div className="text-center text-red-400 mb-4 bg-red-900/20 p-2 rounded-lg border border-red-500/30">{aiError}</div>}
       {aiSearchResults && (
-        <div className="mb-6 p-3 bg-gray-800/50 rounded-lg border border-gray-700 flex items-center justify-between animate-fade-in">
-            <div>
-                <p className="text-sm font-semibold text-purple-300">✨ AI Results for: "{aiSearchResults.prompt}"</p>
-                <p className="text-xs text-gray-400">{aiSearchResults.urls.length} stations found.</p>
+        <div className="mb-6 p-4 bg-purple-900/10 rounded-xl border border-purple-500/30 flex items-center justify-between animate-fade-in">
+            <div className="flex items-center gap-3">
+                <SparklesIcon className="h-6 w-6 text-purple-400" />
+                <div>
+                    <p className="text-sm font-bold text-purple-200">AI Vibe Match for: "{aiSearchResults.prompt}"</p>
+                    <p className="text-xs text-gray-400">{aiSearchResults.urls.length} matches found.</p>
+                </div>
             </div>
-            <button onClick={() => setAiSearchResults(null)} className="flex items-center gap-1.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 border border-red-500/50 rounded-full py-1.5 px-3 transition-colors text-sm font-semibold">
-                <XIcon className="h-4 w-4" /> Clear
+            <button onClick={() => setAiSearchResults(null)} className="flex items-center gap-1.5 bg-gray-800 hover:bg-gray-700 text-gray-400 border border-gray-700 rounded-full py-1.5 px-4 transition-colors text-xs font-bold">
+                <XIcon className="h-4 w-4" /> Reset
             </button>
         </div>
       )}
 
-      {/* Trending Tags Section */}
+      {/* Enhanced Trending Tags Section */}
       {!aiSearchResults && activeTab === 'all' && (
-        <div className="mb-8 overflow-hidden">
-          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-              <span className="w-8 h-px bg-gray-800"></span> Trending Genres
-          </h3>
-          <div className="flex flex-wrap gap-2">
+        <div className="mb-10 animate-fade-in">
+          <div className="flex items-center gap-3 mb-4">
+              <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-color)]"></div>
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Trending Categories</h3>
+              <div className="flex-grow h-px bg-gray-800/50"></div>
+          </div>
+          <div className="flex flex-wrap gap-2.5">
             {trendingTags.map(tag => (
                 <TagPill 
                     key={tag} 
                     tag={tag} 
                     isSelected={selectedTag === tag} 
                     onClick={handleTagToggle} 
-                    className="px-4 py-1 text-xs"
+                    className="px-5 py-1.5 text-xs"
                 />
             ))}
           </div>
         </div>
       )}
 
-      <div className="flex justify-between items-center mb-4">
-        <div className="border-b border-gray-700/50 flex overflow-x-auto custom-scrollbar-hide">
-            <TabButton label="All Stations" isActive={activeTab === 'all'} onClick={() => setActiveTab('all')} />
-            <TabButton label="Favorites" isActive={activeTab === 'favorites'} onClick={() => setActiveTab('favorites')} />
-            <TabButton label="Community Hits" isActive={activeTab === 'community'} onClick={() => setActiveTab('community')} />
+      <div className="flex justify-between items-center mb-6 border-b border-gray-800/50 pb-2">
+        <div className="flex gap-2 overflow-x-auto custom-scrollbar-hide">
+            <TabButton label="Broadcasting" isActive={activeTab === 'all'} onClick={() => setActiveTab('all')} />
+            <TabButton label="Your Favorites" isActive={activeTab === 'favorites'} onClick={() => setActiveTab('favorites')} />
+            <TabButton label="Global Hits" isActive={activeTab === 'community'} onClick={() => setActiveTab('community')} />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
             {!aiSearchResults && activeTab === 'all' && (
-                <div className="relative hidden sm:block">
-                    <select value={sortMode} onChange={e => setSortMode(e.target.value as SortMode)} className="bg-gray-800/50 border border-gray-700 rounded-full py-2 pl-8 pr-4 text-sm text-white appearance-none focus:outline-none focus:ring-1 focus:ring-[var(--accent-color)]">
-                        <option value="rating">Sort by Rating</option>
-                        <option value="name">Sort by Name</option>
+                <div className="relative hidden lg:block">
+                    <select value={sortMode} onChange={e => setSortMode(e.target.value as SortMode)} className="bg-gray-800/60 border border-gray-700/50 rounded-full py-2 pl-9 pr-4 text-xs font-bold text-gray-300 appearance-none focus:outline-none focus:ring-1 focus:ring-[var(--accent-color)]">
+                        <option value="rating">Top Rated</option>
+                        <option value="name">Alphabetical</option>
                     </select>
-                    <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"><SortIcon/></div>
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"><SortIcon/></div>
                 </div>
             )}
             {activeTab !== 'community' && (
-                <div className="flex items-center gap-1 p-1 bg-gray-800/50 rounded-full border border-gray-700"><button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-full transition-colors ${viewMode === 'grid' ? 'bg-[var(--accent-color)] text-black' : 'text-gray-400 hover:text-white'}`}><GridIcon /></button><button onClick={() => setViewMode('list')} className={`p-1.5 rounded-full transition-colors ${viewMode === 'list' ? 'bg-[var(--accent-color)] text-black' : 'text-gray-400 hover:text-white'}`}><ListIcon /></button></div>
+                <div className="flex items-center gap-1 p-1 bg-gray-800/60 rounded-full border border-gray-700/50">
+                    <button onClick={() => setViewMode('grid')} className={`p-2 rounded-full transition-colors ${viewMode === 'grid' ? 'bg-[var(--accent-color)] text-black' : 'text-gray-500 hover:text-white'}`}><GridIcon /></button>
+                    <button onClick={() => setViewMode('list')} className={`p-2 rounded-full transition-colors ${viewMode === 'list' ? 'bg-[var(--accent-color)] text-black' : 'text-gray-500 hover:text-white'}`}><ListIcon /></button>
+                </div>
             )}
         </div>
       </div>
       
       {activeTab === 'community' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
           {communityHits.map((song) => (
-            <div key={song.id} className="relative group bg-gray-800/50 ring-2 ring-gray-700/50 rounded-lg overflow-hidden shadow-lg" style={{ aspectRatio: '1 / 1' }}>
-                <img src={song.albumArt} alt={song.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                <div className="absolute inset-0 bg-black/60 p-4 flex flex-col justify-end">
-                    <h3 className="font-bold text-lg text-white truncate" title={song.title}>{song.title}</h3>
-                    <p className="text-xs text-gray-300 truncate" title={song.artist}>{song.artist}</p>
+            <div key={song.id} className="relative group bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-xl" style={{ aspectRatio: '1 / 1' }}>
+                <img src={song.albumArt} alt={song.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent p-5 flex flex-col justify-end">
+                    <h3 className="font-bold text-lg text-white truncate drop-shadow-md" title={song.title}>{song.title}</h3>
+                    <p className="text-xs text-cyan-300 truncate font-semibold" title={song.artist}>{song.artist}</p>
                 </div>
-                <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <button onClick={() => onPlayFromCommunity(song.id)} className="flex items-center gap-2 bg-cyan-500/80 hover:bg-cyan-500 text-black font-bold py-2 px-4 rounded-full transition-colors transform hover:scale-105">
-                        <RadioIcon/> Find Station
+                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 backdrop-blur-sm">
+                    <button onClick={() => onPlayFromCommunity(song.id)} className="flex items-center gap-2 bg-[var(--accent-color)] text-black font-bold py-3 px-6 rounded-full transition-all transform hover:scale-110 shadow-lg shadow-[var(--accent-color)]/20">
+                        <RadioIcon/> Tune In
                     </button>
                 </div>
             </div>
@@ -251,33 +254,32 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
         </div>
       ) : displayedStations.length > 0 ? (
         viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
             {displayedStations.map((station, index) => {
                const isHighGrade = station.name === "High Grade Radio";
                const tags = station.genre.split(',').map(t => t.trim()).slice(0, 3);
                
-               // Insert Sponsor Card after the 4th item (index 3)
                if (index === 3 && activeTab === 'all' && !aiSearchResults && !selectedTag) {
                     return (
-                        <React.Fragment key={station.streamUrl}>
+                        <React.Fragment key="sponsor-fragment">
                              <SponsorCard />
-                             <div className="relative group flex flex-col station-card-animate" style={{ animationDelay: `${index * 30}ms`}}>
+                             <div key={station.streamUrl} className="relative group flex flex-col station-card-animate" style={{ animationDelay: `${index * 30}ms`}}>
                                 <div className="relative">
-                                    <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-lg overflow-hidden transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-color)] focus-visible:ring-opacity-75 shadow-lg hover:shadow-[var(--accent-color)]/40 hover:scale-[1.03] ${ currentStation?.streamUrl === station.streamUrl ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/50' : isHighGrade ? 'ring-2 ring-yellow-500/80 hover:ring-yellow-400 shadow-yellow-500/20' : 'ring-2 ring-gray-700/50 hover:ring-[var(--accent-color)]/70' }`} style={{ aspectRatio: '1 / 1' }} aria-label={`Play ${station.name}`} >
-                                        <img src={station.coverArt} alt={station.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                        <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-colors duration-300 p-4 flex flex-col justify-end">
-                                            <h3 className="font-bold text-lg text-white truncate">{station.name}</h3>
-                                            <div className="flex flex-wrap gap-1 mt-1">
+                                    <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-xl overflow-hidden transition-all duration-300 focus:outline-none shadow-xl hover:scale-[1.03] ${ currentStation?.streamUrl === station.streamUrl ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/30' : isHighGrade ? 'ring-2 ring-yellow-500/60 shadow-yellow-500/10' : 'ring-1 ring-gray-800 hover:ring-[var(--accent-color)]/50' }`} style={{ aspectRatio: '1 / 1' }} >
+                                        <img src={station.coverArt} alt={station.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-5 flex flex-col justify-end">
+                                            <h3 className="font-bold text-lg text-white truncate mb-2">{station.name}</h3>
+                                            <div className="flex flex-wrap gap-1.5">
                                                 {tags.map(t => <TagPill key={t} tag={t} onClick={handleTagToggle} isSelected={selectedTag === t} />)}
                                             </div>
                                         </div>
-                                        {isHighGrade && <div className="absolute top-2 left-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Featured</div>}
+                                        {isHighGrade && <div className="absolute top-3 left-3 bg-yellow-500 text-black text-[10px] font-black px-2 py-0.5 rounded shadow-lg uppercase">Featured</div>}
                                     </button>
-                                    <button onClick={() => onToggleFavorite(station)} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full transition-opacity opacity-0 group-hover:opacity-100 hover:!opacity-100 hover:bg-black/70"><HeartIcon isFavorite={!!station.isFavorite} className="h-5 w-5" /></button>
+                                    <button onClick={() => onToggleFavorite(station)} className="absolute top-3 right-3 p-2 bg-black/40 backdrop-blur-md rounded-full transition-all opacity-0 group-hover:opacity-100 hover:scale-110 hover:bg-black/60 shadow-lg"><HeartIcon isFavorite={!!station.isFavorite} className="h-5 w-5" /></button>
                                 </div>
-                                <div className="flex items-center justify-between mt-2">
-                                    <button onClick={() => onShowDetails(station)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-white" title="View details"><InfoIcon className="h-4 w-4" /> Details</button>
-                                    <StarRating rating={station.rating || 0} readOnly={true} starClassName="h-4 w-4" />
+                                <div className="flex items-center justify-between mt-3 px-1">
+                                    <button onClick={() => onShowDetails(station)} className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 hover:text-white transition-colors" title="View details"><InfoIcon className="h-4 w-4" /> More Info</button>
+                                    <StarRating rating={station.rating || 0} readOnly={true} starClassName="h-3.5 w-3.5" />
                                 </div>
                                 {currentStation?.streamUrl === station.streamUrl && <PlayIndicator />}
                               </div>
@@ -288,62 +290,64 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
                return (
               <div key={station.streamUrl} className="relative group flex flex-col station-card-animate" style={{ animationDelay: `${index * 30}ms`}}>
                 <div className="relative">
-                    <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-lg overflow-hidden transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-color)] focus-visible:ring-opacity-75 shadow-lg hover:shadow-[var(--accent-color)]/40 hover:scale-[1.03] ${ currentStation?.streamUrl === station.streamUrl ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/50' : isHighGrade ? 'ring-2 ring-yellow-500/80 hover:ring-yellow-400 shadow-yellow-500/20' : 'ring-2 ring-gray-700/50 hover:ring-[var(--accent-color)]/70' }`} style={{ aspectRatio: '1 / 1' }} aria-label={`Play ${station.name}`} >
-                        <img src={station.coverArt} alt={station.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                        <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-colors duration-300 p-4 flex flex-col justify-end">
-                            <h3 className="font-bold text-lg text-white truncate">{station.name}</h3>
-                            <div className="flex flex-wrap gap-1 mt-1">
+                    <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-xl overflow-hidden transition-all duration-300 focus:outline-none shadow-xl hover:scale-[1.03] ${ currentStation?.streamUrl === station.streamUrl ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/30' : isHighGrade ? 'ring-2 ring-yellow-500/60 shadow-yellow-500/10' : 'ring-1 ring-gray-800 hover:ring-[var(--accent-color)]/50' }`} style={{ aspectRatio: '1 / 1' }} >
+                        <img src={station.coverArt} alt={station.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-5 flex flex-col justify-end">
+                            <h3 className="font-bold text-lg text-white truncate mb-2">{station.name}</h3>
+                            <div className="flex flex-wrap gap-1.5">
                                 {tags.map(t => <TagPill key={t} tag={t} onClick={handleTagToggle} isSelected={selectedTag === t} />)}
                             </div>
                         </div>
-                        {isHighGrade && <div className="absolute top-2 left-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Featured</div>}
+                        {isHighGrade && <div className="absolute top-3 left-3 bg-yellow-500 text-black text-[10px] font-black px-2 py-0.5 rounded shadow-lg uppercase">Featured</div>}
                     </button>
-                    <button onClick={() => onToggleFavorite(station)} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full transition-opacity opacity-0 group-hover:opacity-100 hover:!opacity-100 hover:bg-black/70"><HeartIcon isFavorite={!!station.isFavorite} className="h-5 w-5" /></button>
+                    <button onClick={() => onToggleFavorite(station)} className="absolute top-3 right-3 p-2 bg-black/40 backdrop-blur-md rounded-full transition-all opacity-0 group-hover:opacity-100 hover:scale-110 hover:bg-black/60 shadow-lg"><HeartIcon isFavorite={!!station.isFavorite} className="h-5 w-5" /></button>
                 </div>
-                <div className="flex items-center justify-between mt-2">
-                    <button onClick={() => onShowDetails(station)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-white" title="View details"><InfoIcon className="h-4 w-4" /> Details</button>
-                    <StarRating rating={station.rating || 0} readOnly={true} starClassName="h-4 w-4" />
+                <div className="flex items-center justify-between mt-3 px-1">
+                    <button onClick={() => onShowDetails(station)} className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 hover:text-white transition-colors" title="View details"><InfoIcon className="h-4 w-4" /> More Info</button>
+                    <StarRating rating={station.rating || 0} readOnly={true} starClassName="h-3.5 w-3.5" />
                 </div>
                 {currentStation?.streamUrl === station.streamUrl && <PlayIndicator />}
               </div>
             )})}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4 max-w-4xl mx-auto">
             {displayedStations.map((station, index) => (
-              <div key={station.streamUrl} className={`flex items-center p-3 rounded-lg transition-colors duration-200 station-card-animate ${currentStation?.streamUrl === station.streamUrl ? 'bg-gray-700/50' : 'bg-gray-800/30 hover:bg-gray-800/60'}`} style={{ animationDelay: `${index * 30}ms`}}>
-                <img src={station.coverArt} alt={station.name} className="w-12 h-12 rounded-md object-cover mr-4" />
+              <div key={station.streamUrl} className={`flex items-center p-4 rounded-xl border transition-all duration-300 station-card-animate ${currentStation?.streamUrl === station.streamUrl ? 'bg-[var(--accent-color)]/10 border-[var(--accent-color)] shadow-lg shadow-[var(--accent-color)]/10' : 'bg-gray-800/20 border-gray-800/50 hover:bg-gray-800/40 hover:border-gray-700'}`} style={{ animationDelay: `${index * 30}ms`}}>
+                <img src={station.coverArt} alt={station.name} className="w-16 h-16 rounded-lg object-cover mr-6 shadow-md" />
                 <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onSelectStation(station)}>
-                    <h3 className="font-semibold text-white truncate flex items-center gap-2">
+                    <h3 className="font-bold text-white text-lg truncate flex items-center gap-3">
                         {station.name} 
-                        {station.name === "High Grade Radio" && <span className="text-[10px] text-yellow-400 border border-yellow-500/50 px-1 rounded">FEATURED</span>}
+                        {station.name === "High Grade Radio" && <span className="text-[9px] font-black text-yellow-400 border border-yellow-500/40 px-1.5 py-0.5 rounded tracking-tighter uppercase">Featured</span>}
                     </h3>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                        {station.genre.split(',').map(t => t.trim()).slice(0, 4).map(t => <TagPill key={t} tag={t} onClick={handleTagToggle} isSelected={selectedTag === t} />)}
+                    <div className="flex flex-wrap gap-2 mt-2">
+                        {station.genre.split(',').map(t => t.trim()).slice(0, 5).map(t => <TagPill key={t} tag={t} onClick={handleTagToggle} isSelected={selectedTag === t} />)}
                     </div>
                 </div>
-                 <div className="flex items-center gap-2">
-                    <button onClick={() => onShowDetails(station)} className="p-2 text-gray-400 hover:text-white rounded-full" title="View details"><InfoIcon className="h-5 w-5"/></button>
-                    <button onClick={() => onToggleFavorite(station)} className="p-2 text-gray-400 hover:text-pink-500 rounded-full"><HeartIcon isFavorite={!!station.isFavorite} className="h-5 w-5" /></button>
-                    {currentStation?.streamUrl === station.streamUrl && ( <div className="w-6 h-6 rounded-full bg-[var(--accent-color)] animate-pulse"></div> )}
+                 <div className="flex items-center gap-3 ml-4">
+                    <StarRating rating={station.rating || 0} readOnly={true} starClassName="h-4 w-4 hidden sm:flex" />
+                    <div className="w-px h-8 bg-gray-700/50 hidden sm:block mx-1"></div>
+                    <button onClick={() => onShowDetails(station)} className="p-2.5 text-gray-500 hover:text-white rounded-full hover:bg-gray-700/50 transition-colors" title="View details"><InfoIcon className="h-6 w-6"/></button>
+                    <button onClick={() => onToggleFavorite(station)} className="p-2.5 text-gray-500 hover:text-pink-500 rounded-full hover:bg-gray-700/50 transition-colors"><HeartIcon isFavorite={!!station.isFavorite} className="h-6 w-6" /></button>
                 </div>
               </div>
             ))}
           </div>
         )
       ) : (
-        <div className="text-center text-gray-400 py-10">
-          <p className="text-lg font-semibold">No Stations Found</p>
-          <p className="text-sm mt-1">
+        <div className="text-center py-20 bg-gray-900/20 rounded-3xl border border-gray-800/50">
+          <div className="mb-6"><SearchIcon className="h-16 w-16 text-gray-700 mx-auto opacity-20" /></div>
+          <p className="text-xl font-bold text-gray-400">No matching vibes found</p>
+          <p className="text-sm text-gray-500 mt-2 max-w-sm mx-auto px-4">
             {aiSearchResults 
-                ? "The AI couldn't find a match for your vibe. Try being more descriptive!" 
+                ? "The AI couldn't find a direct match. Try broad terms like 'Chilled', 'Upbeat', or 'World Music'." 
                 : activeTab === 'favorites'
-                ? 'Click the heart icon on any station to add it here.'
-                : `Try adjusting your search or selecting a different genre.`
+                ? 'Save your favorite stations to see them here for quick access.'
+                : `We couldn't find anything matching your filters. Try a different category or clear search.`
             }
           </p>
-          {(selectedTag || searchQuery) && (
-              <button onClick={() => { setSelectedTag(null); onSearchChange(''); setAiSearchResults(null); }} className="mt-4 text-[var(--accent-color)] hover:underline font-bold text-sm">Clear all filters</button>
+          {(selectedTag || searchQuery || aiSearchResults) && (
+              <button onClick={() => { setSelectedTag(null); onSearchChange(''); setAiSearchResults(null); }} className="mt-8 bg-white/5 hover:bg-white/10 text-white border border-white/10 px-8 py-3 rounded-full font-bold text-sm transition-all shadow-xl">Clear All Filters</button>
           )}
         </div>
       )}

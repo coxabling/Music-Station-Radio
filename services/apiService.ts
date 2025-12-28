@@ -205,18 +205,37 @@ async function fetchWithTimeout(resource: string, options: any = {}) {
 
 /**
  * Normalizes tags from Radio Browser into a clean, comma-separated string of unique genres.
+ * Removes technical noise and redundant terms.
  */
 const normalizeTags = (rawTags: string): string => {
     if (!rawTags) return 'Various';
-    // Radio browser tags can be comma-separated, space-separated, or both.
-    const tags = rawTags
-        .split(/[,;\s]+/)
-        .map(t => t.trim().toLowerCase())
-        .filter(t => t.length > 2 && t.length < 20) // Filter out noise
-        .filter((val, index, self) => self.indexOf(val) === index); // Unique
     
-    // Take top 5 meaningful tags
-    const relevant = tags.slice(0, 5).map(t => t.charAt(0).toUpperCase() + t.slice(1));
+    // Technical noise terms to exclude
+    const blacklist = new Set([
+        'mp3', 'aac', 'ogg', 'opus', '128k', '128kbps', '64k', '320k', 
+        'shoutcast', 'icecast', 'stream', 'live', 'stereo', 'hi-fi', 'hifi',
+        'http', 'https', 'station', 'radio', 'online', 'www', 'com', 'org',
+        'playing', 'listen', 'music', 'sound', 'broadcasting', 'cast', 'fm', 'am'
+    ]);
+
+    // Split by common delimiters
+    const tags = rawTags
+        .split(/[,;\s/]+/)
+        .map(t => t.trim().toLowerCase())
+        .filter(t => t.length > 2 && t.length < 20) // Filter by length
+        .filter(t => !blacklist.has(t)) // Filter out blacklisted terms
+        .filter(t => !/^\d+$/.test(t)) // Filter out purely numeric tags (often bitrates)
+        .filter((val, index, self) => self.indexOf(val) === index); // Ensure uniqueness
+    
+    // Take top 6 meaningful tags and capitalize them
+    const relevant = tags.slice(0, 6).map(t => {
+        if (t === 'rnb') return 'R&B';
+        if (t === 'hiphop') return 'Hip-Hop';
+        if (t === 'edm') return 'EDM';
+        if (t === 'lofi') return 'Lo-Fi';
+        return t.charAt(0).toUpperCase() + t.slice(1);
+    });
+
     return relevant.length > 0 ? relevant.join(', ') : 'Various';
 };
 
