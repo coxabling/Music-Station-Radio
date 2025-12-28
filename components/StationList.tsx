@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import type { Station, LayoutMode, SongVote, User } from '../types';
 import { StarRating } from './StarRating';
 import { findStationsByVibe } from '../services/geminiService';
+import { searchRadioBrowser } from '../services/apiService';
 
 interface StationListProps {
   stations: Station[];
@@ -31,6 +32,7 @@ const SortIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-
 const InfoIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>;
 const SparklesIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clipRule="evenodd"/></svg>;
 const XIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>;
+const GlobeIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>;
 
 const TabButton: React.FC<{label: string; isActive: boolean; onClick: () => void}> = ({ label, isActive, onClick }) => (
     <button onClick={onClick} className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors focus:outline-none ${ isActive ? 'bg-gray-800/50 text-[var(--accent-color)] border-b-2 accent-color-border' : 'text-gray-400 hover:text-white' }`}>{label}</button>
@@ -86,7 +88,9 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
   const [sortMode, setSortMode] = useState<SortMode>('rating');
   
   const [aiSearchResults, setAiSearchResults] = useState<{ urls: string[], prompt: string } | null>(null);
+  const [globalSearchResults, setGlobalSearchResults] = useState<Station[] | null>(null);
   const [isAiSearching, setIsAiSearching] = useState(false);
+  const [isGlobalSearching, setIsGlobalSearching] = useState(false);
   const [aiError, setAiError] = useState('');
 
   const trendingTags = useMemo(() => {
@@ -106,6 +110,7 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
   const handleTagToggle = (tag: string) => {
     setSelectedTag(prev => prev === tag ? null : tag);
     setAiSearchResults(null);
+    setGlobalSearchResults(null);
   };
   
   const handleVibeSearch = async () => {
@@ -113,6 +118,7 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
     setIsAiSearching(true);
     setAiError('');
     setAiSearchResults(null);
+    setGlobalSearchResults(null);
     try {
       const resultUrls = await findStationsByVibe(searchQuery, allStations);
       setAiSearchResults({ urls: resultUrls, prompt: searchQuery });
@@ -124,6 +130,21 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
     }
   };
 
+  const handleGlobalSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setIsGlobalSearching(true);
+    setGlobalSearchResults(null);
+    setAiSearchResults(null);
+    try {
+        const results = await searchRadioBrowser(searchQuery);
+        setGlobalSearchResults(results);
+    } catch (e) {
+        console.error("Global search failed:", e);
+    } finally {
+        setIsGlobalSearching(false);
+    }
+  };
+
   const communityHits = useMemo(() => {
     return (Object.values(songVotes) as SongVote[])
       .sort((a, b) => b.likes - a.likes)
@@ -131,6 +152,9 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
   }, [songVotes]);
 
   const displayedStations = useMemo(() => {
+    if (globalSearchResults) {
+        return globalSearchResults;
+    }
     if (aiSearchResults) {
         const urlMap = new Map(allStations.map(s => [s.streamUrl, s]));
         const aiList = aiSearchResults.urls.map(url => urlMap.get(url)).filter((s): s is Station => !!s);
@@ -149,7 +173,7 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
           return 0;
         });
     }
-  }, [activeTab, stations, allStations, selectedTag, sortMode, aiSearchResults]);
+  }, [activeTab, stations, allStations, selectedTag, sortMode, aiSearchResults, globalSearchResults]);
 
 
   return (
@@ -158,38 +182,46 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
       
       <div className="mb-8 max-w-2xl mx-auto flex flex-col sm:flex-row items-center gap-4">
         <div className="relative flex-grow w-full">
-            <input type="text" placeholder="Genre, mood, or station name..." value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} className="w-full bg-gray-800/40 border border-gray-700/50 rounded-full py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] transition-all duration-300" aria-label="Search station" />
+            <input 
+                type="text" 
+                placeholder="Genre, mood, or station name..." 
+                value={searchQuery} 
+                onChange={(e) => onSearchChange(e.target.value)} 
+                className="w-full bg-gray-800/40 border border-gray-700/50 rounded-full py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] transition-all duration-300" 
+                aria-label="Search station" 
+            />
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"><SearchIcon /></div>
         </div>
         <div className="flex-shrink-0 w-full sm:w-auto flex items-center justify-center gap-2">
+            <button onClick={handleGlobalSearch} disabled={isGlobalSearching || !searchQuery.trim()} className="w-full sm:w-auto flex items-center justify-center bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-200 border border-cyan-500/50 rounded-full py-3 px-6 transition-colors duration-300 font-bold disabled:opacity-50">
+                {isGlobalSearching ? <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-cyan-200"></div> : <GlobeIcon className="h-5 w-5" />}
+                <span className="ml-2 whitespace-nowrap">Global</span>
+            </button>
             <button onClick={handleVibeSearch} disabled={isAiSearching || !searchQuery.trim()} className="w-full sm:w-auto flex items-center justify-center bg-purple-500/20 hover:bg-purple-500/40 text-purple-200 border border-purple-500/50 rounded-full py-3 px-6 transition-colors duration-300 font-bold disabled:opacity-50">
                 {isAiSearching ? <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-purple-200"></div> : <SparklesIcon className="h-5 w-5" />}
-                <span className="ml-2 whitespace-nowrap">AI Vibe</span>
+                <span className="ml-2 whitespace-nowrap">Vibe</span>
             </button>
-            {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
-            <button onClick={onOpenSubmitModal} className="flex-shrink-0 flex items-center justify-center bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-200 border border-cyan-500/50 rounded-full py-3 px-6 transition-colors duration-300 font-bold" aria-label="Add station"><AddIcon />Add</button>
-            )}
         </div>
       </div>
 
       {aiError && <div className="text-center text-red-400 mb-4 bg-red-900/20 p-2 rounded-lg border border-red-500/30">{aiError}</div>}
-      {aiSearchResults && (
+      
+      {(aiSearchResults || globalSearchResults) && (
         <div className="mb-6 p-4 bg-purple-900/10 rounded-xl border border-purple-500/30 flex items-center justify-between animate-fade-in">
             <div className="flex items-center gap-3">
-                <SparklesIcon className="h-6 w-6 text-purple-400" />
+                {aiSearchResults ? <SparklesIcon className="h-6 w-6 text-purple-400" /> : <GlobeIcon className="h-6 w-6 text-cyan-400"/>}
                 <div>
-                    <p className="text-sm font-bold text-purple-200">AI Vibe Match for: "{aiSearchResults.prompt}"</p>
-                    <p className="text-xs text-gray-400">{aiSearchResults.urls.length} matches found.</p>
+                    <p className="text-sm font-bold text-gray-200">{aiSearchResults ? `AI Vibe Match for: "${aiSearchResults.prompt}"` : `Global Results for: "${searchQuery}"`}</p>
+                    <p className="text-xs text-gray-400">{displayedStations.length} matches found.</p>
                 </div>
             </div>
-            <button onClick={() => setAiSearchResults(null)} className="flex items-center gap-1.5 bg-gray-800 hover:bg-gray-700 text-gray-400 border border-gray-700 rounded-full py-1.5 px-4 transition-colors text-xs font-bold">
+            <button onClick={() => { setAiSearchResults(null); setGlobalSearchResults(null); }} className="flex items-center gap-1.5 bg-gray-800 hover:bg-gray-700 text-gray-400 border border-gray-700 rounded-full py-1.5 px-4 transition-colors text-xs font-bold">
                 <XIcon className="h-4 w-4" /> Reset
             </button>
         </div>
       )}
 
-      {/* Enhanced Trending Tags Section */}
-      {!aiSearchResults && activeTab === 'all' && (
+      {!aiSearchResults && !globalSearchResults && activeTab === 'all' && (
         <div className="mb-10 animate-fade-in">
           <div className="flex items-center gap-3 mb-4">
               <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-color)]"></div>
@@ -217,7 +249,7 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
             <TabButton label="Global Hits" isActive={activeTab === 'community'} onClick={() => setActiveTab('community')} />
         </div>
         <div className="flex items-center gap-3">
-            {!aiSearchResults && activeTab === 'all' && (
+            {!aiSearchResults && !globalSearchResults && activeTab === 'all' && (
                 <div className="relative hidden lg:block">
                     <select value={sortMode} onChange={e => setSortMode(e.target.value as SortMode)} className="bg-gray-800/60 border border-gray-700/50 rounded-full py-2 pl-9 pr-4 text-xs font-bold text-gray-300 appearance-none focus:outline-none focus:ring-1 focus:ring-[var(--accent-color)]">
                         <option value="rating">Top Rated</option>
@@ -259,7 +291,7 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
                const isHighGrade = station.name === "High Grade Radio";
                const tags = station.genre.split(',').map(t => t.trim()).slice(0, 3);
                
-               if (index === 3 && activeTab === 'all' && !aiSearchResults && !selectedTag) {
+               if (index === 3 && activeTab === 'all' && !aiSearchResults && !globalSearchResults && !selectedTag) {
                     return (
                         <React.Fragment key="sponsor-fragment">
                              <SponsorCard />
@@ -346,8 +378,11 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
                 : `We couldn't find anything matching your filters. Try a different category or clear search.`
             }
           </p>
-          {(selectedTag || searchQuery || aiSearchResults) && (
-              <button onClick={() => { setSelectedTag(null); onSearchChange(''); setAiSearchResults(null); }} className="mt-8 bg-white/5 hover:bg-white/10 text-white border border-white/10 px-8 py-3 rounded-full font-bold text-sm transition-all shadow-xl">Clear All Filters</button>
+          {(selectedTag || searchQuery || aiSearchResults || globalSearchResults) && (
+              <button onClick={() => { setSelectedTag(null); onSearchChange(''); setAiSearchResults(null); setGlobalSearchResults(null); }} className="mt-8 bg-white/5 hover:bg-white/10 text-white border border-white/10 px-8 py-3 rounded-full font-bold text-sm transition-all shadow-xl">Clear All Filters</button>
+          )}
+          {searchQuery && !globalSearchResults && !isGlobalSearching && (
+              <button onClick={handleGlobalSearch} className="mt-4 text-[var(--accent-color)] hover:underline font-bold text-sm block mx-auto">Try searching the entire Radio Browser database</button>
           )}
         </div>
       )}

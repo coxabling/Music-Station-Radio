@@ -204,125 +204,100 @@ async function fetchWithTimeout(resource: string, options: any = {}) {
 }
 
 /**
- * Normalizes tags from Radio Browser into a clean, comma-separated string of unique genres.
- * Removes technical noise and redundant terms.
+ * Normalizes tags from Radio Browser into a clean string.
  */
 const normalizeTags = (rawTags: string): string => {
     if (!rawTags) return 'Various';
-    
-    // Technical noise terms to exclude
-    const blacklist = new Set([
-        'mp3', 'aac', 'ogg', 'opus', '128k', '128kbps', '64k', '320k', 
-        'shoutcast', 'icecast', 'stream', 'live', 'stereo', 'hi-fi', 'hifi',
-        'http', 'https', 'station', 'radio', 'online', 'www', 'com', 'org',
-        'playing', 'listen', 'music', 'sound', 'broadcasting', 'cast', 'fm', 'am'
-    ]);
-
-    // Split by common delimiters
-    const tags = rawTags
-        .split(/[,;\s/]+/)
+    const blacklist = new Set(['mp3', 'aac', 'ogg', '128k', '128kbps', '64k', 'shoutcast', 'icecast', 'stream', 'live']);
+    const tags = rawTags.split(/[,;\s/]+/)
         .map(t => t.trim().toLowerCase())
-        .filter(t => t.length > 2 && t.length < 20) // Filter by length
-        .filter(t => !blacklist.has(t)) // Filter out blacklisted terms
-        .filter(t => !/^\d+$/.test(t)) // Filter out purely numeric tags (often bitrates)
-        .filter((val, index, self) => self.indexOf(val) === index); // Ensure uniqueness
-    
-    // Take top 6 meaningful tags and capitalize them
-    const relevant = tags.slice(0, 6).map(t => {
-        if (t === 'rnb') return 'R&B';
-        if (t === 'hiphop') return 'Hip-Hop';
-        if (t === 'edm') return 'EDM';
-        if (t === 'lofi') return 'Lo-Fi';
-        return t.charAt(0).toUpperCase() + t.slice(1);
-    });
-
+        .filter(t => t.length > 2 && !blacklist.has(t) && !/^\d+$/.test(t))
+        .filter((val, index, self) => self.indexOf(val) === index);
+    const relevant = tags.slice(0, 5).map(t => t.charAt(0).toUpperCase() + t.slice(1));
     return relevant.length > 0 ? relevant.join(', ') : 'Various';
 };
 
 /**
+ * Map API response item to our Station type.
+ */
+const mapToStation = (item: any): Station => ({
+    name: item.name,
+    genre: normalizeTags(item.tags),
+    description: item.country ? `Broadcasting from ${item.country}. ${item.state || ''}` : 'No description available.',
+    streamUrl: item.url_resolved || item.url,
+    coverArt: item.favicon || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(item.name)}&backgroundColor=030712`,
+    rating: Math.min(5, (item.votes / 1000) + 3),
+    ratingsCount: item.votes,
+    location: (item.geo_lat && item.geo_long) ? { lat: item.geo_lat, lng: item.geo_long } : undefined,
+    owner: undefined,
+    acceptsSubmissions: false,
+    submissions: [],
+    guestbook: []
+});
+
+/**
+ * Discovers active Radio Browser mirrors.
+ */
+let discoveredMirrors: string[] = ['de1.api.radio-browser.info', 'at1.api.radio-browser.info'];
+const refreshMirrors = async () => {
+    try {
+        const response = await fetchWithTimeout('https://all.api.radio-browser.info/json/servers', { timeout: 3000 });
+        if (response.ok) {
+            const servers = await response.json();
+            discoveredMirrors = servers.map((s: any) => s.name);
+            console.log(`Discovered ${discoveredMirrors.length} Radio Browser mirrors.`);
+        }
+    } catch (e) {
+        console.warn("Mirror discovery failed, using defaults.");
+    }
+};
+
+/**
  * Fetches radio stations from Radio Browser API.
- * Uses multiple mirrors as fallbacks and multiple CORS proxies to ensure reliability.
  */
 export const fetchRadioBrowserStations = async (limit: number = 100): Promise<Station[]> => {
+    await refreshMirrors();
     const query = `limit=${limit}&hidebroken=true&order=clickcount&reverse=true`;
     
-    // Official mirrors - de1 and at1 are usually the most stable
-    const mirrors = [
-        'de1.api.radio-browser.info',
-        'at1.api.radio-browser.info',
-        'fr1.api.radio-browser.info',
-        'nl1.api.radio-browser.info'
-    ];
-
-    const mapItem = (item: any): Station => ({
-        name: item.name,
-        genre: normalizeTags(item.tags),
-        description: `Broadcasting from ${item.country}${item.state ? ', ' + item.state : ''}.`,
-        streamUrl: item.url_resolved || item.url,
-        coverArt: item.favicon || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(item.name)}&backgroundColor=030712`,
-        rating: Math.min(5, (item.votes / 1000) + 3),
-        ratingsCount: item.votes,
-        location: (item.geo_lat && item.geo_long) ? { lat: item.geo_lat, lng: item.geo_long } : undefined,
-        owner: undefined,
-        acceptsSubmissions: false,
-        submissions: [],
-        guestbook: []
-    });
-
-    // Strategy 1: Direct fetch from mirrors with 2.5s timeout per mirror
-    for (const mirror of mirrors) {
+    for (const mirror of discoveredMirrors.slice(0, 3)) {
         try {
-            const response = await fetchWithTimeout(`https://${mirror}/json/stations/search?${query}`, {
-                method: 'GET',
-                headers: { 'Accept': 'application/json' },
-                timeout: 2500
-            });
-            
+            const response = await fetchWithTimeout(`https://${mirror}/json/stations/search?${query}`, { timeout: 3000 });
             if (response.ok) {
                 const data = await response.json();
-                if (Array.isArray(data) && data.length > 0) {
-                    return data.map(mapItem);
-                }
+                return data.map(mapToStation);
             }
-        } catch (error) {
-            // Silently continue
-        }
+        } catch (e) {}
     }
 
-    // Strategy 2: Fetch via allorigins (Highly reliable CORS proxy)
-    for (const targetMirror of mirrors.slice(0, 2)) {
-        try {
-            const targetUrl = `https://${targetMirror}/json/stations/search?${query}`;
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-            const response = await fetchWithTimeout(proxyUrl, { timeout: 7000 });
-            
-            if (response.ok) {
-                const result = await response.json();
-                const rawData = typeof result.contents === 'string' ? JSON.parse(result.contents) : result.contents;
-                if (Array.isArray(rawData) && rawData.length > 0) {
-                    return rawData.map(mapItem);
-                }
-            }
-        } catch (error) {
-            // Silently continue
-        }
-    }
-
-    // Strategy 3: Fetch via corsproxy.io
+    // Fallback through proxy
     try {
-        const targetUrl = `https://de1.api.radio-browser.info/json/stations/search?${query}`;
-        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://de1.api.radio-browser.info/json/stations/search?${query}`)}`;
         const response = await fetchWithTimeout(proxyUrl, { timeout: 7000 });
-        
         if (response.ok) {
-            const data = await response.json();
-            if (Array.isArray(data) && data.length > 0) {
-                return data.map(mapItem);
-            }
+            const result = await response.json();
+            const rawData = typeof result.contents === 'string' ? JSON.parse(result.contents) : result.contents;
+            return rawData.map(mapToStation);
         }
-    } catch (error) {
-        console.warn("All fetching strategies failed.");
-    }
+    } catch (e) {}
 
+    return [];
+};
+
+/**
+ * Searches the entire Radio Browser database by keyword.
+ */
+export const searchRadioBrowser = async (keyword: string, limit: number = 50): Promise<Station[]> => {
+    if (!keyword.trim()) return [];
+    const query = `name=${encodeURIComponent(keyword)}&limit=${limit}&hidebroken=true&order=clickcount&reverse=true`;
+    
+    for (const mirror of discoveredMirrors.slice(0, 3)) {
+        try {
+            const response = await fetchWithTimeout(`https://${mirror}/json/stations/search?${query}`, { timeout: 4000 });
+            if (response.ok) {
+                const data = await response.json();
+                return data.map(mapToStation);
+            }
+        } catch (e) {}
+    }
     return [];
 };

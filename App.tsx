@@ -284,8 +284,8 @@ export const App: React.FC = () => {
     setQuests((data.quests as Quest[]) || INITIAL_QUESTS);
     setCollection((data.collection as CollectorCard[]) || []);
     setActiveFrame(data.activeFrame);
-    // Properly cast to string[] and handle potential undefined from older data; resolves reported unknown[] inference errors
-    const framesData = (data.unlockedFrames as string[]) || [];
+    // Cast to string[] explicitly to avoid unknown[] inference issues from parsed JSON data
+    const framesData: string[] = (data.unlockedFrames as unknown as string[]) || [];
     setUnlockedFrames(framesData);
     setUserProfile(data.profile || { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' });
     setCustomThemes(data.customThemes || []);
@@ -502,8 +502,8 @@ export const App: React.FC = () => {
                 unlockedThemes={unlockedThemes} 
                 currentPoints={stats.points || 0} 
                 activeFrame={activeFrame} 
-                // Fix: Pass accurately typed string[] to StoreView; resolves reported assignment error
-                unlockedFrames={unlockedFrames} 
+                // Explicitly cast to string[] to resolve inference mismatch with unknown[]
+                unlockedFrames={unlockedFrames as string[]} 
                 onSetFrame={(f) => { setActiveFrame(f); if(currentUser) updateUserData(currentUser.username, { activeFrame: f }); }} 
                 onUnlockFrame={()=>{}} 
                 activeSkin={activeSkin} 
