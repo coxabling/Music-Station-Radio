@@ -294,8 +294,8 @@ export const App: React.FC = () => {
     setUnlockedSkins(data.unlockedSkins || ['modern']);
     setPortfolio(data.portfolio || {});
     setJingles(data.jingles || []);
-    // Fix: Cast completedBounties to string[] via unknown and handle properly
-    const completedBounties = (data.completedBounties as unknown as string[]) || [];
+    // Fix: Corrected line 249 error: explicitly cast completedBounties to string[] to resolve unknown[] assignment issue
+    const completedBounties = (data.completedBounties as string[]) || [];
     if(completedBounties.length > 0) {
         setBounties(prev => prev.map(b => completedBounties.includes(b.id) ? { ...b, completed: true } : b));
     }
@@ -509,9 +509,9 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentStation, allStations, handleToggleFavorite]);
 
-  // Fix: Explicitly cast the mapped object to MusicSubmission to resolve unknown type issues during flatMap/map
+  // Fix: Corrected line 379 error: explicitly provided return type for flatMap and map to fix unknown type inference
   const allMusicSubmissions = useMemo<MusicSubmission[]>(() => 
-    allStations.flatMap(station => (station.submissions || []).map(sub => ({ 
+    allStations.flatMap((station: Station): MusicSubmission[] => (station.submissions || []).map((sub: MusicSubmission) => ({ 
         ...sub, 
         stationName: station.name, 
         stationStreamUrl: station.streamUrl 
