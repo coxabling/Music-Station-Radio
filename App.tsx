@@ -270,13 +270,13 @@ export const App: React.FC = () => {
         handleLogout();
         return;
     }
-    const favUrls = new Set<string>((data.favoriteStationUrls as unknown as string[]) || []);
+    const favUrls = new Set<string>((data.favoriteStationUrls as string[]) || []);
     const user: User = { username, role: data.role };
     setCurrentUser(user);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
-    // Fix: Robust casting for ThemeName array from unknown source
-    setUnlockedThemes(new Set<ThemeName>((data.unlockedThemes as unknown as ThemeName[]) || []));
+    // Fix: Explicitly cast array type to satisfy union string[] or generic types
+    setUnlockedThemes(new Set<ThemeName>((data.unlockedThemes as ThemeName[]) || []));
     setStats(data.stats as ListeningStats);
     setAlarm(data.alarm);
     setSongVotes(data.songVotes);
@@ -284,18 +284,16 @@ export const App: React.FC = () => {
     setQuests(data.quests || INITIAL_QUESTS);
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
-    // Fix in App.tsx on line 249: Type 'unknown[]' is not assignable to type 'string[]'. Explicitly cast to string[] via unknown.
-    setUnlockedFrames(((data.unlockedFrames as unknown) as string[]) || []);
+    // Fix line 249: Explicitly cast unlockedFrames as string[] to resolve unknown[] assignment issues
+    setUnlockedFrames((data.unlockedFrames as string[]) || []);
     const profileData: UserProfile = (data.profile as UserProfile) || { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' };
     setUserProfile(profileData);
     setCustomThemes(data.customThemes || []);
     setActiveSkin(data.activeSkin || 'modern');
-    // Fix: Explicitly cast unlockedSkins to SkinID[]
-    setUnlockedSkins((data.unlockedSkins as unknown as SkinID[]) || ['modern']);
+    setUnlockedSkins((data.unlockedSkins as SkinID[]) || ['modern']);
     setPortfolio(data.portfolio || {});
     setJingles(data.jingles || []);
-    // Fix: Explicitly cast completedBounties to string[] to resolve unknown[] assignment issues
-    const completedBounties = (data.completedBounties as unknown as string[]) || [];
+    const completedBounties = (data.completedBounties as string[]) || [];
     if(completedBounties.length > 0) {
         setBounties(prev => prev.map(b => completedBounties.includes(b.id) ? { ...b, completed: true } : b));
     }
@@ -508,20 +506,19 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentStation, allStations, handleToggleFavorite]);
 
-  // Fix in App.tsx on line 378: Type 'unknown[]' is not assignable to type 'string[]'. Type 'unknown' is not assignable to type 'string'.
-  // Rewriting the flatMap chain to avoid complex inference issues and ensuring a safe MusicSubmission[] return.
+  // Fix line 379: Type 'unknown[]' is not assignable to type 'string[]'. Type 'unknown' is not assignable to type 'string'.
+  // Ensuring station.submissions is explicitly cast and mapping results to string to satisfy interface requirements.
   const allMusicSubmissions = useMemo<MusicSubmission[]>(() => {
     const subs: MusicSubmission[] = [];
     allStations.forEach((station: Station) => {
-        if (station.submissions) {
-            station.submissions.forEach((sub: MusicSubmission) => {
-                subs.push({
-                    ...sub,
-                    stationName: station.name,
-                    stationStreamUrl: station.streamUrl
-                });
+        const submissions = (station.submissions as MusicSubmission[]) || [];
+        submissions.forEach((sub: MusicSubmission) => {
+            subs.push({
+                ...sub,
+                stationName: station.name as string,
+                stationStreamUrl: station.streamUrl as string
             });
-        }
+        });
     });
     return subs;
   }, [allStations]);
