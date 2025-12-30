@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -11,9 +10,9 @@
     <meta name="referrer" content="strict-origin-when-cross-origin">
 
     <!-- SEO -->
-    <title>Music Station Radio | Premium Global Audio Platform</title>
-    <meta name="description" content="Tune in to Music Station Radio. Discover thousands of live radio stations with our modern, AI-enhanced web player. Your next favorite song is playing now." />
-    <meta name="keywords" content="Online Radio, Music Station Radio, Music Streaming, Web Radio, Radio Player, Live Radio, Afropop, Reggae, World Music, Free Radio" />
+    <title>High Grade Radio | Music Station Syndicate</title>
+    <meta name="description" content="Tune in to High Grade Radio on the Music Station Syndicate platform. Discover thousands of live radio stations with our modern, AI-enhanced web player." />
+    <meta name="keywords" content="Online Radio, High Grade Radio, Music Station Radio, Music Streaming, Web Radio, Live Radio, Reggae, Dancehall, World Music" />
     <link rel="canonical" href="https://musicstationradio.com/" />
 
     <!-- AdTonos Integration -->
@@ -22,14 +21,14 @@
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://musicstationradio.com/" />
-    <meta property="og:title" content="Music Station Radio | Stream Your Favorite Genres" />
+    <meta property="og:title" content="High Grade Radio | Premium Global Audio" />
     <meta property="og:description" content="The pinnacle of independent broadcasting. High-fidelity streams and global community." />
     <meta property="og:image" content="https://storage.googleapis.com/aistudio-hosting/public-assets/music-station-radio-social-card.png" />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="https://musicstationradio.com/" />
-    <meta property="twitter:title" content="Music Station Radio | Premium Global Music Station" />
+    <meta property="twitter:title" content="High Grade Radio | Premium Global Music" />
     <meta property="twitter:description" content="Tune in to a world of music with our AI-enhanced web player." />
     <meta property="twitter:image" content="https://storage.googleapis.com/aistudio-hosting/public-assets/music-station-radio-social-card.png" />
 
@@ -41,7 +40,7 @@
     <link rel="apple-touch-icon" href="/icon-192x192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Music Station">
+    <meta name="apple-mobile-web-app-title" content="High Grade Radio">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -49,7 +48,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     
     <script>
-      // Force dark mode on page load to prevent FOUC
       document.documentElement.classList.add('dark');
     </script>
     
@@ -58,7 +56,7 @@
     {
       "@context": "https://schema.org",
       "@type": "RadioBroadcastService",
-      "name": "Music Station Radio",
+      "name": "High Grade Radio",
       "description": "A premium online radio streaming service featuring a diverse collection of music genres from around the world.",
       "provider": {
         "@type": "Organization",
@@ -83,6 +81,27 @@
       .accent-color-text { color: var(--accent-color); }
       .accent-color-border { border-color: var(--accent-color); }
       .accent-color-bg { background-color: var(--accent-color); }
+
+      /* Animation for featured cards */
+      @keyframes shine {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+      .featured-shine::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          to right,
+          transparent 0%,
+          rgba(255, 255, 255, 0.1) 50%,
+          transparent 100%
+        );
+        animation: shine 3s infinite;
+      }
     </style>
   <script type="importmap">
 {
