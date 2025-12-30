@@ -275,9 +275,8 @@ export const App: React.FC = () => {
     setCurrentUser(user);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
-    // Fix: Use unknown cast to avoid assignment issues from data source
+    // Fix: Using unknown cast for data incoming from potentially inconsistent JSON storage
     setUnlockedThemes(new Set<ThemeName>((data.unlockedThemes as unknown as ThemeName[]) || []));
-    // Fix: Cast stats to ListeningStats
     setStats(data.stats as ListeningStats);
     setAlarm(data.alarm);
     setSongVotes(data.songVotes);
@@ -285,7 +284,7 @@ export const App: React.FC = () => {
     setQuests(data.quests || INITIAL_QUESTS);
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
-    // Fix: Explicitly cast to string[] via unknown to satisfy compiler
+    // Fix: Explicitly cast to string[] via unknown to satisfy compiler for unknown JSON sources
     setUnlockedFrames((data.unlockedFrames as unknown as string[]) || []);
     const profileData: UserProfile = (data.profile as UserProfile) || { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' };
     setUserProfile(profileData);
@@ -294,8 +293,8 @@ export const App: React.FC = () => {
     setUnlockedSkins(data.unlockedSkins || ['modern']);
     setPortfolio(data.portfolio || {});
     setJingles(data.jingles || []);
-    // Fix: Corrected line 249 error: explicitly cast completedBounties to string[] to resolve unknown[] assignment issue
-    const completedBounties = (data.completedBounties as string[]) || [];
+    // Fix: Explicitly cast completedBounties to string[] to resolve unknown[] assignment issues
+    const completedBounties = (data.completedBounties as unknown as string[]) || [];
     if(completedBounties.length > 0) {
         setBounties(prev => prev.map(b => completedBounties.includes(b.id) ? { ...b, completed: true } : b));
     }
@@ -441,7 +440,6 @@ export const App: React.FC = () => {
       if (currentUser && username === currentUser.username) setTargetUserProfile(userProfile || undefined);
       else {
           const data = await getUserData(username);
-          // Fix: Explicitly cast profile data to UserProfile
           if (data) setTargetUserProfile((data.profile as UserProfile) || { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' });
       }
   }, [currentUser, userProfile]);
@@ -509,13 +507,13 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentStation, allStations, handleToggleFavorite]);
 
-  // Fix: Corrected line 379 error: explicitly provided return type for flatMap and map to fix unknown type inference
+  // Fix: Explicitly cast the flatMap result to MusicSubmission[] to resolve unknown inference issues
   const allMusicSubmissions = useMemo<MusicSubmission[]>(() => 
-    allStations.flatMap((station: Station): MusicSubmission[] => (station.submissions || []).map((sub: MusicSubmission) => ({ 
+    (allStations.flatMap((station: Station) => (station.submissions || []).map((sub: MusicSubmission) => ({ 
         ...sub, 
         stationName: station.name, 
         stationStreamUrl: station.streamUrl 
-    } as MusicSubmission)))
+    }))) as unknown as MusicSubmission[])
   , [allStations]);
 
   const renderActiveView = () => {

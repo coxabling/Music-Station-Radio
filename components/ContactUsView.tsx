@@ -54,7 +54,7 @@ export const ContactUsView: React.FC<ContactUsViewProps> = ({ onSuccess }) => {
                                     </div>
                                     <div>
                                         <p className="text-xs font-black uppercase tracking-widest text-gray-500 mb-1">Email Us</p>
-                                        <p className="text-white font-bold text-lg">support@music-station.live</p>
+                                        <p className="text-white font-bold text-lg">support@musicstationradio.com</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-4 group">
