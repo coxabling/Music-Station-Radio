@@ -35,4 +35,4 @@ resetdigital.co, 196, RESELLER
 pilotx.tv, 4468, RESELLER, 77f6f7d81cd87ce7
 data-fusion.io, 4468, RESELLER
 video.unrulymedia.com, 919490605, RESELLER
-sabio.us, 100178, RESELLER, 96ed93aaa97957
+sabio.us, 100178, RESELLER, 96ed93aaa9795702
