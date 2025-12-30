@@ -246,7 +246,7 @@ export const App: React.FC = () => {
               setToasts(t => [...t, { id: Date.now(), title: 'Added to Favorites', icon: HeartIcon, type: 'success' }]);
                if (newSet.size === 1) unlockAchievement('curator');
           }
-          if (currentUser) updateUserData(currentUser.username, { favoriteStationUrls: Array.from(newSet) });
+          if (currentUser) updateUserData(currentUser.username, { favoriteStationUrls: Array.from(newSet) as string[] });
           return newSet;
       });
       setAllStations(prev => prev.map(s => s.streamUrl === station.streamUrl ? { ...s, isFavorite: !s.isFavorite } : s));
@@ -275,7 +275,6 @@ export const App: React.FC = () => {
     setCurrentUser(user);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
-    // Fix: Explicitly cast array type to satisfy union string[] or generic types
     setUnlockedThemes(new Set<ThemeName>((data.unlockedThemes as ThemeName[]) || []));
     setStats(data.stats as ListeningStats);
     setAlarm(data.alarm);
@@ -284,7 +283,6 @@ export const App: React.FC = () => {
     setQuests(data.quests || INITIAL_QUESTS);
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
-    // Fix line 249: Explicitly cast unlockedFrames as string[] to resolve unknown[] assignment issues
     setUnlockedFrames((data.unlockedFrames as string[]) || []);
     const profileData: UserProfile = (data.profile as UserProfile) || { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' };
     setUserProfile(profileData);
@@ -374,7 +372,7 @@ export const App: React.FC = () => {
       newUnlocked.add(theme.name);
       setStats(prev => ({ ...prev, points: newPoints }));
       setUnlockedThemes(newUnlocked);
-      updateUserData(currentUser.username, { stats: { ...stats, points: newPoints }, unlockedThemes: Array.from(newUnlocked) });
+      updateUserData(currentUser.username, { stats: { ...stats, points: newPoints }, unlockedThemes: Array.from(newUnlocked) as ThemeName[] });
       setToasts(t => [...t, { id: Date.now(), title: 'Theme Unlocked!', message: `You purchased ${theme.displayName}`, icon: StarIcon, type: 'theme_unlocked' }]);
     } else setToasts(t => [...t, { id: Date.now(), title: 'Insufficient Points', message: `Need ${theme.cost - currentPoints} more points.`, icon: LockIcon, type: 'error' }]);
   };
@@ -506,8 +504,6 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentStation, allStations, handleToggleFavorite]);
 
-  // Fix line 379: Type 'unknown[]' is not assignable to type 'string[]'. Type 'unknown' is not assignable to type 'string'.
-  // Ensuring station.submissions is explicitly cast and mapping results to string to satisfy interface requirements.
   const allMusicSubmissions = useMemo<MusicSubmission[]>(() => {
     const subs: MusicSubmission[] = [];
     allStations.forEach((station: Station) => {
