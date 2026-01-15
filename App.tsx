@@ -66,6 +66,8 @@ export const App: React.FC = () => {
   const [activeView, setActiveView] = useState<ActiveView>('explore');
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
 
+  // Default to High Grade Radio on entry
+  const highGradeStation = useMemo(() => defaultStations.find(s => s.name === "High Grade Radio") || defaultStations[0], []);
   const [currentStation, setCurrentStation] = useState<Station | null>(null);
   const [stationForDetail, setStationForDetail] = useState<Station | null>(null);
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
@@ -79,7 +81,7 @@ export const App: React.FC = () => {
   const [backgrounds, setBackgrounds] = useState<[string | null, string | null]>([null, null]);
   const [activeBgIndex, setActiveBgIndex] = useState(0);
   
-  const [albumArtColor, setAlbumArtColor] = useState('#67e8f9');
+  const [albumArtColor, setAlbumArtColor] = useState('#facc15');
   const [activeTheme, setActiveTheme] = useState<ThemeName>('dynamic');
 
   const [allStations, setAllStations] = useState<Station[]>(defaultStations);
@@ -103,7 +105,7 @@ export const App: React.FC = () => {
   const [targetUserProfile, setTargetUserProfile] = useState<UserProfile | undefined>(undefined);
 
   const [favoriteStationUrls, setFavoriteStationUrls] = useState<Set<string>>(new Set<string>());
-  const [unlockedThemes, setUnlockedThemes] = useState<Set<ThemeName>>(new Set(['dynamic']));
+  const [unlockedThemes, setUnlockedThemes] = useState<Set<ThemeName>>(new Set(['dynamic', 'reggae']));
 
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isImmersiveMode, setIsImmersiveMode] = useState(false);
@@ -145,7 +147,7 @@ export const App: React.FC = () => {
 
   const accentColor = useMemo(() => {
     if (activeTheme === 'dynamic') return albumArtColor;
-    return currentThemeObj?.color || '#67e8f9';
+    return currentThemeObj?.color || '#facc15';
   }, [activeTheme, albumArtColor, currentThemeObj]);
   
   const rgbComponents = useMemo(() => {
@@ -274,7 +276,7 @@ export const App: React.FC = () => {
     setCurrentUser(user);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
-    setUnlockedThemes(new Set<ThemeName>((data.unlockedThemes as ThemeName[]) || []));
+    setUnlockedThemes(new Set<ThemeName>((data.unlockedThemes as ThemeName[]) || ['dynamic', 'reggae']));
     setStats(data.stats as ListeningStats);
     setAlarm(data.alarm);
     setSongVotes(data.songVotes);
@@ -296,7 +298,13 @@ export const App: React.FC = () => {
     }
     setActiveView('explore');
     setIsDataLoading(false);
-  }, [handleLogout]);
+
+    // Auto-select flagship station for new or returning users
+    if (!currentStation) {
+        setCurrentStation(highGradeStation);
+        setStationForDetail(highGradeStation);
+    }
+  }, [handleLogout, highGradeStation, currentStation]);
 
   useEffect(() => {
       let storedUser: { username: string } | null = null;
@@ -347,8 +355,8 @@ export const App: React.FC = () => {
     setNowPlaying(nowPlayingUpdate);
     const newArt = nowPlayingUpdate?.albumArt || null;
     if (newArt) {
-      getDominantColor(newArt).then(color => setAlbumArtColor(color)).catch(() => setAlbumArtColor('#67e8f9'));
-    } else setAlbumArtColor('#67e8f9');
+      getDominantColor(newArt).then(color => setAlbumArtColor(color)).catch(() => setAlbumArtColor('#facc15'));
+    } else setAlbumArtColor('#facc15');
     if (currentThemeObj?.backgroundImage) {
          setBackgrounds([currentThemeObj.backgroundImage, null]);
          return;

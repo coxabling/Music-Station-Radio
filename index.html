@@ -5,31 +5,31 @@
     <link rel="icon" type="image/png" href="/icon-192x192.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
-    <!-- Security Headers (Meta-based) -->
+    <!-- Security Headers -->
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <meta name="referrer" content="strict-origin-when-cross-origin">
 
-    <!-- SEO -->
+    <!-- SEO & Integration -->
     <title>High Grade Radio | Music Station Syndicate</title>
-    <meta name="description" content="Tune in to High Grade Radio on the Music Station Syndicate platform. Discover thousands of live radio stations with our modern, AI-enhanced web player." />
-    <meta name="keywords" content="Online Radio, High Grade Radio, Music Station Radio, Music Streaming, Web Radio, Live Radio, Reggae, Dancehall, World Music" />
+    <meta name="description" content="Experience High Grade Radio: The pinnacle of independent broadcasting. Discover high-fidelity streams and a global community on the Music Station Syndicate." />
+    <meta name="keywords" content="Online Radio, High Grade Radio, Music Station Radio, Reggae, Dancehall, AI Radio Player, Global Music" />
     <link rel="canonical" href="https://musicstationradio.com/" />
 
-    <!-- AdTonos Integration -->
+    <!-- AdTonos Integration Tracking Script -->
     <script async defer src="https://cookie.adtonos.com/attc-ysJP87JREcdxL3BEz.min.js"></script>
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://musicstationradio.com/" />
     <meta property="og:title" content="High Grade Radio | Premium Global Audio" />
-    <meta property="og:description" content="The pinnacle of independent broadcasting. High-fidelity streams and global community." />
+    <meta property="og:description" content="The world's highest grade independent radio station. Tune in for high-fidelity rhythms." />
     <meta property="og:image" content="https://storage.googleapis.com/aistudio-hosting/public-assets/music-station-radio-social-card.png" />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="https://musicstationradio.com/" />
-    <meta property="twitter:title" content="High Grade Radio | Premium Global Music" />
-    <meta property="twitter:description" content="Tune in to a world of music with our AI-enhanced web player." />
+    <meta property="twitter:title" content="High Grade Radio | Global Music Station" />
+    <meta property="twitter:description" content="Tune in to a world of high-grade music with our AI-enhanced player." />
     <meta property="twitter:image" content="https://storage.googleapis.com/aistudio-hosting/public-assets/music-station-radio-social-card.png" />
 
     <!-- PWA -->
@@ -51,21 +51,6 @@
       document.documentElement.classList.add('dark');
     </script>
     
-    <!-- Structured Data -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "RadioBroadcastService",
-      "name": "High Grade Radio",
-      "description": "A premium online radio streaming service featuring a diverse collection of music genres from around the world.",
-      "provider": {
-        "@type": "Organization",
-        "name": "Music Station Syndicate",
-        "url": "https://musicstationradio.com/"
-      },
-      "url": "https://musicstationradio.com/"
-    }
-    </script>
     <style>
       :root {
         --accent-color: #facc15;
@@ -82,7 +67,6 @@
       .accent-color-border { border-color: var(--accent-color); }
       .accent-color-bg { background-color: var(--accent-color); }
 
-      /* Animation for featured cards */
       @keyframes shine {
         0% { transform: translateX(-100%); }
         100% { transform: translateX(100%); }
@@ -118,18 +102,5 @@
   <body class="dark selection:bg-yellow-500 selection:text-black">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then(registration => {
-              console.log('ServiceWorker registration successful');
-            })
-            .catch(error => {
-              console.log('ServiceWorker registration failed');
-            });
-        });
-      }
-    </script>
   </body>
 </html>
