@@ -44,9 +44,11 @@ export interface ChatMessage {
   avatarColor: string;
   initials: string;
   frame?: string; 
-  badges?: AchievementID[]; // New
-  tier?: 'bronze' | 'silver' | 'gold'; // New
-  avatarUrl?: string; // New: Custom avatar URL
+  badges?: AchievementID[]; 
+  tier?: 'bronze' | 'silver' | 'gold'; 
+  avatarUrl?: string; 
+  isSuperChat?: boolean; // New
+  superChatAmount?: number; // New
 }
 
 // Types for Visualizer Customization
@@ -249,6 +251,7 @@ export interface Quest {
   goal: number;
   reward: number;
   isClaimed: boolean;
+  type: 'daily' | 'weekly'; // New
 }
 
 // New Features Types

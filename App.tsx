@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -22,7 +23,7 @@ import { AdminDashboardView } from './components/AdminDashboardView';
 import { StationManagerDashboardView } from './components/StationManagerDashboardView';
 import { ArtistDashboardView } from './components/ArtistDashboardView';
 import { RightPanel } from './components/RightPanel';
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, BOUNTIES, ShieldCheckIcon, UploadIcon, CheckCircleIcon, XCircleIcon, MusicNoteIcon } from './constants';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, CARDS_DB, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, BOUNTIES, ShieldCheckIcon, UploadIcon, CheckCircleIcon, XCircleIcon, MusicNoteIcon, CollectionIcon, TrophyIcon } from './constants';
 import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, CollectorCard, Lounge, UserProfile, AvatarFrame, SkinID, Bounty, Jingle, PlayerSkin, GuestbookEntry, Quest } from './types';
 import { getDominantColor } from './utils/colorExtractor';
 import { LandingPage } from './components/LandingPage';
@@ -100,6 +101,10 @@ export const App: React.FC = () => {
   const [stationToClaim, setStationToClaim] = useState<Station | null>(null);
   const [isBuyNowModalOpen, setIsBuyNowModalOpen] = useState(false);
   const [isJingleModalOpen, setIsJingleModalOpen] = useState(false);
+  const [isPredictionMarketOpen, setIsPredictionMarketOpen] = useState(false);
+  const [isCollectionOpen, setIsCollectionOpen] = useState(false);
+  const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
+  const [targetGiftUser, setTargetGiftUser] = useState<string | null>(null);
 
   const [viewingProfile, setViewingProfile] = useState<string | null>(null);
   const [targetUserProfile, setTargetUserProfile] = useState<UserProfile | undefined>(undefined);
@@ -116,6 +121,7 @@ export const App: React.FC = () => {
   const [unlockedAchievements, setUnlockedAchievements] = useState<Record<string, UnlockedAchievement>>({});
   const [quests, setQuests] = useState<Quest[]>(INITIAL_QUESTS);
   const [collection, setCollection] = useState<CollectorCard[]>([] as CollectorCard[]);
+  const [activeBets, setActiveBets] = useState<Bet[]>([]);
   
   const [activeFrame, setActiveFrame] = useState<string | undefined>(undefined);
   const [unlockedFrames, setUnlockedFrames] = useState<string[]>([]);
@@ -159,6 +165,7 @@ export const App: React.FC = () => {
       };
   }, [accentColor]);
 
+  // Initial Data Loading
   useEffect(() => {
     const initStations = async () => {
         const browserStations = await fetchRadioBrowserStations(100);
@@ -173,6 +180,7 @@ export const App: React.FC = () => {
     initStations();
   }, []);
 
+  // Listen Time & Quest Progress tracking
   useEffect(() => {
     if (currentStation && isPlaying && currentUser) {
         statsUpdateInterval.current = window.setInterval(() => {
@@ -187,6 +195,27 @@ export const App: React.FC = () => {
                 }
                 return next;
             });
+
+            // Quest Logic: Track Listen Time Quest (Daily Tune-In)
+            setQuests(prev => prev.map(q => {
+                if (q.id === 'q1' && !q.isClaimed) {
+                    const newProgress = Math.min(q.goal, q.progress + 1);
+                    if (newProgress === q.goal && q.progress < q.goal) {
+                        setToasts(t => [...t, { id: Date.now(), title: 'Quest Complete!', message: q.title, icon: StarIcon, type: 'milestone' }]);
+                    }
+                    return { ...q, progress: newProgress };
+                }
+                return q;
+            }));
+
+            // Random Card Drop (1% chance every minute of listening)
+            if (Math.random() < 0.01) {
+                const randomCard = CARDS_DB[Math.floor(Math.random() * CARDS_DB.length)];
+                const newCard: CollectorCard = { ...randomCard, id: `card_${Date.now()}`, acquiredAt: new Date().toISOString() };
+                setCollection(prev => [...prev, newCard]);
+                setToasts(t => [...t, { id: Date.now(), title: 'New Collector Card!', message: `You found a ${newCard.name}!`, icon: CollectionIcon, type: 'achievement' }]);
+                setIsCoinActive(true);
+            }
         }, 1000);
     } else {
         if (statsUpdateInterval.current) clearInterval(statsUpdateInterval.current);
@@ -198,61 +227,100 @@ export const App: React.FC = () => {
 
   useEffect(() => {
       if (currentUser && stats.totalTime > 0 && stats.totalTime % 10 === 0) {
-          updateUserData(currentUser.username, { stats });
+          updateUserData(currentUser.username, { stats, quests, collection });
       }
-  }, [stats.totalTime, currentUser, stats]);
+  }, [stats.totalTime, currentUser, stats, quests, collection]);
 
-  useEffect(() => {
-      if (!nowPlaying || !currentUser) return;
-      const activeBounties = bounties.filter(b => !b.completed);
-      activeBounties.forEach(bounty => {
-          let matched = false;
-          if (bounty.targetType === 'artist' && nowPlaying.artist.toLowerCase().includes(bounty.targetValue.toLowerCase())) matched = true;
-          if (bounty.targetType === 'station' && currentStation?.name.toLowerCase().includes(bounty.targetValue.toLowerCase())) matched = true;
-          if (bounty.targetType === 'genre' && currentStation?.genre.toLowerCase().includes(bounty.targetValue.toLowerCase())) matched = true;
+  // Quests & Betting Handlers
+  const handleClaimQuest = useCallback((questId: string) => {
+      const quest = quests.find(q => q.id === questId);
+      if (!quest || quest.progress < quest.goal || quest.isClaimed) return;
 
-          if (matched) {
-              const newBounties = bounties.map(b => b.id === bounty.id ? { ...b, completed: true } : b);
-              setBounties(newBounties);
-              const newPoints = (stats.points || 0) + bounty.reward;
-              setStats(prev => ({ ...prev, points: newPoints }));
-              updateUserData(currentUser.username, { stats: { ...stats, points: newPoints }, completedBounties: newBounties.filter(b => b.completed).map(b => b.id) });
-              setToasts(t => [...t, { id: Date.now(), title: 'Bounty Complete!', message: `Earned ${bounty.reward} pts`, icon: StarIcon, type: 'success' }]);
-          }
-      });
-  }, [nowPlaying, currentStation, bounties, currentUser, stats]);
+      const newPoints = (stats.points || 0) + quest.reward;
+      setStats(prev => ({ ...prev, points: newPoints }));
+      setQuests(prev => prev.map(q => q.id === questId ? { ...q, isClaimed: true } : q));
+      setToasts(t => [...t, { id: Date.now(), title: 'Reward Claimed!', message: `Earned ${quest.reward} pts`, icon: StarIcon, type: 'success' }]);
+      setIsCoinActive(true);
+  }, [quests, stats]);
 
-  const unlockAchievement = useCallback((achievementId: AchievementID) => {
-    if (!currentUser) return;
-    setUnlockedAchievements(prev => {
-      if (prev[achievementId]) return prev;
-      const achievement = ACHIEVEMENTS[achievementId];
-      if (!achievement) return prev;
-      const newUnlocked: Record<string, UnlockedAchievement> = { ...prev, [achievementId]: { id: achievementId, unlockedAt: new Date().toISOString() }};
-      updateUserData(currentUser.username, { unlockedAchievements: newUnlocked });
-      setToasts(prevToasts => [...prevToasts, { id: Date.now(), title: achievement.name, icon: achievement.icon, type: 'achievement' }]);
-      return newUnlocked;
+  const handlePlaceBet = useCallback((songTitle: string, artist: string, amount: number, odds: number) => {
+      if (!currentUser || (stats.points || 0) < amount) return;
+      
+      const newBet: Bet = {
+          id: `bet_${Date.now()}`,
+          songTitle,
+          artist,
+          amount,
+          odds,
+          potentialPayout: Math.floor(amount * odds),
+          placedAt: new Date().toISOString(),
+          status: 'pending'
+      };
+
+      const newPoints = (stats.points || 0) - amount;
+      setStats(prev => ({ ...prev, points: newPoints }));
+      setActiveBets(prev => [...prev, newBet]);
+      setToasts(t => [...t, { id: Date.now(), title: 'Wager Placed!', message: `You bet ${amount} on ${songTitle}`, icon: FireIcon, type: 'info' }]);
+  }, [currentUser, stats.points]);
+
+  const handleSendSuperChat = useCallback((amount: number, message: string) => {
+      if (!currentUser || (stats.points || 0) < amount) return;
+      const newPoints = (stats.points || 0) - amount;
+      setStats(prev => ({ ...prev, points: newPoints }));
+      // Super chat is handled by the component adding a special message type
+      setToasts(t => [...t, { id: Date.now(), title: 'Super Chat Sent!', icon: StarIcon, type: 'points' }]);
+  }, [currentUser, stats.points]);
+
+  const handleSendGift = useCallback((amount: number, recipient: string) => {
+      if (!currentUser || (stats.points || 0) < amount) return;
+      const newPoints = (stats.points || 0) - amount;
+      setStats(prev => ({ ...prev, points: newPoints }));
+      setToasts(t => [...t, { id: Date.now(), title: 'Gift Dispatched!', message: `Sent ${amount} points to ${recipient}`, icon: StarIcon, type: 'success' }]);
+  }, [currentUser, stats.points]);
+
+  // Navigation Logic
+  const handleBackToHome = useCallback(() => {
+      setActiveView('explore');
+  }, []);
+
+  /* Fix: Added handleToggleFavorite function to manage favoriting stations and persisting to storage. */
+  const handleToggleFavorite = useCallback(async (station: Station) => {
+    if (!currentUser) {
+      setIsLoginModalOpen(true);
+      return;
+    }
+
+    const streamUrl = station.streamUrl;
+    const isCurrentlyFavorite = favoriteStationUrls.has(streamUrl);
+
+    const nextFavorites = new Set(favoriteStationUrls);
+    if (isCurrentlyFavorite) {
+      nextFavorites.delete(streamUrl);
+    } else {
+      nextFavorites.add(streamUrl);
+    }
+
+    setFavoriteStationUrls(nextFavorites);
+    
+    setAllStations(prev => prev.map(s => 
+      s.streamUrl === streamUrl ? { ...s, isFavorite: !isCurrentlyFavorite } : s
+    ));
+    setUserStations(prev => prev.map(s => 
+      s.streamUrl === streamUrl ? { ...s, isFavorite: !isCurrentlyFavorite } : s
+    ));
+
+    await updateUserData(currentUser.username, { 
+      favoriteStationUrls: Array.from(nextFavorites) 
     });
-  }, [currentUser]);
 
-  const handleToggleFavorite = useCallback((station: Station) => {
-      setFavoriteStationUrls(prev => {
-          const newSet = new Set(prev);
-          const isFav = newSet.has(station.streamUrl);
-          if (isFav) {
-              newSet.delete(station.streamUrl);
-              setToasts(t => [...t, { id: Date.now(), title: 'Removed from Favorites', icon: HeartIcon, type: 'info' }]);
-          } else {
-              newSet.add(station.streamUrl);
-              setToasts(t => [...t, { id: Date.now(), title: 'Added to Favorites', icon: HeartIcon, type: 'success' }]);
-               if (newSet.size === 1) unlockAchievement('curator');
-          }
-          if (currentUser) updateUserData(currentUser.username, { favoriteStationUrls: Array.from(newSet) as string[] });
-          return newSet;
-      });
-      setAllStations(prev => prev.map(s => s.streamUrl === station.streamUrl ? { ...s, isFavorite: !s.isFavorite } : s));
-      setStationForDetail(prev => (prev?.streamUrl === station.streamUrl ? { ...prev, isFavorite: !prev.isFavorite } : prev));
-  }, [currentUser, unlockAchievement]);
+    setToasts(t => [...t, { 
+      id: Date.now(), 
+      title: isCurrentlyFavorite ? 'Removed from Favorites' : 'Added to Favorites', 
+      message: station.name, 
+      icon: HeartIcon, 
+      type: 'success' 
+    }]);
+  }, [currentUser, favoriteStationUrls]);
 
   const handleLogout = useCallback(() => {
     setCurrentStation(null);
@@ -299,7 +367,6 @@ export const App: React.FC = () => {
     setActiveView('explore');
     setIsDataLoading(false);
 
-    // Auto-select flagship station for new or returning users
     if (!currentStation) {
         setCurrentStation(highGradeStation);
         setStationForDetail(highGradeStation);
@@ -431,6 +498,14 @@ export const App: React.FC = () => {
         newUserVotes[songId] = voteType;
         if (voteType === 'like') newSongVotes[songId].likes++;
         else newSongVotes[songId].dislikes++;
+        
+        // Quest Logic: Check Vibe Check Quest
+        setQuests(prev => prev.map(q => {
+            if (q.id === 'q3' && !q.isClaimed && voteType === 'like') {
+                return { ...q, progress: Math.min(q.goal, q.progress + 1) };
+            }
+            return q;
+        }));
     }
     setSongVotes(newSongVotes);
     setStats({ ...newStats, songUserVotes: newUserVotes });
@@ -448,7 +523,6 @@ export const App: React.FC = () => {
       }
   }, [currentUser, userProfile]);
 
-  // handleClaimOwnership - Fixed name to match line 711 usage
   const handleClaimOwnership = useCallback((station: Station, reason: string) => {
       if (!currentUser) return;
       setAllStations(prev => prev.map(s => s.streamUrl === station.streamUrl ? { ...s, claimRequest: { username: currentUser.username, reason, submittedAt: new Date().toISOString() } } : s));
@@ -491,10 +565,6 @@ export const App: React.FC = () => {
       setIsEditModalOpen(false);
       setToasts(t => [...t, { id: Date.now(), title: 'Station Updated!', icon: ShieldCheckIcon, type: 'success' }]);
   }, [currentUser, userStations]);
-
-  const handleBackToHome = useCallback(() => {
-      setActiveView('explore');
-  }, []);
 
   // --- Administrative Functions ---
   const handleApproveClaim = useCallback(async (station: Station, claimantUsername: string) => {
@@ -632,7 +702,7 @@ export const App: React.FC = () => {
       case 'leaderboard': 
         return <LeaderboardView currentUser={currentUser} userPoints={stats.points || 0} onBack={handleBackToHome} />;
       case 'dashboard': 
-        return <DashboardView user={currentUser} stats={stats} favoritesCount={favoriteStationUrls.size} unlockedAchievements={unlockedAchievements} onBack={handleBackToHome} />;
+        return <DashboardView user={currentUser} stats={stats} favoritesCount={favoriteStationUrls.size} unlockedAchievements={unlockedAchievements} onBack={handleBackToHome} quests={quests} onClaimQuest={handleClaimQuest} />;
       case 'help': 
         return <HelpFAQ onContactClick={() => setActiveView('contact')} onBack={handleBackToHome} />;
       case 'contact':
@@ -691,7 +761,7 @@ export const App: React.FC = () => {
         <div className={`relative text-gray-200 flex flex-col h-full transition-[padding-top] duration-300 ${isHeaderVisible && !isImmersiveMode ? 'pt-16' : 'pt-0'}`}>
             <Header currentUser={currentUser} onLogout={handleLogout} points={stats.points || 0} onGoToHome={() => setActiveView('dashboard')} isVisible={isHeaderVisible && !isImmersiveMode} customAvatarUrl={currentUser?.profile?.customAvatarUrl} />
             <div className={`flex flex-1 overflow-hidden transition-opacity duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-                {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModal(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} onOpenStockMarket={() => {}} />}
+                {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModal(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} onOpenStockMarket={() => setIsPredictionMarketOpen(true)} onOpenCollection={() => setIsCollectionOpen(true)} />}
                 <main id="main-content" className="flex-1 overflow-y-auto pb-24">{renderActiveView()}</main>
                 <RightPanel station={stationForDetail} currentStation={currentStation} allStations={allStations} currentUser={currentUser} stats={stats} onAddReview={() => {}} onSelectStation={handleSelectStation} onRateStation={() => {}} onEdit={handleEditStation} onOpenMusicSubmissionModal={(s) => { setStationForSubmission(s); setIsMusicSubmissionModalOpen(true); }} onOpenClaimModal={(s) => { setStationToClaim(s); setIsClaimModalOpen(true); }} onToggleFavorite={handleToggleFavorite} nowPlaying={nowPlaying} bounties={bounties} onOpenJingleModal={() => setIsJingleModalOpen(true)} onAddGuestbookEntry={handleAddGuestbookEntry} />
             </div>
@@ -706,7 +776,7 @@ export const App: React.FC = () => {
                  </div>
              )}
              {currentStation && <RadioPlayer station={currentStation} allStations={allStations} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(!isImmersiveMode)} songVotes={songVotes} onVote={handleSongVote} onRateStation={() => {}} userRating={0} onOpenTippingModal={() => {}} onSelectStation={handleSelectStation} onToggleChat={() => setIsChatOpen(!isChatOpen)} onStartRaid={() => {}} raidStatus="idle" raidTarget={null} onHidePlayer={() => setIsPlayerVisible(false)} isVisible={isPlayerVisible} onOpenBuyNow={() => setIsBuyNowModalOpen(true)} isHeaderVisible={isHeaderVisible} onToggleHeader={handleToggleHeader} onHype={handleHype} hypeScore={hypeScore} isPlaying={isPlaying} onPlayPause={setIsPlaying} isDataSaver={isDataSaver} sleepTimerTarget={sleepTimerTarget} userSongVotes={stats.songUserVotes} activeSkin={activeSkin} />}
-             {currentStation && <ListeningPartyChat station={currentStation} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} nowPlaying={nowPlaying} onSuperChat={() => {}} userPoints={stats.points || 0} activeFrame={activeFrame} onUserClick={handleOpenProfile} currentUserAvatarUrl={currentUser?.profile?.customAvatarUrl} />}
+             {currentStation && <ListeningPartyChat station={currentStation} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} nowPlaying={nowPlaying} onSuperChat={handleSendSuperChat} userPoints={stats.points || 0} activeFrame={activeFrame} onUserClick={(u) => { setTargetGiftUser(u); setIsGiftModalOpen(true); }} currentUserAvatarUrl={currentUser?.profile?.customAvatarUrl} />}
         </div>
       </div>
       
@@ -724,6 +794,10 @@ export const App: React.FC = () => {
       <EventsModal isOpen={isEventsModalOpen} onClose={() => setIsEventsModalOpen(false)} onSelectStation={(name) => { const s = allStations.find(st=>st.name===name); if(s) handleSelectStation(s); setIsEventsModalOpen(false); }} />
       <SongHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} history={stats.songHistory} />
       <MusicSubmissionModal isOpen={isMusicSubmissionModalOpen} onClose={() => setIsMusicSubmissionModalOpen(false)} onSubmit={handleAddMusicSubmission} station={stationForSubmission} userPoints={stats.points || 0} />
+      
+      <PredictionMarketModal isOpen={isPredictionMarketOpen} onClose={() => setIsPredictionMarketOpen(false)} userPoints={stats.points || 0} activeBets={activeBets} onPlaceBet={handlePlaceBet} trendingSongs={Object.values(songVotes)} />
+      <CollectionModal isOpen={isCollectionOpen} onClose={() => setIsCollectionOpen(false)} collection={collection} />
+      <GiftPointsModal isOpen={isGiftModalOpen} onClose={() => setIsGiftModalOpen(false)} targetUser={targetGiftUser || ''} userPoints={stats.points || 0} onSendGift={handleSendGift} />
     </div>
   );
 };

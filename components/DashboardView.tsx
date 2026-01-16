@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
-import type { User, ListeningStats, UnlockedAchievement, StationPlayData, SongHistoryItem } from '../types';
+import type { User, ListeningStats, UnlockedAchievement, StationPlayData, SongHistoryItem, Quest } from '../types';
 import { formatTime, formatTimeAgo } from '../utils/time';
-import { ACHIEVEMENTS, StarIcon, TrophyIcon } from '../constants';
+import { ACHIEVEMENTS, StarIcon, TrophyIcon, CheckCircleIcon } from '../constants';
 import { BarChart } from './BarChart';
 
 interface DashboardViewProps {
@@ -9,7 +9,9 @@ interface DashboardViewProps {
     stats: ListeningStats;
     favoritesCount: number;
     unlockedAchievements: Record<string, UnlockedAchievement>;
-    onBack: () => void; // New prop
+    onBack: () => void; 
+    quests: Quest[];
+    onClaimQuest: (id: string) => void;
 }
 
 const StatHighlight: React.FC<{ icon: React.ReactNode; value: string | number; label: string; }> = ({ icon, value, label }) => (
@@ -27,6 +29,7 @@ const StatHighlight: React.FC<{ icon: React.ReactNode; value: string | number; l
 const RadioIcon: React.FC<{className?: string}> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" /><path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 4a1 1 0 10-2 0v1a1 1 0 102 0v-1zm5-1a1 1 0 00-1 1v1a1 1 0 102 0v-1a1 1 0 00-1-1z" clipRule="evenodd" /></svg>;
 const HistoryIcon: React.FC<{className?: string}> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
 const BackIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>;
+const ClipboardIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>;
 
 const Section: React.FC<{title: string, icon: React.ReactNode, children: React.ReactNode, className?: string}> = ({ title, icon, children, className }) => (
     <section className={`bg-gray-900/50 p-6 rounded-lg border border-gray-700/50 ${className}`}>
@@ -39,7 +42,7 @@ const Section: React.FC<{title: string, icon: React.ReactNode, children: React.R
 );
 
 
-export const DashboardView: React.FC<DashboardViewProps> = ({ user, stats, favoritesCount, unlockedAchievements, onBack }) => {
+export const DashboardView: React.FC<DashboardViewProps> = ({ user, stats, favoritesCount, unlockedAchievements, onBack, quests, onClaimQuest }) => {
     
     if (!user) return null;
     
@@ -103,6 +106,49 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ user, stats, favor
                                 label="Stations Played"
                             />
                         </div>
+
+                        <Section title="Active Quests" icon={<ClipboardIcon />}>
+                            <div className="space-y-4">
+                                {quests.map(quest => {
+                                    const isComplete = quest.progress >= quest.goal;
+                                    return (
+                                        <div key={quest.id} className={`p-4 rounded-xl border transition-all ${quest.isClaimed ? 'bg-gray-800/20 border-gray-800 opacity-50' : 'bg-gray-800/40 border-gray-700'}`}>
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <h4 className="font-bold text-white">{quest.title}</h4>
+                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-black uppercase border ${quest.type === 'daily' ? 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10' : 'border-purple-500/30 text-purple-400 bg-purple-500/10'}`}>{quest.type}</span>
+                                                    </div>
+                                                    <p className="text-xs text-gray-400 mt-1">{quest.description}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="flex items-center gap-1.5 text-yellow-400 font-bold text-sm">
+                                                        <span>+{quest.reward}</span>
+                                                        <StarIcon className="w-3.5 h-3.5"/>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex-grow bg-gray-900 rounded-full h-2 overflow-hidden">
+                                                    <div 
+                                                        className={`h-full transition-all duration-500 ${isComplete ? 'bg-green-500' : 'bg-[var(--accent-color)]'}`}
+                                                        style={{ width: `${(quest.progress / quest.goal) * 100}%` }}
+                                                    />
+                                                </div>
+                                                {isComplete && !quest.isClaimed ? (
+                                                    <button onClick={() => onClaimQuest(quest.id)} className="flex-shrink-0 bg-green-500 hover:bg-green-400 text-black font-bold py-1 px-4 rounded text-xs transition-colors">Claim</button>
+                                                ) : quest.isClaimed ? (
+                                                    <div className="flex items-center gap-1 text-gray-500 text-xs font-bold uppercase"><CheckCircleIcon className="w-4 h-4"/> Claimed</div>
+                                                ) : (
+                                                    <span className="text-[10px] font-mono text-gray-500">{quest.progress}/{quest.goal}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </Section>
+
                         <BarChart data={topGenresChartData} title="Your Top Genres" />
                     </main>
 

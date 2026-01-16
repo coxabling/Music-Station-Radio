@@ -1,7 +1,6 @@
-
 import React from 'react';
 import type { ActiveView, User } from '../types';
-import { HomeIcon, ExploreIcon, CommunityIcon, StoreIcon, LeaderboardIconSidebar, ChatBubbleIcon, AdminIcon, BriefcaseIcon, MusicNoteIcon } from '../constants';
+import { HomeIcon, ExploreIcon, CommunityIcon, StoreIcon, LeaderboardIconSidebar, ChatBubbleIcon, AdminIcon, BriefcaseIcon, MusicNoteIcon, CollectionIcon } from '../constants';
 
 interface SidebarProps {
     activeView: ActiveView;
@@ -10,7 +9,8 @@ interface SidebarProps {
     onOpenSongChart: () => void;
     onOpenEvents: () => void;
     onOpenHistory: () => void;
-    onOpenStockMarket: () => void; // New
+    onOpenStockMarket: () => void; 
+    onOpenCollection: () => void; // New
     currentUser: User | null;
 }
 
@@ -42,7 +42,7 @@ const TrendingUpIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="
 const QuestionIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 9.75h4.875a2.625 2.625 0 010 5.25H12M12 18.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>;
 
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, onOpenAlarm, onOpenSongChart, onOpenEvents, onOpenHistory, onOpenStockMarket, currentUser }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, onOpenAlarm, onOpenSongChart, onOpenEvents, onOpenHistory, onOpenStockMarket, onOpenCollection, currentUser }) => {
     
     const handleDashboardClick = () => {
         let targetView: ActiveView = 'dashboard';
@@ -76,7 +76,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, onO
                 
                 <div className="w-full h-px bg-gray-700 my-2 flex-shrink-0" />
                 
-                <NavButton label="Stocks" icon={<TrendingUpIcon />} isActive={false} onClick={onOpenStockMarket} />
+                <NavButton label="Market" icon={<TrendingUpIcon />} isActive={false} onClick={onOpenStockMarket} />
+                <NavButton label="Cards" icon={<CollectionIcon className="w-6 h-6" />} isActive={false} onClick={onOpenCollection} />
                 <NavButton label="Song Chart" icon={<ChartBarIcon className="w-6 h-6"/>} isActive={false} onClick={onOpenSongChart} />
                 <NavButton label="History" icon={<HistoryIcon className="w-6 h-6"/>} isActive={false} onClick={onOpenHistory} />
                 <NavButton label="Events" icon={<CalendarIcon className="w-6 h-6"/>} isActive={false} onClick={onOpenEvents} />
@@ -86,7 +87,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, onO
                     <NavButton label="Help" icon={<QuestionIcon />} isActive={activeView === 'help'} onClick={() => setActiveView('help')} />
                 </div>
 
-                {/* Spacer for better bottom padding scrolling */}
                 <div className="h-4 flex-shrink-0"></div>
             </nav>
             <style>{`
