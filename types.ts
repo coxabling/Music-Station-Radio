@@ -241,6 +241,15 @@ export interface Bet {
   potentialPayout: number;
   placedAt: string;
   status: 'pending' | 'won' | 'lost';
+  resultAt?: string;
+}
+
+export interface MarketTrend {
+    songId: string;
+    title: string;
+    artist: string;
+    change: number; // percentage
+    volume: number; // total points bet
 }
 
 export interface Quest {

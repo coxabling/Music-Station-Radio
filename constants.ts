@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Station, EQBand, EQPreset, Theme, Achievement, AchievementID, LeaderboardEntry, TranslationLanguage, ListeningEvent, StationReview, CommunityEvent, MusicSubmission, AvatarFrame, FriendActivity, Quest, CollectorCard, PlayerSkin, Bounty, Stock } from './types';
+import type { Station, EQBand, EQPreset, Theme, Achievement, AchievementID, LeaderboardEntry, TranslationLanguage, ListeningEvent, StationReview, CommunityEvent, MusicSubmission, AvatarFrame, FriendActivity, Quest, CollectorCard, PlayerSkin, Bounty, Stock, MarketTrend } from './types';
 
 // --- Achievement Icons ---
 const PlayIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className: className, viewBox: "0 0 20 20", fill: "currentColor"}, React.createElement('path', {fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8.006v3.988a1 1 0 001.555.832l3.197-2.005a1 1 0 000-1.664L9.555 7.168z", clipRule: "evenodd" }));
@@ -48,6 +48,21 @@ export const MYSTERY_TRACK = {
     albumArt: "https://picsum.photos/seed/hypestorm/400",
     songId: "mystery-hype-track"
 };
+
+export const MOCK_MARKET_TRENDS: MarketTrend[] = [
+    { songId: 't1', title: 'Essence', artist: 'Wizkid', change: 4.2, volume: 15400 },
+    { songId: 't2', title: 'Last Last', artist: 'Burna Boy', change: -1.5, volume: 12100 },
+    { songId: 't3', title: 'Calm Down', artist: 'Rema', change: 8.7, volume: 22000 },
+    { songId: 't4', title: 'Buga', artist: 'Kizz Daniel', change: 0.8, volume: 8400 },
+    { songId: 't5', title: 'One Love', artist: 'Bob Marley', change: 2.1, volume: 5600 },
+];
+
+export const MOCK_PROSPECTS = [
+    { id: 'p1', title: 'Sunshine City', artist: 'Reggae Collective', odds: 3.5, albumArt: 'https://picsum.photos/seed/p1/200' },
+    { id: 'p2', title: 'Lagos Night', artist: 'Afro Kings', odds: 12.0, albumArt: 'https://picsum.photos/seed/p2/200' },
+    { id: 'p3', title: 'Durban Heat', artist: 'Gqom Queen', odds: 1.8, albumArt: 'https://picsum.photos/seed/p3/200' },
+    { id: 'p4', title: 'Roots Prayer', artist: 'Elder Spirit', odds: 25.0, albumArt: 'https://picsum.photos/seed/p4/200' },
+];
 
 export const ACHIEVEMENTS: Record<AchievementID, Achievement> = {
   'first_listen': { id: 'first_listen', name: 'Welcome to the Club', description: 'Tune in for the first time.', icon: PlayIcon },
