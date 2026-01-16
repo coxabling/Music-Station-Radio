@@ -229,6 +229,7 @@ const mapToStation = (item: any): Station => ({
     rating: Math.min(5, (item.votes / 1000) + 3),
     ratingsCount: item.votes,
     location: (item.geo_lat && item.geo_long) ? { lat: item.geo_lat, lng: item.geo_long } : undefined,
+    countryCode: item.countrycode?.toLowerCase(), // Extract country code (ISO alpha-2)
     owner: undefined,
     acceptsSubmissions: false,
     submissions: [],

@@ -1,4 +1,3 @@
-
 import type * as React from 'react';
 
 export interface User {
@@ -17,6 +16,7 @@ export interface Station {
   rating?: number;
   ratingsCount?: number;
   location?: { lat: number; lng: number };
+  countryCode?: string; // New: ISO alpha-2 code
   owner?: string;
   acceptsSubmissions?: boolean;
   claimRequest?: {

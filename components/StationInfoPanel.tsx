@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import type { Station, StationReview, User, Bounty } from '../types';
 import { StarRating } from './StarRating';
@@ -156,8 +155,18 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
             </button>
         </div>
         <div className="flex-1 min-w-0 pt-1">
-          <h2 className="text-2xl font-black text-white font-orbitron truncate leading-tight tracking-tight">{station.name}</h2>
-          <div className="flex flex-wrap gap-1.5 mt-3 mb-3">
+          <div className="flex items-center gap-2 mb-1">
+             {station.countryCode && (
+                 <img 
+                    src={`https://flagcdn.com/w40/${station.countryCode.toLowerCase()}.png`} 
+                    alt={`Flag of ${station.countryCode}`} 
+                    className="h-3.5 w-auto rounded-sm shadow-sm border border-white/10"
+                    title={`Broadcasting from country code: ${station.countryCode.toUpperCase()}`}
+                 />
+             )}
+             <h2 className="text-2xl font-black text-white font-orbitron truncate leading-tight tracking-tight">{station.name}</h2>
+          </div>
+          <div className="flex flex-wrap gap-1.5 mt-2 mb-3">
             {tags.map(t => <TagPill key={t} tag={t} />)}
           </div>
           <div className="flex items-center gap-2">

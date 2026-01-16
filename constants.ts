@@ -68,6 +68,7 @@ const initialStations: Station[] = [
     rating: 4.9,
     ratingsCount: 512,
     location: { lat: 18.1096, lng: -77.2975 },
+    countryCode: 'jm',
     owner: 'DJ_VibeMaster',
     acceptsSubmissions: true,
     submissions: [],
@@ -82,6 +83,7 @@ const initialStations: Station[] = [
     rating: 4.5,
     ratingsCount: 128,
     location: { lat: 51.5072, lng: -0.1276 },
+    countryCode: 'gb',
     submissions: [],
   },
   {
@@ -93,6 +95,7 @@ const initialStations: Station[] = [
     rating: 4.2,
     ratingsCount: 94,
     location: { lat: -22.9585, lng: 18.4904 },
+    countryCode: 'na',
     submissions: [],
   },
   {
@@ -104,6 +107,7 @@ const initialStations: Station[] = [
     rating: 4.6,
     ratingsCount: 182,
     location: { lat: 9.0820, lng: 8.6753 },
+    countryCode: 'ng',
     submissions: [],
   },
   {
@@ -115,6 +119,7 @@ const initialStations: Station[] = [
     rating: 4.3,
     ratingsCount: 78,
     location: { lat: 5.6037, lng: -0.1870 },
+    countryCode: 'gh',
     submissions: [],
   },
   {
@@ -126,6 +131,7 @@ const initialStations: Station[] = [
     rating: 4.7,
     ratingsCount: 201,
     location: { lat: 34.0522, lng: -118.2437 },
+    countryCode: 'us',
     owner: 'GrooveMachine',
     acceptsSubmissions: false,
     submissions: [],
