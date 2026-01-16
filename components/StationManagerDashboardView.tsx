@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef } from 'react';
 import type { User, Station, MusicSubmission, Jingle, GuestbookEntry } from '../types';
 import { formatTimeAgo } from '../utils/time';
@@ -11,6 +10,7 @@ const HeartIcon: React.FC<{className?: string}> = ({className = ''}) => React.cr
 const EditIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L16.732 3.732z" /></svg>;
 const MicrophoneIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>;
 const BookOpenIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.079 0-2.157.242-3.207.72A1.5 1.5 0 003 6.042v12.319c0 .574.057 1.138.192 1.685A3 3 0 005.124 21a1.5 1.5 0 001.275-.684H12m0 0v-1.588a2.375 2.375 0 01-1.124-2.027 1.5 1.5 0 00-.381-.992H7.5c-.968 0-1.95.255-2.91.722L3 18.75V6.042M12 6.042a8.967 8.967 0 016-2.292c1.079 0 2.157.242 3.207.72A1.5 1.5 0 0121 6.042v12.319c0 .574-.057 1.138-.192 1.685a3 3 0 00-2.396 1.185A1.5 1.5 0 0018.75 21H12" /></svg>;
+const BackIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>;
 
 
 interface StationManagerDashboardViewProps {
@@ -21,6 +21,7 @@ interface StationManagerDashboardViewProps {
     jingles: Jingle[]; // Global jingles array
     onReviewJingle: (jingleId: string, status: 'approved' | 'rejected') => void; // New prop for jingles
     onDeleteGuestbookEntry: (stationStreamUrl: string, entryId: string) => void; // New prop for guestbook
+    onBack: () => void; // New prop
 }
 
 const Stat: React.FC<{ icon: React.ReactNode, value: string | number, label: string }> = ({ icon, value, label }) => (
@@ -117,7 +118,7 @@ const SubmissionCard: React.FC<{
     );
 };
 
-export const StationManagerDashboardView: React.FC<StationManagerDashboardViewProps> = ({ user, allStations, onReviewSubmission, onEditStation, jingles, onReviewJingle, onDeleteGuestbookEntry }) => {
+export const StationManagerDashboardView: React.FC<StationManagerDashboardViewProps> = ({ user, allStations, onReviewSubmission, onEditStation, jingles, onReviewJingle, onDeleteGuestbookEntry, onBack }) => {
     const [activeTab, setActiveTab] = useState<ManagerTab>('submissions');
 
     const managedStations = useMemo(() => {
@@ -208,106 +209,113 @@ export const StationManagerDashboardView: React.FC<StationManagerDashboardViewPr
     
     return (
         <div className="p-4 md:p-8 animate-fade-in">
-             <header className="text-center mb-8">
-                <h1 className="text-3xl font-bold font-orbitron accent-color-text flex items-center justify-center gap-3">
-                    <BriefcaseIcon className="w-8 h-8"/>
-                    Manager Dashboard
-                </h1>
-                <p className="text-gray-400 mt-2">Review and manage music submissions, jingles, and guestbook for your stations.</p>
-            </header>
-            
-            <div className="max-w-4xl mx-auto space-y-8">
-                {managedStations.length > 0 ? (
-                    <>
-                        <section>
-                            <h2 className="text-2xl font-bold text-gray-200 mb-4 font-orbitron">My Stations</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {managedStations.map(station => (
-                                    <div key={station.streamUrl} className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50 space-y-4">
-                                        <div className="flex justify-between items-start gap-4">
-                                            <div className="flex items-start gap-4">
-                                                <img src={station.coverArt} alt={station.name} className="w-16 h-16 rounded-md object-cover" />
-                                                <div>
-                                                    <h3 className="font-bold text-white text-lg">{station.name}</h3>
-                                                    <p className="text-sm text-gray-400">{station.genre}</p>
+             <div className="max-w-4xl mx-auto">
+                <button onClick={onBack} className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[var(--accent-color)] transition-colors mb-6 group">
+                    <BackIcon />
+                    <span className="uppercase tracking-widest group-hover:pl-1 transition-all">Back to Explore</span>
+                </button>
+
+                <header className="text-center mb-8">
+                    <h1 className="text-3xl font-bold font-orbitron accent-color-text flex items-center justify-center gap-3">
+                        <BriefcaseIcon className="w-8 h-8"/>
+                        Manager Dashboard
+                    </h1>
+                    <p className="text-gray-400 mt-2">Review and manage music submissions, jingles, and guestbook for your stations.</p>
+                </header>
+                
+                <div className="space-y-8">
+                    {managedStations.length > 0 ? (
+                        <>
+                            <section>
+                                <h2 className="text-2xl font-bold text-gray-200 mb-4 font-orbitron">My Stations</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {managedStations.map(station => (
+                                        <div key={station.streamUrl} className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50 space-y-4">
+                                            <div className="flex justify-between items-start gap-4">
+                                                <div className="flex items-start gap-4">
+                                                    <img src={station.coverArt} alt={station.name} className="w-16 h-16 rounded-md object-cover" />
+                                                    <div>
+                                                        <h3 className="font-bold text-white text-lg">{station.name}</h3>
+                                                        <p className="text-sm text-gray-400">{station.genre}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button onClick={() => alert('Raid scheduled! (Demo)')} className="flex-shrink-0 p-2 text-purple-400 hover:text-purple-300 rounded-full hover:bg-purple-500/10 transition-colors" title="Schedule Raid">
+                                                        <RocketIcon className="w-5 h-5"/>
+                                                    </button>
+                                                    <button onClick={() => onEditStation(station)} className="flex-shrink-0 p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-700/50 transition-colors" title="Edit Station">
+                                                        <EditIcon className="w-5 h-5"/>
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <div className="flex gap-2">
-                                                <button onClick={() => alert('Raid scheduled! (Demo)')} className="flex-shrink-0 p-2 text-purple-400 hover:text-purple-300 rounded-full hover:bg-purple-500/10 transition-colors" title="Schedule Raid">
-                                                    <RocketIcon className="w-5 h-5"/>
-                                                </button>
-                                                <button onClick={() => onEditStation(station)} className="flex-shrink-0 p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-700/50 transition-colors" title="Edit Station">
-                                                    <EditIcon className="w-5 h-5"/>
-                                                </button>
+                                            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-700/50">
+                                                <Stat icon={<StarIcon className="w-4 h-4 text-yellow-400"/>} value={station.rating || 0} label="Rating" />
+                                                <Stat icon={<HeartIcon className="w-4 h-4 text-pink-400"/>} value={((station.ratingsCount || 0) * 5 + Math.floor(Math.random()*10))} label="Favorites" />
+                                                <Stat icon={<ClockIcon className="w-4 h-4 text-cyan-400"/>} value={`${Math.floor((station.ratingsCount || 1) * 2.3)}h`} label="Listened (wk)" />
+                                                <Stat icon={<UploadIcon className="w-4 h-4 text-purple-400"/>} value={(station.submissions || []).filter(s => s.status === 'pending').length} label="Pending" />
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-700/50">
-                                            <Stat icon={<StarIcon className="w-4 h-4 text-yellow-400"/>} value={station.rating || 0} label="Rating" />
-                                            <Stat icon={<HeartIcon className="w-4 h-4 text-pink-400"/>} value={((station.ratingsCount || 0) * 5 + Math.floor(Math.random()*10))} label="Favorites" />
-                                            <Stat icon={<ClockIcon className="w-4 h-4 text-cyan-400"/>} value={`${Math.floor((station.ratingsCount || 1) * 2.3)}h`} label="Listened (wk)" />
-                                            <Stat icon={<UploadIcon className="w-4 h-4 text-purple-400"/>} value={(station.submissions || []).filter(s => s.status === 'pending').length} label="Pending" />
+                                    ))}
+                                </div>
+                            </section>
+
+                            <section>
+                                <h2 className="text-2xl font-bold text-gray-200 mb-4 font-orbitron">Station Content</h2>
+                                <div className="border-b border-gray-700/50 mb-6 flex overflow-x-auto custom-tab-scrollbar">
+                                    <TabButton label="Submissions" count={pendingSubmissions.length} isActive={activeTab === 'submissions'} onClick={() => setActiveTab('submissions')} />
+                                    <TabButton label="Jingles" count={pendingJingles.length} isActive={activeTab === 'jingles'} onClick={() => setActiveTab('jingles')} />
+                                    <TabButton label="Guestbook" count={allGuestbookEntriesForManagedStations.length} isActive={activeTab === 'guestbook'} onClick={() => setActiveTab('guestbook')} />
+                                </div>
+
+                                {activeTab === 'submissions' && (
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-yellow-400 mb-3">Pending ({pendingSubmissions.length})</h3>
+                                            {renderSubmissionList(pendingSubmissions)}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-green-400 mb-3">Approved ({approvedSubmissions.length})</h3>
+                                            {renderSubmissionList(approvedSubmissions)}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-red-400 mb-3">Rejected ({rejectedSubmissions.length})</h3>
+                                            {renderSubmissionList(rejectedSubmissions)}
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        </section>
+                                )}
 
-                        <section>
-                            <h2 className="text-2xl font-bold text-gray-200 mb-4 font-orbitron">Station Content</h2>
-                            <div className="border-b border-gray-700/50 mb-6 flex overflow-x-auto custom-tab-scrollbar">
-                                <TabButton label="Submissions" count={pendingSubmissions.length} isActive={activeTab === 'submissions'} onClick={() => setActiveTab('submissions')} />
-                                <TabButton label="Jingles" count={pendingJingles.length} isActive={activeTab === 'jingles'} onClick={() => setActiveTab('jingles')} />
-                                <TabButton label="Guestbook" count={allGuestbookEntriesForManagedStations.length} isActive={activeTab === 'guestbook'} onClick={() => setActiveTab('guestbook')} />
-                            </div>
+                                {activeTab === 'jingles' && (
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-yellow-400 mb-3">Pending ({pendingJingles.length})</h3>
+                                            {renderJingleList(pendingJingles)}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-green-400 mb-3">Approved ({approvedJingles.length})</h3>
+                                            {renderJingleList(approvedJingles)}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-red-400 mb-3">Rejected ({rejectedJingles.length})</h3>
+                                            {renderJingleList(rejectedJingles)}
+                                        </div>
+                                    </div>
+                                )}
 
-                            {activeTab === 'submissions' && (
-                                <div className="space-y-6">
+                                {activeTab === 'guestbook' && (
                                     <div>
-                                        <h3 className="text-lg font-semibold text-yellow-400 mb-3">Pending ({pendingSubmissions.length})</h3>
-                                        {renderSubmissionList(pendingSubmissions)}
+                                        <h3 className="text-lg font-semibold text-gray-300 mb-3">Entries ({allGuestbookEntriesForManagedStations.length})</h3>
+                                        {renderGuestbookList(allGuestbookEntriesForManagedStations)}
                                     </div>
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-green-400 mb-3">Approved ({approvedSubmissions.length})</h3>
-                                        {renderSubmissionList(approvedSubmissions)}
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-red-400 mb-3">Rejected ({rejectedSubmissions.length})</h3>
-                                        {renderSubmissionList(rejectedSubmissions)}
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'jingles' && (
-                                <div className="space-y-6">
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-yellow-400 mb-3">Pending ({pendingJingles.length})</h3>
-                                        {renderJingleList(pendingJingles)}
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-green-400 mb-3">Approved ({approvedJingles.length})</h3>
-                                        {renderJingleList(approvedJingles)}
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-red-400 mb-3">Rejected ({rejectedJingles.length})</h3>
-                                        {renderJingleList(rejectedJingles)}
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'guestbook' && (
-                                <div>
-                                    <h3 className="text-lg font-semibold text-gray-300 mb-3">Entries ({allGuestbookEntriesForManagedStations.length})</h3>
-                                    {renderGuestbookList(allGuestbookEntriesForManagedStations)}
-                                </div>
-                            )}
-                        </section>
-                    </>
-                ) : (
-                    <div className="text-center py-16 bg-gray-900/50 rounded-lg border border-gray-700/50">
-                        <p className="text-gray-400">You do not own any stations.</p>
-                        <p className="text-sm text-gray-500 mt-2">You can claim an existing station or submit a new one from the Explore page.</p>
-                    </div>
-                )}
+                                )}
+                            </section>
+                        </>
+                    ) : (
+                        <div className="text-center py-16 bg-gray-900/50 rounded-lg border border-gray-700/50">
+                            <p className="text-gray-400">You do not own any stations.</p>
+                            <p className="text-sm text-gray-500 mt-2">You can claim an existing station or submit a new one from the Explore page.</p>
+                        </div>
+                    )}
+                </div>
             </div>
              <style>{`
                 .custom-tab-scrollbar::-webkit-scrollbar {

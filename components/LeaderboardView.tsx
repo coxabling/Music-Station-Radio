@@ -3,14 +3,17 @@ import type { User } from '../types';
 import { LEADERBOARD_DATA } from '../constants';
 import { RoleBadge } from './RoleBadge';
 
+const BackIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>;
+
 interface LeaderboardViewProps {
   currentUser: User | null;
   userPoints: number;
+  onBack: () => void; // New prop
 }
 
 const TrophyIcon: React.FC<{className: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path d="M11.68 1.33a1 1 0 011.64 0l1.35 2.22a1 1 0 00.82.55l2.45.36a1 1 0 01.56 1.7l-1.78 1.73a1 1 0 00-.29.89l.42 2.44a1 1 0 01-1.45 1.05L12 11.45a1 1 0 00-.94 0l-2.19 1.15a1 1 0 01-1.45-1.05l.42-2.44a1 1 0 00-.29-.89L5.78 6.16a1 1 0 01.56-1.7l2.45-.36a1 1 0 00.82-.55L11.68 1.33zM10 14a1 1 0 011 1v2a1 1 0 11-2 0v-2a1 1 0 011-1zM6 16a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM14 16a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1z" /></svg>;
 
-export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, userPoints }) => {
+export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, userPoints, onBack }) => {
   const rankedList = useMemo(() => {
     if (!currentUser) return [];
 
@@ -29,6 +32,11 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, u
   return (
     <div className="p-4 md:p-8 animate-fade-in">
         <div className="max-w-2xl mx-auto">
+            <button onClick={onBack} className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[var(--accent-color)] transition-colors mb-6 group">
+                <BackIcon />
+                <span className="uppercase tracking-widest group-hover:pl-1 transition-all">Back to Explore</span>
+            </button>
+
             <header className="text-center mb-8">
                 <h1 className="text-3xl font-bold font-orbitron accent-color-text">
                     Listener Leaderboard

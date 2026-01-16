@@ -1,7 +1,10 @@
 import React from 'react';
 
+const BackIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>;
+
 interface HelpFAQProps {
     onContactClick?: () => void;
+    onBack: () => void; // New prop
 }
 
 const faqs = [
@@ -31,10 +34,15 @@ const faqs = [
   }
 ];
 
-export const HelpFAQ: React.FC<HelpFAQProps> = ({ onContactClick }) => {
+export const HelpFAQ: React.FC<HelpFAQProps> = ({ onContactClick, onBack }) => {
   return (
     <div className="p-4 md:p-8 animate-fade-in h-full overflow-y-auto">
       <div className="max-w-4xl mx-auto">
+        <button onClick={onBack} className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[var(--accent-color)] transition-colors mb-6 group">
+            <BackIcon />
+            <span className="uppercase tracking-widest group-hover:pl-1 transition-all">Back to Explore</span>
+        </button>
+
         <header className="text-center mb-12">
           <h1 className="text-4xl font-bold font-orbitron text-white mb-4">
             Network Support

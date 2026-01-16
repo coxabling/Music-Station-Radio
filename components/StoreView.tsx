@@ -1,6 +1,3 @@
-
-
-
 import React, { useState } from 'react';
 import type { Theme, ThemeName, AvatarFrame, SkinID, PlayerSkin } from '../types';
 import { THEMES, AVATAR_FRAMES, PLAYER_SKINS, StarIcon, LockIcon, CheckCircleIcon } from '../constants';
@@ -22,19 +19,26 @@ interface StoreViewProps {
   onUnlockSkin: (skin: PlayerSkin) => void;
 
   currentPoints: number;
+  onBack: () => void; // New prop
 }
 
 const PaintBrushIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>;
 const UserCircleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
 const CubeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>;
+const BackIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>;
 
 
-export const StoreView: React.FC<StoreViewProps> = ({ activeTheme, onSetTheme, unlockedThemes, onUnlockTheme, activeFrame, unlockedFrames, onSetFrame, onUnlockFrame, activeSkin, unlockedSkins, onSetSkin, onUnlockSkin, currentPoints }) => {
+export const StoreView: React.FC<StoreViewProps> = ({ activeTheme, onSetTheme, unlockedThemes, onUnlockTheme, activeFrame, unlockedFrames, onSetFrame, onUnlockFrame, activeSkin, unlockedSkins, onSetSkin, onUnlockSkin, currentPoints, onBack }) => {
   const [activeTab, setActiveTab] = useState<'themes' | 'frames' | 'skins'>('skins');
 
   return (
     <div className="p-4 md:p-8 animate-fade-in h-full overflow-y-auto">
         <div className="max-w-6xl mx-auto">
+            <button onClick={onBack} className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[var(--accent-color)] transition-colors mb-6 group">
+                <BackIcon />
+                <span className="uppercase tracking-widest group-hover:pl-1 transition-all">Back to Explore</span>
+            </button>
+
             <header className="text-center mb-8 relative">
                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[var(--accent-color)]/10 rounded-full blur-[100px] pointer-events-none"></div>
                 <h1 className="text-4xl font-bold font-orbitron text-white flex items-center justify-center gap-3 mb-2 relative z-10">

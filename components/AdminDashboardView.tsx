@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Station, User, UserData, MusicSubmission, Jingle, GuestbookEntry } from '../types';
 import { formatTimeAgo } from '../utils/time';
@@ -16,6 +15,7 @@ const UploadIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="
 const MicrophoneIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>;
 const BookOpenIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.079 0-2.157.242-3.207.72A1.5 1.5 0 003 6.042v12.319c0 .574.057 1.138.192 1.685A3 3 0 005.124 21a1.5 1.5 0 001.275-.684H12m0 0v-1.588a2.375 2.375 0 01-1.124-2.027 1.5 1.5 0 00-.381-.992H7.5c-.968 0-1.95.255-2.91.722L3 18.75V6.042M12 6.042a8.967 8.967 0 016-2.292c1.079 0 2.157.242 3.207.72A1.5 1.5 0 0121 6.042v12.319c0 .574-.057 1.138-.192 1.685a3 3 0 00-2.396 1.185A1.5 1.5 0 0018.75 21H12" /></svg>;
 
+const BackIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>;
 
 interface AdminDashboardViewProps {
     stations: Station[];
@@ -25,11 +25,12 @@ interface AdminDashboardViewProps {
     onEditStation: (station: Station) => void;
     onDeleteStation: (station: Station) => void;
     currentUser: User | null;
-    onOpenProfile: (username: string) => void; // New prop for user profile
-    onReviewSubmission: (stationStreamUrl: string, submissionId: string, status: 'approved' | 'rejected', managerComment?: string) => void; // New prop for submissions
-    jingles: Jingle[]; // Global jingles array
-    onReviewJingle: (jingleId: string, status: 'approved' | 'rejected') => void; // New prop for jingles
-    onDeleteGuestbookEntry: (stationStreamUrl: string, entryId: string) => void; // New prop for guestbook
+    onOpenProfile: (username: string) => void; 
+    onReviewSubmission: (stationStreamUrl: string, submissionId: string, status: 'approved' | 'rejected', managerComment?: string) => void; 
+    jingles: Jingle[]; 
+    onReviewJingle: (jingleId: string, status: 'approved' | 'rejected') => void; 
+    onDeleteGuestbookEntry: (stationStreamUrl: string, entryId: string) => void; 
+    onBack: () => void; // New prop
 }
 
 type Tab = 'overview' | 'users' | 'stations' | 'claims' | 'submissions' | 'jingles' | 'guestbook';
@@ -171,7 +172,6 @@ const SubmissionCard: React.FC<{
     );
 };
 
-// Added export to fix import in StationManagerDashboardView
 export const JingleCard: React.FC<{
     jingle: Jingle & { stationName: string };
     onReview: (jingleId: string, status: 'approved' | 'rejected') => void;
@@ -209,7 +209,6 @@ export const JingleCard: React.FC<{
     );
 };
 
-// Added export to fix import in StationManagerDashboardView
 export const GuestbookEntryCard: React.FC<{
     entry: GuestbookEntry;
     onDelete: (stationStreamUrl: string, entryId: string) => void;
@@ -232,7 +231,7 @@ export const GuestbookEntryCard: React.FC<{
 };
 
 
-export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ stations, onApproveClaim, onDenyClaim, onUpdateUserRole, onEditStation, onDeleteStation, currentUser, onOpenProfile, onReviewSubmission, jingles, onReviewJingle, onDeleteGuestbookEntry }) => {
+export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ stations, onApproveClaim, onDenyClaim, onUpdateUserRole, onEditStation, onDeleteStation, currentUser, onOpenProfile, onReviewSubmission, jingles, onReviewJingle, onDeleteGuestbookEntry, onBack }) => {
     const [activeTab, setActiveTab] = useState<Tab>('overview');
     const [allUsers, setAllUsers] = useState<{ username: string, data: UserData }[]>([]);
     const [isLoadingUsers, setIsLoadingUsers] = useState(true);
@@ -293,6 +292,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ stations
     return (
         <div className="p-4 md:p-8 animate-fade-in min-h-full">
             <div className="max-w-6xl mx-auto">
+                <button onClick={onBack} className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[var(--accent-color)] transition-colors mb-6 group">
+                    <BackIcon />
+                    <span className="uppercase tracking-widest group-hover:pl-1 transition-all">Back to Explore</span>
+                </button>
+
                 <header className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                     <div>
                         <h1 className="text-3xl font-bold font-orbitron accent-color-text flex items-center gap-3">

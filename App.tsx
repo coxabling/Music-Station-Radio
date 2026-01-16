@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -493,6 +492,10 @@ export const App: React.FC = () => {
       setToasts(t => [...t, { id: Date.now(), title: 'Station Updated!', icon: ShieldCheckIcon, type: 'success' }]);
   }, [currentUser, userStations]);
 
+  const handleBackToHome = useCallback(() => {
+      setActiveView('explore');
+  }, []);
+
   // --- Administrative Functions ---
   const handleApproveClaim = useCallback(async (station: Station, claimantUsername: string) => {
       setAllStations(prev => prev.map(s => s.streamUrl === station.streamUrl ? { ...s, owner: claimantUsername, claimRequest: undefined } : s));
@@ -602,11 +605,11 @@ export const App: React.FC = () => {
   const renderActiveView = () => {
     switch (activeView) {
       case 'artist_dashboard': 
-        return <ArtistDashboardView user={currentUser} stats={stats} submissions={allMusicSubmissions.filter(s => s.submittedBy === currentUser?.username)} setActiveView={setActiveView} />;
+        return <ArtistDashboardView user={currentUser} stats={stats} submissions={allMusicSubmissions.filter(s => s.submittedBy === currentUser?.username)} setActiveView={setActiveView} onBack={handleBackToHome} />;
       case 'station_manager_dashboard': 
-        return <StationManagerDashboardView user={currentUser} allStations={allStations} onReviewSubmission={handleReviewSubmission} onEditStation={handleEditStation} jingles={jingles} onReviewJingle={handleReviewJingle} onDeleteGuestbookEntry={handleDeleteGuestbookEntry} />;
+        return <StationManagerDashboardView user={currentUser} allStations={allStations} onReviewSubmission={handleReviewSubmission} onEditStation={handleEditStation} jingles={jingles} onReviewJingle={handleReviewJingle} onDeleteGuestbookEntry={handleDeleteGuestbookEntry} onBack={handleBackToHome} />;
       case 'admin': 
-        return <AdminDashboardView stations={allStations} onApproveClaim={handleApproveClaim} onDenyClaim={handleDenyClaim} onUpdateUserRole={handleUpdateUserRole} onEditStation={handleEditStation} onDeleteStation={handleDeleteStation} currentUser={currentUser} onOpenProfile={handleOpenProfile} onReviewSubmission={handleReviewSubmission} jingles={jingles} onReviewJingle={handleReviewJingle} onDeleteGuestbookEntry={handleDeleteGuestbookEntry} />;
+        return <AdminDashboardView stations={allStations} onApproveClaim={handleApproveClaim} onDenyClaim={handleDenyClaim} onUpdateUserRole={handleUpdateUserRole} onEditStation={handleEditStation} onDeleteStation={handleDeleteStation} currentUser={currentUser} onOpenProfile={handleOpenProfile} onReviewSubmission={handleReviewSubmission} jingles={jingles} onReviewJingle={handleReviewJingle} onDeleteGuestbookEntry={handleDeleteGuestbookEntry} onBack={handleBackToHome} />;
       case 'store': 
         return (
             <StoreView 
@@ -623,16 +626,17 @@ export const App: React.FC = () => {
                 unlockedSkins={unlockedSkins} 
                 onSetSkin={(s) => { setActiveSkin(s); if(currentUser) updateUserData(currentUser.username, { activeSkin: s }); }} 
                 onUnlockSkin={handleUnlockSkin} 
+                onBack={handleBackToHome}
             />
         );
       case 'leaderboard': 
-        return <LeaderboardView currentUser={currentUser} userPoints={stats.points || 0} />;
+        return <LeaderboardView currentUser={currentUser} userPoints={stats.points || 0} onBack={handleBackToHome} />;
       case 'dashboard': 
-        return <DashboardView user={currentUser} stats={stats} favoritesCount={favoriteStationUrls.size} unlockedAchievements={unlockedAchievements} />;
+        return <DashboardView user={currentUser} stats={stats} favoritesCount={favoriteStationUrls.size} unlockedAchievements={unlockedAchievements} onBack={handleBackToHome} />;
       case 'help': 
-        return <HelpFAQ onContactClick={() => setActiveView('contact')} />;
+        return <HelpFAQ onContactClick={() => setActiveView('contact')} onBack={handleBackToHome} />;
       case 'contact':
-        return <ContactUsView onSuccess={(msg) => setToasts(t => [...t, { id: Date.now(), title: 'Ticket Sent', message: msg, icon: CheckCircleIcon, type: 'success' }])} />;
+        return <ContactUsView onSuccess={(msg) => setToasts(t => [...t, { id: Date.now(), title: 'Ticket Sent', message: msg, icon: CheckCircleIcon, type: 'success' }])} onBack={handleBackToHome} />;
       default: 
         return (
             <StationList 

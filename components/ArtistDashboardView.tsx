@@ -2,11 +2,14 @@ import React from 'react';
 import type { User, ListeningStats, MusicSubmission, ActiveView } from '../types';
 import { StarIcon, ExploreIcon, CheckCircleIcon, XCircleIcon, ClockIcon, UserCircleIcon } from '../constants';
 
+const BackIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>;
+
 interface ArtistDashboardViewProps {
     user: User | null;
     stats: ListeningStats;
     submissions: MusicSubmission[];
     setActiveView: (view: ActiveView) => void;
+    onBack: () => void; // New prop
 }
 
 const StatCard: React.FC<{ icon: React.ReactNode; value: string | number; label: string; }> = ({ icon, value, label }) => (
@@ -54,7 +57,7 @@ const SubmissionItem: React.FC<{ submission: MusicSubmission }> = ({ submission 
 };
 
 
-export const ArtistDashboardView: React.FC<ArtistDashboardViewProps> = ({ user, stats, submissions, setActiveView }) => {
+export const ArtistDashboardView: React.FC<ArtistDashboardViewProps> = ({ user, stats, submissions, setActiveView, onBack }) => {
     if (!user) return null;
     
     const pending = submissions.filter(s => s.status === 'pending');
@@ -63,60 +66,67 @@ export const ArtistDashboardView: React.FC<ArtistDashboardViewProps> = ({ user, 
 
     return (
         <div className="p-4 md:p-8 animate-fade-in">
-            <header className="text-center mb-8">
-                <h1 className="text-3xl font-bold font-orbitron accent-color-text flex items-center justify-center gap-3">
-                    <UserCircleIcon className="w-8 h-8"/>
-                    Artist Dashboard
-                </h1>
-                <p className="text-gray-400 mt-2">Manage your music submissions and track your stats.</p>
-            </header>
+            <div className="max-w-4xl mx-auto">
+                <button onClick={onBack} className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[var(--accent-color)] transition-colors mb-6 group">
+                    <BackIcon />
+                    <span className="uppercase tracking-widest group-hover:pl-1 transition-all">Back to Explore</span>
+                </button>
 
-            <div className="max-w-4xl mx-auto space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <StatCard 
-                        icon={<StarIcon className="h-6 w-6 text-yellow-400" />}
-                        value={(stats.points || 0).toLocaleString()}
-                        label="Listening Points"
-                    />
-                     <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700/50 flex flex-col items-center justify-center text-center">
-                        <p className="text-gray-300">Ready to get your music heard?</p>
-                        <button onClick={() => setActiveView('explore')} className="mt-2 flex items-center gap-2 bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-200 border border-cyan-500/50 rounded-full py-2 px-5 transition-colors duration-300 font-semibold">
-                            <ExploreIcon className="w-5 h-5"/>
-                            Find Stations to Submit
-                        </button>
+                <header className="text-center mb-8">
+                    <h1 className="text-3xl font-bold font-orbitron accent-color-text flex items-center justify-center gap-3">
+                        <UserCircleIcon className="w-8 h-8"/>
+                        Artist Dashboard
+                    </h1>
+                    <p className="text-gray-400 mt-2">Manage your music submissions and track your stats.</p>
+                </header>
+
+                <div className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <StatCard 
+                            icon={<StarIcon className="h-6 w-6 text-yellow-400" />}
+                            value={(stats.points || 0).toLocaleString()}
+                            label="Listening Points"
+                        />
+                        <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700/50 flex flex-col items-center justify-center text-center">
+                            <p className="text-gray-300">Ready to get your music heard?</p>
+                            <button onClick={() => setActiveView('explore')} className="mt-2 flex items-center gap-2 bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-200 border border-cyan-500/50 rounded-full py-2 px-5 transition-colors duration-300 font-semibold">
+                                <ExploreIcon className="w-5 h-5"/>
+                                Find Stations to Submit
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-                <section>
-                    <h2 className="text-2xl font-bold text-gray-200 mb-4 font-orbitron">My Submissions</h2>
-                    
-                    {submissions.length === 0 ? (
-                        <div className="text-center py-12 bg-gray-900/50 rounded-lg border border-gray-700/50">
-                            <p className="text-gray-400">You haven't submitted any tracks yet.</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-6">
-                            <div>
-                                <h3 className="text-lg font-semibold text-yellow-400 mb-3">Pending ({pending.length})</h3>
-                                <div className="space-y-3">
-                                    {pending.length > 0 ? pending.map(s => <SubmissionItem key={s.id} submission={s} />) : <p className="text-sm text-gray-500">No pending submissions.</p>}
+                    <section>
+                        <h2 className="text-2xl font-bold text-gray-200 mb-4 font-orbitron">My Submissions</h2>
+                        
+                        {submissions.length === 0 ? (
+                            <div className="text-center py-12 bg-gray-900/50 rounded-lg border border-gray-700/50">
+                                <p className="text-gray-400">You haven't submitted any tracks yet.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-yellow-400 mb-3">Pending ({pending.length})</h3>
+                                    <div className="space-y-3">
+                                        {pending.length > 0 ? pending.map(s => <SubmissionItem key={s.id} submission={s} />) : <p className="text-sm text-gray-500">No pending submissions.</p>}
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-green-400 mb-3">Approved ({approved.length})</h3>
+                                    <div className="space-y-3">
+                                        {approved.length > 0 ? approved.map(s => <SubmissionItem key={s.id} submission={s} />) : <p className="text-sm text-gray-500">No approved submissions yet.</p>}
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-red-400 mb-3">Rejected ({rejected.length})</h3>
+                                    <div className="space-y-3">
+                                        {rejected.length > 0 ? rejected.map(s => <SubmissionItem key={s.id} submission={s} />) : <p className="text-sm text-gray-500">No rejected submissions.</p>}
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <h3 className="text-lg font-semibold text-green-400 mb-3">Approved ({approved.length})</h3>
-                                <div className="space-y-3">
-                                     {approved.length > 0 ? approved.map(s => <SubmissionItem key={s.id} submission={s} />) : <p className="text-sm text-gray-500">No approved submissions yet.</p>}
-                                </div>
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-semibold text-red-400 mb-3">Rejected ({rejected.length})</h3>
-                                <div className="space-y-3">
-                                    {rejected.length > 0 ? rejected.map(s => <SubmissionItem key={s.id} submission={s} />) : <p className="text-sm text-gray-500">No rejected submissions.</p>}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </section>
+                        )}
+                    </section>
+                </div>
             </div>
         </div>
     );

@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { SendIcon, StarIcon, ChatBubbleIcon, GlobeIcon } from '../constants';
 
+const BackIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>;
+
 interface ContactUsViewProps {
     onSuccess: (message: string) => void;
+    onBack: () => void; // New prop
 }
 
-export const ContactUsView: React.FC<ContactUsViewProps> = ({ onSuccess }) => {
+export const ContactUsView: React.FC<ContactUsViewProps> = ({ onSuccess, onBack }) => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -29,6 +32,11 @@ export const ContactUsView: React.FC<ContactUsViewProps> = ({ onSuccess }) => {
     return (
         <div className="p-4 md:p-8 animate-fade-in h-full overflow-y-auto">
             <div className="max-w-5xl mx-auto">
+                <button onClick={onBack} className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[var(--accent-color)] transition-colors mb-6 group">
+                    <BackIcon />
+                    <span className="uppercase tracking-widest group-hover:pl-1 transition-all">Back to Explore</span>
+                </button>
+
                 <header className="text-center mb-12 relative">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[var(--accent-color)]/10 rounded-full blur-[100px] pointer-events-none"></div>
                     <h1 className="text-4xl md:text-5xl font-bold font-orbitron text-white mb-4 relative z-10">
@@ -138,7 +146,7 @@ export const ContactUsView: React.FC<ContactUsViewProps> = ({ onSuccess }) => {
                                     rows={5}
                                     value={formData.message}
                                     onChange={e => setFormData({...formData, message: e.target.value})}
-                                    className="w-full bg-black/40 border border-gray-700 rounded-2xl py-4 px-5 text-white focus:outline-none focus:border-[var(--accent-color)] focus:ring-1 focus:ring-[var(--accent-color)] transition-all" 
+                                    className="w-full bg-black/40 border border-gray-700 rounded-2xl py-4 px-5 text-white focus:outline-none focus:ring-1 focus:ring-[var(--accent-color)] transition-all" 
                                     placeholder="Communicate your request to the Music Station Radio team..."
                                 />
                             </div>
