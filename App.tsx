@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -439,7 +440,16 @@ export const App: React.FC = () => {
     setActiveFrame(data.activeFrame);
     // Fix: cast data.unlockedFrames to string[] explicitly to satisfy strict typing and resolve the unknown[] assignment error.
     setUnlockedFrames((data.unlockedFrames as string[]) || ([] as string[]));
-    const profileData: UserProfile = (data.profile as UserProfile) || { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' };
+    // Fix: explicitly construct profileData with type casting for all nested arrays to resolve unknown[] assignment errors.
+    const profileData: UserProfile = data.profile ? {
+        bio: data.profile.bio || '',
+        topArtists: (data.profile.topArtists as string[]) || [],
+        favoriteGenres: (data.profile.favoriteGenres as string[]) || [],
+        following: (data.profile.following as string[]) || [],
+        followers: (data.profile.followers as string[]) || [],
+        location: data.profile.location,
+        customAvatarUrl: data.profile.customAvatarUrl
+    } : { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' };
     setUserProfile(profileData);
     setCustomThemes(data.customThemes || []);
     setActiveSkin(data.activeSkin || 'modern');

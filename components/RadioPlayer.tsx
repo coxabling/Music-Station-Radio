@@ -8,7 +8,7 @@ import { LiveReactions } from './LiveReactions';
 import { SimilarStations } from './SimilarStations';
 import { Marquee } from './Marquee';
 import { RaidModal } from './RaidModal';
-import { EQ_BANDS, EQ_PRESETS, RocketIcon, FireIcon, MYSTERY_TRACK } from '../constants';
+import { EQ_BANDS, EQ_PRESETS, RocketIcon, FireIcon, MYSTERY_TRACK, SpatialAudioIcon } from '../constants';
 
 // Lazily load SongInfoModal as a workaround for "no exported member" error
 const SongInfoModal = React.lazy(() => import('./SongInfoModal'));
@@ -118,6 +118,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
   const [isRaidModalOpen, setIsRaidModalOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isVinylMode, setIsVinylMode] = useState(false);
+  const [isSpatialMode, setIsSpatialMode] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -129,6 +130,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
   const wobbleGainRef = useRef<GainNode | null>(null);
   const noiseGainRef = useRef<GainNode | null>(null);
   const noiseSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const pannerNodeRef = useRef<PannerNode | null>(null);
 
   const faviconCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const originalFaviconHref = useRef<string | null>(null);
@@ -185,7 +187,15 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
           noiseGainRef.current = noiseGain;
           const gainNode = context.createGain();
           gainNodeRef.current = gainNode;
-          noiseGain.connect(gainNode);
+          
+          const panner = context.createPanner();
+          panner.panningModel = 'HRTF';
+          panner.distanceModel = 'inverse';
+          panner.refDistance = 1;
+          panner.maxDistance = 10000;
+          panner.rolloffFactor = 1;
+          pannerNodeRef.current = panner;
+
           const analyser = context.createAnalyser();
           analyser.fftSize = 256;
           analyserRef.current = analyser;
@@ -196,15 +206,46 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
               return filter;
           });
           const source = context.createMediaElementSource(audioRef.current);
+          
+          noiseGain.connect(gainNode);
           source.connect(lofiFilter);
           lofiFilter.connect(wobbleDelay);
           wobbleDelay.connect(gainNode);
-          let lastNode: AudioNode = gainNode;
+          gainNode.connect(panner);
+          
+          let lastNode: AudioNode = panner;
           for (const eqNode of eqNodesRef.current) { lastNode.connect(eqNode); lastNode = eqNode; }
           lastNode.connect(analyser);
           analyser.connect(context.destination);
       }
   }, []); 
+
+  // Spatial Audio Animation Loop
+  useEffect(() => {
+    if (!isSpatialMode || !pannerNodeRef.current || !isPlaying) {
+      if (pannerNodeRef.current) {
+        pannerNodeRef.current.positionX.setValueAtTime(0, audioContextRef.current?.currentTime || 0);
+        pannerNodeRef.current.positionZ.setValueAtTime(0, audioContextRef.current?.currentTime || 0);
+      }
+      return;
+    }
+
+    let angle = 0;
+    let animationId: number;
+    const animate = () => {
+      angle += 0.01;
+      const x = Math.cos(angle) * 5;
+      const z = Math.sin(angle) * 5;
+      if (pannerNodeRef.current) {
+        const now = audioContextRef.current?.currentTime || 0;
+        pannerNodeRef.current.positionX.setTargetAtTime(x, now, 0.1);
+        pannerNodeRef.current.positionZ.setTargetAtTime(z, now, 0.1);
+      }
+      animationId = requestAnimationFrame(animate);
+    };
+    animate();
+    return () => cancelAnimationFrame(animationId);
+  }, [isSpatialMode, isPlaying]);
 
   useEffect(() => {
       if (!isPlaying || !analyserRef.current) {
@@ -245,7 +286,6 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                   grad.addColorStop(1, 'rgba(0,0,0,0)');
                   ctx.beginPath();
                   ctx.arc(16, 16, radius, 0, Math.PI * 2);
-                  ctx.fillStyle = grad;
                   ctx.fill();
                   ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
                   ctx.font = 'bold 16px sans-serif';
@@ -336,7 +376,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
 
   const ControlButton: React.FC<{icon: React.ReactNode; label: string; onClick?: () => void; hasFeature?: boolean; isActive?: boolean; className?: string, progress?: number}> = ({icon, label, onClick, hasFeature = true, isActive = false, className, progress}) => {
     if(!hasFeature) return <div className="w-16 h-16" />;
-    let buttonClass = "relative flex flex-col items-center justify-center gap-1 transition-all text-xs w-16 h-16 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden";
+    let buttonClass = "relative flex flex-col items-center justify-center gap-1 transition-all text-[10px] uppercase font-black tracking-tighter w-16 h-16 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden";
     if (activeSkin === 'winamp') buttonClass = `relative flex items-center justify-center w-12 h-12 border border-[#00ff00] ${isActive ? 'bg-[#00ff00] text-black' : 'bg-black text-[#00ff00]'}`;
     else if (activeSkin === 'wooden') buttonClass = `relative flex flex-col items-center justify-center w-16 h-16 rounded-full shadow-lg border-2 border-[#d4a017] bg-[#5c4033] text-[#d4a017] ${isActive ? 'brightness-125' : ''}`;
     else if (activeSkin === 'boombox') buttonClass = `relative flex flex-col items-center justify-center w-16 h-16 bg-gradient-to-b from-gray-300 to-gray-500 border-2 border-gray-600 rounded shadow-md active:translate-y-1 ${isActive ? 'text-blue-600' : 'text-gray-800'}`;
@@ -403,6 +443,9 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
             <img src={currentNowPlaying?.albumArt || station.coverArt} alt={currentNowPlaying?.title || station.name} className={`w-full h-full object-cover animate-fade-in ${activeSkin === 'modern' ? 'rounded-2xl shadow-2xl' : activeSkin === 'boombox' ? 'rounded-full opacity-80 hover:opacity-100' : activeSkin === 'wooden' ? 'sepia-[.4] rounded-lg border-4 border-[#8b5a2b]' : 'border border-[#00ff00]'}`} key={currentNowPlaying?.albumArt || station.name} onError={handleImageError} />
             {activeSkin === 'boombox' && <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_30%,black_120%)] rounded-full pointer-events-none grid place-items-center opacity-50" style={{backgroundImage: 'radial-gradient(#333 15%, transparent 16%)', backgroundSize: '10px 10px'}}></div>}
             {isVinylMode && <div className="absolute inset-0 pointer-events-none rounded-2xl bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-40 mix-blend-overlay animate-pulse"></div>}
+            {isSpatialMode && isPlaying && (
+              <div className="absolute -inset-4 border-2 border-cyan-400/20 rounded-full animate-ping pointer-events-none"></div>
+            )}
         </div>
         
         <div className={`w-full max-w-xs mt-4 ${activeSkin === 'winamp' ? 'bg-black border border-[#808080] p-2' : ''}`}>
@@ -430,16 +473,17 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
         </div>
         
         <div className="w-full max-w-sm mx-auto mt-4">
-            <div className={`grid grid-cols-6 relative gap-2 ${activeSkin === 'winamp' ? 'bg-[#202020] p-2 border border-[#808080]' : ''}`}>
+            <div className={`grid grid-cols-4 md:grid-cols-7 relative gap-2 ${activeSkin === 'winamp' ? 'bg-[#202020] p-2 border border-[#808080]' : ''}`}>
                 <ControlButton icon={<InfoIcon/>} label="Info" onClick={() => setIsInfoModalOpen(true)} hasFeature={isSong}/>
-                <ControlButton icon={<EqIcon/>} label="Equalizer" onClick={() => setIsEqModalOpen(true)}/>
-                <ControlButton icon={<CassetteIcon className="w-6 h-6"/>} label="Vinyl Mode" onClick={() => setIsVinylMode(!isVinylMode)} isActive={isVinylMode}/>
+                <ControlButton icon={<EqIcon/>} label="EQ" onClick={() => setIsEqModalOpen(true)}/>
+                <ControlButton icon={<CassetteIcon className="w-6 h-6"/>} label="Vinyl" onClick={() => setIsVinylMode(!isVinylMode)} isActive={isVinylMode}/>
+                <ControlButton icon={<SpatialAudioIcon className="w-6 h-6"/>} label="360°" onClick={() => setIsSpatialMode(!isSpatialMode)} isActive={isSpatialMode} />
                 <ControlButton icon={<ChatIcon/>} label="Chat" onClick={onToggleChat}/>
                  <ControlButton icon={<FireIcon className={`w-5 h-5 ${activeSkin === 'modern' ? 'text-orange-500' : ''} ${hypeScore > 80 ? 'animate-bounce' : 'animate-pulse'}`}/>} label="HYPE" onClick={onHype} className={activeSkin === 'modern' ? "bg-orange-500/20 hover:bg-orange-500/40 border border-orange-500/50 text-orange-300" : ""} progress={hypeScore} />
                 <ControlButton icon={<ShareIcon/>} label="Share" onClick={() => setIsShareModalOpen(true)}/>
             </div>
             <div className="flex justify-center mt-2">
-               <ControlButton icon={<RocketIcon className="h-5 w-5"/>} label="Raid" onClick={() => setIsRaidModalOpen(true)} hasFeature={raidStatus === 'idle'} className="w-full h-10 flex-row" />
+               <ControlButton icon={<RocketIcon className="h-5 w-5"/>} label="Raid Network" onClick={() => setIsRaidModalOpen(true)} hasFeature={raidStatus === 'idle'} className="w-full h-10 flex-row" />
             </div>
         </div>
       </div>
