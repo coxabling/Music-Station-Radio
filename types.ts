@@ -16,7 +16,7 @@ export interface Station {
   rating?: number;
   ratingsCount?: number;
   location?: { lat: number; lng: number };
-  countryCode?: string; // New: ISO alpha-2 code
+  countryCode?: string; // ISO alpha-2 code
   owner?: string;
   acceptsSubmissions?: boolean;
   claimRequest?: {
@@ -25,7 +25,7 @@ export interface Station {
     submittedAt: string;
   };
   submissions?: MusicSubmission[];
-  guestbook?: GuestbookEntry[]; // New
+  guestbook?: GuestbookEntry[];
 }
 
 export interface NowPlaying {
@@ -47,8 +47,8 @@ export interface ChatMessage {
   badges?: AchievementID[]; 
   tier?: 'bronze' | 'silver' | 'gold'; 
   avatarUrl?: string; 
-  isSuperChat?: boolean; // New
-  superChatAmount?: number; // New
+  isSuperChat?: boolean;
+  superChatAmount?: number;
 }
 
 // Types for Visualizer Customization
@@ -117,7 +117,7 @@ export interface Alarm {
 }
 
 // Type for UI Themes
-export type ThemeName = 'dynamic' | 'kente' | 'sahara' | 'naija' | 'galaxy' | 'cyberpunk' | 'midnight' | 'forest' | 'royal' | 'retro' | string; // Added string for custom themes
+export type ThemeName = 'dynamic' | 'kente' | 'sahara' | 'naija' | 'galaxy' | 'cyberpunk' | 'midnight' | 'forest' | 'royal' | 'retro' | string;
 
 export interface Theme {
   name: ThemeName;
@@ -126,8 +126,8 @@ export interface Theme {
   gradient?: string;
   description?: string;
   cost?: number;
-  isCustom?: boolean; // New
-  backgroundImage?: string; // New
+  isCustom?: boolean;
+  backgroundImage?: string;
 }
 
 export type SkinID = 'modern' | 'winamp' | 'boombox' | 'wooden';
@@ -227,10 +227,10 @@ export interface FriendActivity {
     status: 'online' | 'offline';
     avatarColor: string;
     frame?: string;
-    customAvatarUrl?: string; // New: Custom avatar URL for friends
+    customAvatarUrl?: string;
 }
 
-export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard' | 'help' | 'contact' | 'trading_post' | 'prediction_market';
+export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard' | 'help' | 'contact' | 'trading_post' | 'prediction_market' | 'morph';
 
 export interface Bet {
   id: string;
@@ -250,7 +250,7 @@ export interface MarketTrend {
     artist: string;
     change: number; // percentage
     volume: number; // total points bet
-    sparkline?: number[]; // Mini history for chart
+    sparkline?: number[];
 }
 
 export interface Quest {
@@ -261,7 +261,7 @@ export interface Quest {
   goal: number;
   reward: number;
   isClaimed: boolean;
-  type: 'daily' | 'weekly'; // New
+  type: 'daily' | 'weekly';
 }
 
 // New Features Types
@@ -277,7 +277,7 @@ export interface Stock {
 export interface Bounty {
     id: string;
     targetType: 'artist' | 'genre' | 'station';
-    targetValue: string; // e.g. "Burna Boy" or "Reggae"
+    targetValue: string;
     description: string;
     reward: number;
     completed: boolean;
@@ -285,7 +285,7 @@ export interface Bounty {
 
 export interface Jingle {
     id: string;
-    url: string; // Blob URL for now
+    url: string; 
     stationUrl: string;
     creator: string;
     status: 'pending' | 'approved' | 'rejected';
@@ -319,8 +319,6 @@ export interface Lounge {
   listeners: number;
 }
 
-// New Feature Types
-
 export interface UserProfile {
     bio: string;
     topArtists: string[];
@@ -328,7 +326,7 @@ export interface UserProfile {
     location?: string;
     following: string[];
     followers: string[];
-    customAvatarUrl?: string; // NEW: URL for custom avatar image
+    customAvatarUrl?: string;
 }
 
 export interface DirectMessage {
@@ -345,9 +343,9 @@ export interface GuestbookEntry {
     username: string;
     message: string;
     timestamp: string;
-    reply?: string; // Station manager reply
-    stationUrl: string; // NEW
-    stationName: string; // NEW
+    reply?: string; 
+    stationUrl: string; 
+    stationName: string; 
 }
 
 export interface UserData {
@@ -365,9 +363,9 @@ export interface UserData {
     // Social
     activeFrame?: string; 
     unlockedFrames: string[]; 
-    profile?: UserProfile; // New
-    messages?: DirectMessage[]; // New
-    customThemes?: Theme[]; // New
+    profile?: UserProfile;
+    messages?: DirectMessage[];
+    customThemes?: Theme[];
 
     // Gamification
     quests?: Quest[];
@@ -377,9 +375,9 @@ export interface UserData {
     // New
     activeSkin: SkinID;
     unlockedSkins: SkinID[];
-    portfolio: Record<string, number>; // Station URL -> Quantity
+    portfolio: Record<string, number>; 
     completedBounties: string[];
-    jingles?: Jingle[]; // NEW
+    jingles?: Jingle[];
 }
 
 // For music submissions by artists
@@ -405,4 +403,11 @@ export interface CommunityEvent {
     timestamp: string;
     icon: React.FC<{className?: string}>;
     role?: User['role'];
+}
+
+export interface MorphState {
+  stationA: Station | null;
+  stationB: Station | null;
+  balance: number; // 0 (Station A) to 1 (Station B)
+  isMorphing: boolean;
 }

@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -25,6 +24,7 @@ import { ArtistDashboardView } from './components/ArtistDashboardView';
 import { RightPanel } from './components/RightPanel';
 import { TradingPostView } from './components/TradingPostView';
 import { PredictionMarketView } from './components/PredictionMarketView';
+import { MorphView } from './components/MorphView';
 import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, CARDS_DB, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, BOUNTIES, ShieldCheckIcon, UploadIcon, CheckCircleIcon, XCircleIcon, MusicNoteIcon, CollectionIcon, TrophyIcon, MYSTERY_TRACK } from './constants';
 import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, CollectorCard, Lounge, UserProfile, AvatarFrame, SkinID, Bounty, Jingle, PlayerSkin, GuestbookEntry, Quest, MarketListing } from './types';
 import { getDominantColor } from './utils/colorExtractor';
@@ -434,7 +434,8 @@ export const App: React.FC = () => {
     setSongVotes(data.songVotes);
     setUnlockedAchievements(data.unlockedAchievements);
     setQuests(data.quests || INITIAL_QUESTS);
-    setCollection(data.collection || []);
+    // Fix: Explicitly cast collection to CollectorCard[] to resolve unknown array assignment issues.
+    setCollection((data.collection as CollectorCard[]) || ([] as CollectorCard[]));
     setActiveFrame(data.activeFrame);
     // Fix: cast data.unlockedFrames to string[] explicitly to satisfy strict typing and resolve the unknown[] assignment error.
     setUnlockedFrames((data.unlockedFrames as string[]) || ([] as string[]));
@@ -798,6 +799,8 @@ export const App: React.FC = () => {
         return <TradingPostView onBack={handleBackToHome} listings={marketListings} onBuy={handleBuyCard} userPoints={stats.points || 0} currentUser={currentUser} />;
       case 'prediction_market':
         return <PredictionMarketView onBack={handleBackToHome} userPoints={stats.points || 0} activeBets={activeBets} onPlaceBet={handlePlaceBet} trendingSongs={Object.values(songVotes)} />;
+      case 'morph':
+        return <MorphView allStations={allStations} favoriteStationUrls={favoriteStationUrls} onBack={handleBackToHome} currentUser={currentUser} />;
       default: 
         return (
             <StationList 
@@ -850,16 +853,18 @@ export const App: React.FC = () => {
         <div className={`absolute inset-0 bg-black/${isDataSaver ? '90' : '70'} backdrop-blur-${isDataSaver ? 'none' : '2xl'}`}></div>
 
         <div className={`relative text-gray-200 flex flex-col h-full transition-[padding-top] duration-300 ${isHeaderVisible && !isImmersiveMode ? 'pt-16' : 'pt-0'}`}>
-            <Header 
-                currentUser={currentUser} 
-                onLogout={handleLogout} 
-                points={stats.points || 0} 
-                onGoToHome={() => setActiveView('dashboard')} 
-                isVisible={isHeaderVisible && !isImmersiveMode} 
-                customAvatarUrl={currentUser?.profile?.customAvatarUrl} 
-                isHypeStormActive={isHypeStormActive}
-                stormRemaining={stormTimeRemaining}
-            />
+            <header className={`fixed top-0 left-0 w-full bg-gray-950/60 backdrop-blur-xl px-4 border-b border-white/10 flex-shrink-0 h-16 z-30 transition-transform duration-300 ease-in-out ${isHeaderVisible && !isImmersiveMode ? 'translate-y-0' : '-translate-y-full'}`}>
+                <Header 
+                    currentUser={currentUser} 
+                    onLogout={handleLogout} 
+                    points={stats.points || 0} 
+                    onGoToHome={() => setActiveView('dashboard')} 
+                    isVisible={isHeaderVisible && !isImmersiveMode} 
+                    customAvatarUrl={currentUser?.profile?.customAvatarUrl} 
+                    isHypeStormActive={isHypeStormActive}
+                    stormRemaining={stormTimeRemaining}
+                />
+            </header>
             <div className={`flex flex-1 overflow-hidden transition-opacity duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                 {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModal(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} onOpenStockMarket={() => setActiveView('prediction_market')} onOpenCollection={() => setIsCollectionOpen(true)} />}
                 <main id="main-content" className="flex-1 overflow-y-auto pb-24">{renderActiveView()}</main>
@@ -875,7 +880,7 @@ export const App: React.FC = () => {
                      </div>
                  </div>
              )}
-             {currentStation && <RadioPlayer station={currentStation} allStations={allStations} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(!isImmersiveMode)} songVotes={songVotes} onVote={handleSongVote} onRateStation={() => {}} userRating={0} onOpenTippingModal={() => {}} onSelectStation={handleSelectStation} onToggleChat={() => setIsChatOpen(!isChatOpen)} onStartRaid={() => {}} raidStatus="idle" raidTarget={null} onHidePlayer={() => setIsPlayerVisible(false)} isVisible={isPlayerVisible} onOpenBuyNow={() => setIsBuyNowModalOpen(true)} isHeaderVisible={isHeaderVisible} onToggleHeader={handleToggleHeader} onHype={handleHype} hypeScore={hypeScore} isPlaying={isPlaying} onPlayPause={setIsPlaying} isDataSaver={isDataSaver} sleepTimerTarget={sleepTimerTarget} userSongVotes={stats.songUserVotes} activeSkin={activeSkin} globalHype={globalHype} isHypeStormActive={isHypeStormActive} />}
+             {currentStation && activeView !== 'morph' && <RadioPlayer station={currentStation} allStations={allStations} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(!isImmersiveMode)} songVotes={songVotes} onVote={handleSongVote} onRateStation={() => {}} userRating={0} onOpenTippingModal={() => {}} onSelectStation={handleSelectStation} onToggleChat={() => setIsChatOpen(!isChatOpen)} onStartRaid={() => {}} raidStatus="idle" raidTarget={null} onHidePlayer={() => setIsPlayerVisible(false)} isVisible={isPlayerVisible} onOpenBuyNow={() => setIsBuyNowModalOpen(true)} isHeaderVisible={isHeaderVisible} onToggleHeader={handleToggleHeader} onHype={handleHype} hypeScore={hypeScore} isPlaying={isPlaying} onPlayPause={setIsPlaying} isDataSaver={isDataSaver} sleepTimerTarget={sleepTimerTarget} userSongVotes={stats.songUserVotes} activeSkin={activeSkin} globalHype={globalHype} isHypeStormActive={isHypeStormActive} />}
              {currentStation && <ListeningPartyChat station={currentStation} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} nowPlaying={isHypeStormActive ? MYSTERY_TRACK : nowPlaying} onSuperChat={handleSendSuperChat} userPoints={stats.points || 0} activeFrame={activeFrame} onUserClick={(u) => { setTargetGiftUser(u); setIsGiftModalOpen(true); }} currentUserAvatarUrl={currentUser?.profile?.customAvatarUrl} />}
         </div>
       </div>
