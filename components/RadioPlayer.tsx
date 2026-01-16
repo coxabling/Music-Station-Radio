@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { Station, NowPlaying, EQSettings, SongVote, SkinID } from '../types';
 import { fetchNowPlaying } from '../services/geminiService';
@@ -9,7 +8,7 @@ import { LiveReactions } from './LiveReactions';
 import { SimilarStations } from './SimilarStations';
 import { Marquee } from './Marquee';
 import { RaidModal } from './RaidModal';
-import { EQ_BANDS, EQ_PRESETS, RocketIcon, FireIcon } from '../constants';
+import { EQ_BANDS, EQ_PRESETS, RocketIcon, FireIcon, MYSTERY_TRACK } from '../constants';
 
 // Lazily load SongInfoModal as a workaround for "no exported member" error
 const SongInfoModal = React.lazy(() => import('./SongInfoModal'));
@@ -25,7 +24,7 @@ const InfoIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-
 const EqIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>;
 const ThumbUpIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}><path d="M2 20.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v6ZM20.45 8.14a2.25 2.25 0 0 0-1.8-1.14H14.5V4.75a2.75 2.75 0 0 0-5.5 0v3.83l-1.32.74a2.25 2.25 0 0 0-1.18 2V17.5a2.25 2.25 0 0 0 2.25 2.25h8.32a2.25 2.25 0 0 0 2.16-1.66l1.75-6.33a2.25 2.25 0 0 0-.5-2.28Z" /></svg>;
 const ThumbDownIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}><path d="M22 3.5a1.5 1.5 0 11-3 0v6a1.5 1.5 0 013 0v-6ZM3.55 15.86a2.25 2.25 0 0 0 1.8 1.14h4.15v2.25a2.75 2.75 0 0 0 5.5 0v-3.83l1.32-.74a2.25 2.25 0 0 0 1.18-2V6.5a2.25 2.25 0 0 0-2.25-2.25H6.88a2.25 2.25 0 0 0-2.16 1.66l-1.75 6.33a2.25 2.25 0 0 0 0.5 2.28Z" /></svg>;
-const ShareIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} viewBox="0 0 20 20" fill="currentColor"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" /></svg>;
+const ShareIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} viewBox="0 0 20 20" fill="currentColor"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" /></svg>;
 const VolumeUpIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>;
 const VolumeOffIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clipRule="evenodd" /><path d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" /></svg>;
 const ChatIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>;
@@ -56,6 +55,7 @@ const CassetteIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns
     <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18" />
   </svg>
  );
+
 interface RadioPlayerProps {
   station: Station;
   allStations: Station[];
@@ -86,10 +86,12 @@ interface RadioPlayerProps {
   onPlayPause: (playing: boolean) => void;
   isDataSaver?: boolean;
   sleepTimerTarget?: number | null;
-  activeSkin: SkinID; // New
+  activeSkin: SkinID;
+  globalHype?: number; // New
+  isHypeStormActive?: boolean; // New
 }
 
-// Helper to create white noise buffer (reused from previous change)
+// Helper to create white noise buffer
 const createNoiseBuffer = (ctx: AudioContext) => {
     const bufferSize = ctx.sampleRate * 4; 
     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -105,10 +107,10 @@ const createNoiseBuffer = (ctx: AudioContext) => {
 let lastOut = 0;
 
 export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
-  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible, onOpenBuyNow, isHeaderVisible, onToggleHeader, onHype, hypeScore, isPlaying, onPlayPause, isDataSaver, sleepTimerTarget, activeSkin } = props;
+  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible, onOpenBuyNow, isHeaderVisible, onToggleHeader, onHype, hypeScore, isPlaying, onPlayPause, isDataSaver, sleepTimerTarget, activeSkin, globalHype = 0, isHypeStormActive } = props;
 
   const [volume, setVolume] = useState(0.75);
-  const [fadeFactor, setFadeFactor] = useState(1); // For sleep timer
+  const [fadeFactor, setFadeFactor] = useState(1); 
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isEqModalOpen, setIsEqModalOpen] = useState(false);
@@ -123,47 +125,38 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
   const eqNodesRef = useRef<BiquadFilterNode[]>([]);
   const gainNodeRef = useRef<GainNode | null>(null);
   
-  // Lo-Fi / Vinyl Mode Refs
   const lofiFilterRef = useRef<BiquadFilterNode | null>(null);
   const wobbleGainRef = useRef<GainNode | null>(null);
   const noiseGainRef = useRef<GainNode | null>(null);
   const noiseSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
-  // Favicon dynamic rendering refs
   const faviconCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const originalFaviconHref = useRef<string | null>(null);
   
   const [eqSettings, setEqSettings] = useState<EQSettings>({ on: false, values: EQ_PRESETS[0].values, preamp: 1 });
   
-  const isSong = nowPlaying && nowPlaying.title !== "Live Stream" && nowPlaying.title !== "Station Data Unavailable" && !!nowPlaying.songId;
+  const currentNowPlaying = isHypeStormActive ? MYSTERY_TRACK : nowPlaying;
+  const isSong = currentNowPlaying && currentNowPlaying.title !== "Live Stream" && currentNowPlaying.title !== "Station Data Unavailable" && !!currentNowPlaying.songId;
 
   const getSong = useCallback(async () => {
-    if (!station) return;
+    if (!station || isHypeStormActive) return;
     const songInfo = await fetchNowPlaying(station);
     setNowPlaying(songInfo);
-  }, [station]);
+  }, [station, isHypeStormActive]);
   
-  useEffect(() => { onNowPlayingUpdate(nowPlaying); }, [nowPlaying, onNowPlayingUpdate]);
+  useEffect(() => { onNowPlayingUpdate(currentNowPlaying); }, [currentNowPlaying, onNowPlayingUpdate]);
   
-  // Handle Sleep Timer Fade Out
   useEffect(() => {
       if (!sleepTimerTarget) {
           setFadeFactor(1);
           return;
       }
-      
       const interval = setInterval(() => {
           const diff = sleepTimerTarget - Date.now();
-          if (diff <= 0) {
-              setFadeFactor(0);
-          } else if (diff <= 60000) {
-              // Linear fade out over the last 60 seconds
-              setFadeFactor(diff / 60000);
-          } else {
-              setFadeFactor(1);
-          }
+          if (diff <= 0) setFadeFactor(0);
+          else if (diff <= 60000) setFadeFactor(diff / 60000);
+          else setFadeFactor(1);
       }, 1000);
-      
       return () => clearInterval(interval);
   }, [sleepTimerTarget]);
 
@@ -172,51 +165,40 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
       if (!audioContextRef.current) {
           const context = new (window.AudioContext || (window as any).webkitAudioContext)();
           audioContextRef.current = context;
-
           const lofiFilter = context.createBiquadFilter();
           lofiFilter.type = 'lowpass';
           lofiFilter.frequency.value = 22000;
           lofiFilterRef.current = lofiFilter;
-
           const wobbleDelay = context.createDelay();
           wobbleDelay.delayTime.value = 0.05;
-
           const wobbleOsc = context.createOscillator();
           wobbleOsc.frequency.value = 0.5; 
           wobbleOsc.type = 'sine';
           wobbleOsc.start();
-
           const wobbleGain = context.createGain();
           wobbleGain.gain.value = 0;
           wobbleGainRef.current = wobbleGain;
-
           wobbleOsc.connect(wobbleGain);
           wobbleGain.connect(wobbleDelay.delayTime);
-
           const noiseGain = context.createGain();
           noiseGain.gain.value = 0;
           noiseGainRef.current = noiseGain;
-
           const gainNode = context.createGain();
           gainNodeRef.current = gainNode;
           noiseGain.connect(gainNode);
-
           const analyser = context.createAnalyser();
           analyser.fftSize = 256;
           analyserRef.current = analyser;
-
           eqNodesRef.current = EQ_BANDS.map(band => {
               const filter = context.createBiquadFilter();
               filter.type = band.type;
               filter.frequency.value = band.freq;
               return filter;
           });
-
           const source = context.createMediaElementSource(audioRef.current);
           source.connect(lofiFilter);
           lofiFilter.connect(wobbleDelay);
           wobbleDelay.connect(gainNode);
-          
           let lastNode: AudioNode = gainNode;
           for (const eqNode of eqNodesRef.current) { lastNode.connect(eqNode); lastNode = eqNode; }
           lastNode.connect(analyser);
@@ -224,17 +206,14 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
       }
   }, []); 
 
-  // Pulse Favicon Logic
   useEffect(() => {
       if (!isPlaying || !analyserRef.current) {
-          // Restore original favicon if playback stops
           if (originalFaviconHref.current) {
               const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
               if (link) link.href = originalFaviconHref.current;
           }
           return;
       }
-
       if (!faviconCanvasRef.current) {
           faviconCanvasRef.current = document.createElement('canvas');
           faviconCanvasRef.current.width = 32;
@@ -242,59 +221,43 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
           const initialLink = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
           if (initialLink) originalFaviconHref.current = initialLink.href;
       }
-
       const canvas = faviconCanvasRef.current;
       const ctx = canvas.getContext('2d');
       const analyser = analyserRef.current;
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      
       let lastUpdate = 0;
-      const fpsLimit = 1000 / 20; // Throttled for tab performance
-
+      const fpsLimit = 1000 / 20; 
       const animateFavicon = (time: number) => {
           if (!isPlaying) return;
-          
           if (time - lastUpdate > fpsLimit) {
               lastUpdate = time;
               analyser.getByteFrequencyData(dataArray);
-              
-              // Calculate bass intensity (average of first 10 bins)
               let sum = 0;
               for (let i = 0; i < 10; i++) sum += dataArray[i];
               const intensity = (sum / 10) / 255;
-
               if (ctx) {
                   ctx.clearRect(0, 0, 32, 32);
-                  
-                  // Brand colors: Cyan to Purple shift
                   const hue = 180 + (intensity * 100); 
                   const radius = 8 + (intensity * 12);
-                  
-                  // Radial gradient for "High Grade" glow
                   const grad = ctx.createRadialGradient(16, 16, 2, 16, 16, 16);
                   grad.addColorStop(0, `hsl(${hue}, 100%, 70%)`);
                   grad.addColorStop(0.6, `hsl(${hue}, 80%, 40%)`);
                   grad.addColorStop(1, 'rgba(0,0,0,0)');
-
                   ctx.beginPath();
                   ctx.arc(16, 16, radius, 0, Math.PI * 2);
                   ctx.fillStyle = grad;
                   ctx.fill();
-
-                  // Simple white letter 'M' overlay for branding
                   ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
                   ctx.font = 'bold 16px sans-serif';
                   ctx.textAlign = 'center';
                   ctx.textBaseline = 'middle';
                   ctx.fillText('M', 16, 17);
-
                   const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
                   if (link) link.href = canvas.toDataURL('image/png');
               }
           }
           requestAnimationFrame(animateFavicon);
       };
-
       const handle = requestAnimationFrame(animateFavicon);
       return () => cancelAnimationFrame(handle);
   }, [isPlaying]);
@@ -303,11 +266,9 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
       if (!audioContextRef.current) return;
       const ctx = audioContextRef.current;
       const now = ctx.currentTime;
-
       if (isVinylMode) {
           lofiFilterRef.current?.frequency.setTargetAtTime(3500, now, 0.5); 
           wobbleGainRef.current?.gain.setTargetAtTime(0.0015, now, 0.5); 
-
           if (!noiseSourceRef.current) {
               const buffer = createNoiseBuffer(ctx);
               const src = ctx.createBufferSource();
@@ -317,13 +278,11 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
               src.start();
               noiseSourceRef.current = src;
           }
-          // Reduced noise volume for high-grade audio experience
           noiseGainRef.current?.gain.setTargetAtTime(0.015, now, 0.5); 
       } else {
           lofiFilterRef.current?.frequency.setTargetAtTime(22000, now, 0.5);
           wobbleGainRef.current?.gain.setTargetAtTime(0, now, 0.5);
           noiseGainRef.current?.gain.setTargetAtTime(0, now, 0.2);
-          
           setTimeout(() => {
               if (!isVinylMode && noiseSourceRef.current) {
                    try { noiseSourceRef.current.stop(); } catch(e){}
@@ -337,21 +296,13 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
   useEffect(() => {
     const audioEl = audioRef.current;
     if (!audioEl) return;
-    
-    // Security Fix: Upgrade HTTP to HTTPS for all stream URLs to prevent mixed content blocking
     const secureUrl = station.streamUrl.replace(/^http:\/\//i, 'https://');
     audioEl.src = secureUrl;
     audioEl.crossOrigin = "anonymous";
-    
     const playPromise = audioEl.play();
     if(playPromise !== undefined) {
-      playPromise.then(() => {
-        onPlayPause(true);
-      }).catch(error => {
-        if (error.name !== 'AbortError') {
-            console.error("Audio playback failed:", error);
-            onPlayPause(false);
-        }
+      playPromise.then(() => onPlayPause(true)).catch(error => {
+        if (error.name !== 'AbortError') onPlayPause(false);
       });
     }
     getSong();
@@ -362,27 +313,18 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
   const togglePlayPause = useCallback(async () => {
     const audioEl = audioRef.current;
     if (!audioEl) return;
-  
-    if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-      await audioContextRef.current.resume();
-    }
-  
+    if (audioContextRef.current && audioContextRef.current.state === 'suspended') await audioContextRef.current.resume();
     if (isPlaying) {
       audioEl.pause();
       onPlayPause(false);
     } else {
       const playPromise = audioEl.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => onPlayPause(true)).catch(error => { console.error("Playback failed:", error); onPlayPause(false); });
-      }
+      if (playPromise !== undefined) playPromise.then(() => onPlayPause(true)).catch(e => onPlayPause(false));
     }
   }, [isPlaying]);
   
   useEffect(() => { 
-      if (gainNodeRef.current) {
-          // Combine user volume, preamp, and sleep timer fade factor
-          gainNodeRef.current.gain.value = volume * (eqSettings.on ? eqSettings.preamp : 1) * fadeFactor;
-      }
+      if (gainNodeRef.current) gainNodeRef.current.gain.value = volume * (eqSettings.on ? eqSettings.preamp : 1) * fadeFactor;
   }, [volume, eqSettings, fadeFactor]);
 
   useEffect(() => {
@@ -394,44 +336,24 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
 
   const ControlButton: React.FC<{icon: React.ReactNode; label: string; onClick?: () => void; hasFeature?: boolean; isActive?: boolean; className?: string, progress?: number}> = ({icon, label, onClick, hasFeature = true, isActive = false, className, progress}) => {
     if(!hasFeature) return <div className="w-16 h-16" />;
-    
-    // Skin-based styling for buttons
     let buttonClass = "relative flex flex-col items-center justify-center gap-1 transition-all text-xs w-16 h-16 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden";
-    
-    if (activeSkin === 'winamp') {
-        buttonClass = `relative flex items-center justify-center w-12 h-12 border border-[#00ff00] ${isActive ? 'bg-[#00ff00] text-black' : 'bg-black text-[#00ff00]'}`;
-    } else if (activeSkin === 'wooden') {
-        buttonClass = `relative flex flex-col items-center justify-center w-16 h-16 rounded-full shadow-lg border-2 border-[#d4a017] bg-[#5c4033] text-[#d4a017] ${isActive ? 'brightness-125' : ''}`;
-    } else if (activeSkin === 'boombox') {
-        buttonClass = `relative flex flex-col items-center justify-center w-16 h-16 bg-gradient-to-b from-gray-300 to-gray-500 border-2 border-gray-600 rounded shadow-md active:translate-y-1 ${isActive ? 'text-blue-600' : 'text-gray-800'}`;
-    } else {
-        // Modern
-        buttonClass += ` ${isActive ? 'bg-[var(--accent-color)] text-black hover:bg-[var(--accent-color)]/90' : 'text-gray-400 hover:text-white bg-white/5 hover:bg-white/10'}`;
-    }
+    if (activeSkin === 'winamp') buttonClass = `relative flex items-center justify-center w-12 h-12 border border-[#00ff00] ${isActive ? 'bg-[#00ff00] text-black' : 'bg-black text-[#00ff00]'}`;
+    else if (activeSkin === 'wooden') buttonClass = `relative flex flex-col items-center justify-center w-16 h-16 rounded-full shadow-lg border-2 border-[#d4a017] bg-[#5c4033] text-[#d4a017] ${isActive ? 'brightness-125' : ''}`;
+    else if (activeSkin === 'boombox') buttonClass = `relative flex flex-col items-center justify-center w-16 h-16 bg-gradient-to-b from-gray-300 to-gray-500 border-2 border-gray-600 rounded shadow-md active:translate-y-1 ${isActive ? 'text-blue-600' : 'text-gray-800'}`;
+    else buttonClass += ` ${isActive ? 'bg-[var(--accent-color)] text-black hover:bg-[var(--accent-color)]/90' : 'text-gray-400 hover:text-white bg-white/5 hover:bg-white/10'}`;
 
     return (
-        <button 
-            onClick={onClick} 
-            className={`${buttonClass} ${className}`}
-            disabled={!hasFeature}
-            title={label}
-        >
+        <button onClick={onClick} className={`${buttonClass} ${className}`} disabled={!hasFeature} title={label}>
             {progress !== undefined && activeSkin === 'modern' && (
-              <div 
-                className="absolute bottom-0 left-0 right-0 bg-orange-500/40 transition-all duration-300 ease-out" 
-                style={{ height: `${progress}%` }}
-              />
+              <div className="absolute bottom-0 left-0 right-0 bg-orange-500/40 transition-all duration-300 ease-out" style={{ height: `${progress}%` }} />
             )}
-            <div className="relative z-10 flex flex-col items-center">
-               {icon}
-            </div>
+            <div className="relative z-10 flex flex-col items-center">{icon}</div>
         </button>
     )
   }
   
-  const userVote = isSong && nowPlaying.songId ? userSongVotes?.[nowPlaying.songId] : undefined;
+  const userVote = isSong && currentNowPlaying.songId ? userSongVotes?.[currentNowPlaying.songId] : undefined;
   
-  // Skin Specific Classes
   const getPlayerContainerClass = () => {
       switch(activeSkin) {
           case 'winamp': return "bg-black border-2 border-[#808080] font-mono text-[#00ff00]";
@@ -445,13 +367,10 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
     <>
     <div 
       className={`fixed inset-0 z-50 flex flex-col p-4 transition-transform duration-500 ease-in-out ${isExpanded && isVisible ? 'translate-y-0' : 'translate-y-full'} ${getPlayerContainerClass()}`}
-      style={activeSkin === 'modern' ? {
-        backgroundImage: 'radial-gradient(ellipse at bottom, var(--accent-color-rgb, 103, 232, 249) 0.1%, transparent 40%)'
-      } : {}}
+      style={activeSkin === 'modern' ? { backgroundImage: 'radial-gradient(ellipse at bottom, var(--accent-color-rgb, 103, 232, 249) 0.1%, transparent 40%)' } : {}}
     >
       {activeSkin === 'modern' && <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-black/50"></div>}
       
-      {/* Header Bar */}
       <div className={`flex-shrink-0 text-center relative z-10 ${activeSkin === 'winamp' ? 'bg-[#202020] border-b border-[#808080] mb-2' : ''}`}>
         <button onClick={() => setIsExpanded(false)} className={`absolute top-0 left-0 p-4 ${activeSkin === 'winamp' ? 'text-[#00ff00]' : 'text-gray-400 hover:text-white'}`}><ChevronDownIcon/></button>
         <div className="absolute top-0 right-0 flex items-center">
@@ -463,12 +382,11 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
           </button>
         </div>
         <div className="pt-3">
-          {activeSkin !== 'winamp' && <p className="text-sm font-semibold uppercase tracking-wider">Now Playing</p>}
+          {activeSkin !== 'winamp' && <p className="text-sm font-semibold uppercase tracking-wider">{isHypeStormActive ? 'NETWORK EVENT' : 'Now Playing'}</p>}
           <p className={`text-xs ${activeSkin === 'winamp' ? 'text-[#00ff00] font-bold' : 'text-gray-400'}`}>{activeSkin === 'winamp' ? `*** ${station.name} ***` : station.name}</p>
         </div>
       </div>
 
-      {/* Main Content Area */}
       <div className="relative flex-grow flex flex-col items-center justify-center gap-4 text-center px-4 z-10">
         {raidStatus === 'voting' && raidTarget && (
           <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10 animate-fade-in">
@@ -481,78 +399,33 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
           </div>
         )}
         
-        <div 
-            className={`w-full max-w-xs aspect-square transition-all duration-300 ease-in-out relative ${activeSkin === 'boombox' ? 'border-8 border-gray-700 rounded-full shadow-[inset_0_0_20px_black] bg-black' : ''}`}
-            style={activeSkin === 'modern' ? { filter: `drop-shadow(0 10px 25px rgba(var(--accent-color-rgb), 0.3))` } : {}}
-        >
-            <img 
-                src={nowPlaying?.albumArt || station.coverArt} 
-                alt={nowPlaying?.title || station.name} 
-                className={`w-full h-full object-cover animate-fade-in ${activeSkin === 'modern' ? 'rounded-2xl shadow-2xl' : activeSkin === 'boombox' ? 'rounded-full opacity-80 hover:opacity-100' : activeSkin === 'wooden' ? 'sepia-[.4] rounded-lg border-4 border-[#8b5a2b]' : 'border border-[#00ff00]'}`}
-                key={nowPlaying?.albumArt || station.name} 
-                onError={handleImageError} 
-            />
-            {/* Boombox Speaker Grille Overlay */}
+        <div className={`w-full max-w-xs aspect-square transition-all duration-300 ease-in-out relative ${activeSkin === 'boombox' ? 'border-8 border-gray-700 rounded-full shadow-[inset_0_0_20px_black] bg-black' : ''}`} style={activeSkin === 'modern' ? { filter: `drop-shadow(0 10px 25px rgba(var(--accent-color-rgb), 0.3))` } : {}}>
+            <img src={currentNowPlaying?.albumArt || station.coverArt} alt={currentNowPlaying?.title || station.name} className={`w-full h-full object-cover animate-fade-in ${activeSkin === 'modern' ? 'rounded-2xl shadow-2xl' : activeSkin === 'boombox' ? 'rounded-full opacity-80 hover:opacity-100' : activeSkin === 'wooden' ? 'sepia-[.4] rounded-lg border-4 border-[#8b5a2b]' : 'border border-[#00ff00]'}`} key={currentNowPlaying?.albumArt || station.name} onError={handleImageError} />
             {activeSkin === 'boombox' && <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_30%,black_120%)] rounded-full pointer-events-none grid place-items-center opacity-50" style={{backgroundImage: 'radial-gradient(#333 15%, transparent 16%)', backgroundSize: '10px 10px'}}></div>}
-            
-            {isVinylMode && (
-              <div className="absolute inset-0 pointer-events-none rounded-2xl bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-40 mix-blend-overlay animate-pulse"></div>
-            )}
+            {isVinylMode && <div className="absolute inset-0 pointer-events-none rounded-2xl bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-40 mix-blend-overlay animate-pulse"></div>}
         </div>
         
         <div className={`w-full max-w-xs mt-4 ${activeSkin === 'winamp' ? 'bg-black border border-[#808080] p-2' : ''}`}>
-          <Marquee text={nowPlaying?.title || station.name} className={`text-2xl font-bold ${activeSkin === 'winamp' ? 'text-[#00ff00] font-mono' : activeSkin === 'wooden' ? 'text-[#d4a017] font-serif' : 'text-white'}`} />
-          <Marquee text={nowPlaying?.artist || 'Live Stream'} className={`text-lg ${activeSkin === 'winamp' ? 'text-[#00ff00] font-mono' : 'text-gray-300'}`} />
+          <Marquee text={currentNowPlaying?.title || station.name} className={`text-2xl font-bold ${activeSkin === 'winamp' ? 'text-[#00ff00] font-mono' : activeSkin === 'wooden' ? 'text-[#d4a017] font-serif' : 'text-white'}`} />
+          <Marquee text={currentNowPlaying?.artist || 'Live Stream'} className={`text-lg ${activeSkin === 'winamp' ? 'text-[#00ff00] font-mono' : 'text-gray-300'}`} />
         </div>
 
         <div className="flex items-center gap-6 my-2">
-            <button 
-                onClick={() => isSong && onVote(nowPlaying.songId, 'like')}
-                disabled={!isSong}
-                className={`p-2 rounded-full transition-all duration-200 active:scale-95 ${isSong ? 'hover:bg-white/10' : 'opacity-30 cursor-not-allowed'} ${userVote === 'like' ? 'text-green-400 scale-110 shadow-lg shadow-green-400/50' : activeSkin === 'winamp' ? 'text-[#00ff00]' : 'text-gray-400 hover:text-white'}`}
-                aria-label="Like this song"
-            >
-                <ThumbUpIcon className="w-7 h-7" />
-            </button>
-            <button
-                onClick={() => onOpenBuyNow()}
-                disabled={!isSong}
-                className={`p-3 rounded-full transition-all duration-200 active:scale-95 ${isSong ? 'hover:bg-white/10' : 'opacity-30 cursor-not-allowed'} ${activeSkin === 'winamp' ? 'text-[#00ff00]' : 'text-gray-400 hover:text-white'}`}
-                aria-label="Buy this song"
-            >
-                <ShoppingCartIcon className="w-7 h-7" />
-            </button>
-            <button
-                onClick={() => isSong && onVote(nowPlaying.songId, 'dislike')}
-                disabled={!isSong}
-                className={`p-2 rounded-full transition-all duration-200 active:scale-95 ${isSong ? 'hover:bg-white/10' : 'opacity-30 cursor-not-allowed'} ${userVote === 'dislike' ? 'text-red-400 scale-110 shadow-lg shadow-red-400/50' : activeSkin === 'winamp' ? 'text-[#00ff00]' : 'text-gray-400 hover:text-white'}`}
-                aria-label="Dislike this song"
-            >
-                <ThumbDownIcon className="w-7 h-7" />
-            </button>
+            <button onClick={() => isSong && onVote(currentNowPlaying.songId, 'like')} disabled={!isSong} className={`p-2 rounded-full transition-all duration-200 active:scale-95 ${isSong ? 'hover:bg-white/10' : 'opacity-30 cursor-not-allowed'} ${userVote === 'like' ? 'text-green-400 scale-110 shadow-lg shadow-green-400/50' : activeSkin === 'winamp' ? 'text-[#00ff00]' : 'text-gray-400 hover:text-white'}`} aria-label="Like this song"><ThumbUpIcon className="w-7 h-7" /></button>
+            <button onClick={() => onOpenBuyNow()} disabled={!isSong} className={`p-3 rounded-full transition-all duration-200 active:scale-95 ${isSong ? 'hover:bg-white/10' : 'opacity-30 cursor-not-allowed'} ${activeSkin === 'winamp' ? 'text-[#00ff00]' : 'text-gray-400 hover:text-white'}`} aria-label="Buy this song"><ShoppingCartIcon className="w-7 h-7" /></button>
+            <button onClick={() => isSong && onVote(currentNowPlaying.songId, 'dislike')} disabled={!isSong} className={`p-2 rounded-full transition-all duration-200 active:scale-95 ${isSong ? 'hover:bg-white/10' : 'opacity-30 cursor-not-allowed'} ${userVote === 'dislike' ? 'text-red-400 scale-110 shadow-lg shadow-red-400/50' : activeSkin === 'winamp' ? 'text-[#00ff00]' : 'text-gray-400 hover:text-white'}`} aria-label="Dislike this song"><ThumbDownIcon className="w-7 h-7" /></button>
         </div>
       </div>
       
-      {/* Controls Area */}
       <div className="flex-shrink-0 flex flex-col gap-4 z-10">
         <div className="w-full max-w-sm mx-auto"><LiveReactions/></div>
         <div className="w-full h-16">
-            {!isDataSaver ? (
-                <Visualizer analyser={analyserRef.current} isPlaying={isPlaying} />
-            ) : (
-                <div className="w-full h-full flex items-center justify-center bg-black/20 rounded-lg text-xs text-gray-500">
-                    Visualizer Paused (Data Saver)
-                </div>
-            )}
+            {!isDataSaver ? <Visualizer analyser={analyserRef.current} isPlaying={isPlaying} /> : <div className="w-full h-full flex items-center justify-center bg-black/20 rounded-lg text-xs text-gray-500">Visualizer Paused (Data Saver)</div>}
         </div>
         
         <div className={`flex items-center justify-center gap-8 ${activeSkin === 'winamp' ? 'text-[#00ff00]' : activeSkin === 'wooden' ? 'text-[#4a3728]' : 'text-white'}`}>
           <button onClick={onPreviousStation} className={`${activeSkin === 'boombox' ? 'bg-gray-300 text-black w-12 h-12 rounded-full border-b-4 border-gray-500 active:border-b-0 active:translate-y-1' : ''} hover:scale-110 transition-transform`}><BackwardIcon /></button>
-          
-          <button onClick={togglePlayPause} className={`w-20 h-20 rounded-full flex items-center justify-center transition-transform ${activeSkin === 'modern' ? 'bg-white/10 text-[var(--accent-color)] ring-2 ring-white/20 hover:scale-105' : activeSkin === 'winamp' ? 'border-2 border-[#00ff00] text-[#00ff00]' : activeSkin === 'boombox' ? 'bg-red-600 border-b-8 border-red-800 active:border-b-0 active:translate-y-2 shadow-lg' : 'bg-[#d4a017] text-[#3b2417] shadow-xl border-4 border-[#8b5a2b]'}`}>
-            <div className="w-10 h-10">{isPlaying ? <PauseIcon/> : <PlayIcon/>}</div>
-          </button>
-          
+          <button onClick={togglePlayPause} className={`w-20 h-20 rounded-full flex items-center justify-center transition-transform ${activeSkin === 'modern' ? 'bg-white/10 text-[var(--accent-color)] ring-2 ring-white/20 hover:scale-105' : activeSkin === 'winamp' ? 'border-2 border-[#00ff00] text-[#00ff00]' : activeSkin === 'boombox' ? 'bg-red-600 border-b-8 border-red-800 active:border-b-0 active:translate-y-2 shadow-lg' : 'bg-[#d4a017] text-[#3b2417] shadow-xl border-4 border-[#8b5a2b]'}`}><div className="w-10 h-10">{isPlaying ? <PauseIcon/> : <PlayIcon/>}</div></button>
           <button onClick={onNextStation} className={`${activeSkin === 'boombox' ? 'bg-gray-300 text-black w-12 h-12 rounded-full border-b-4 border-gray-500 active:border-b-0 active:translate-y-1' : ''} hover:scale-110 transition-transform`}><ForwardIcon /></button>
         </div>
         
@@ -562,13 +435,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                 <ControlButton icon={<EqIcon/>} label="Equalizer" onClick={() => setIsEqModalOpen(true)}/>
                 <ControlButton icon={<CassetteIcon className="w-6 h-6"/>} label="Vinyl Mode" onClick={() => setIsVinylMode(!isVinylMode)} isActive={isVinylMode}/>
                 <ControlButton icon={<ChatIcon/>} label="Chat" onClick={onToggleChat}/>
-                 <ControlButton 
-                    icon={<FireIcon className={`w-5 h-5 ${activeSkin === 'modern' ? 'text-orange-500' : ''} ${hypeScore > 80 ? 'animate-bounce' : 'animate-pulse'}`}/>} 
-                    label="HYPE" 
-                    onClick={onHype} 
-                    className={activeSkin === 'modern' ? "bg-orange-500/20 hover:bg-orange-500/40 border border-orange-500/50 text-orange-300" : ""}
-                    progress={hypeScore}
-                />
+                 <ControlButton icon={<FireIcon className={`w-5 h-5 ${activeSkin === 'modern' ? 'text-orange-500' : ''} ${hypeScore > 80 ? 'animate-bounce' : 'animate-pulse'}`}/>} label="HYPE" onClick={onHype} className={activeSkin === 'modern' ? "bg-orange-500/20 hover:bg-orange-500/40 border border-orange-500/50 text-orange-300" : ""} progress={hypeScore} />
                 <ControlButton icon={<ShareIcon/>} label="Share" onClick={() => setIsShareModalOpen(true)}/>
             </div>
             <div className="flex justify-center mt-2">
@@ -577,56 +444,45 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
         </div>
       </div>
     </div>
-    {/* Minimized Player */}
+
     <div className={`fixed bottom-0 left-0 right-0 z-40 bg-gray-800/60 backdrop-blur-xl border-t border-white/10 transition-transform duration-500 ease-in-out ${isExpanded || !isVisible ? 'translate-y-full' : 'translate-y-0'}`} onClick={() => setIsExpanded(true)}>
         <div className="container mx-auto px-4 flex items-center h-20">
             <div className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
-                <img src={nowPlaying?.albumArt || station.coverArt} alt={nowPlaying?.title || station.name} className="w-12 h-12 rounded-lg shadow-lg object-cover" onError={handleImageError} />
+                <img src={currentNowPlaying?.albumArt || station.coverArt} alt={currentNowPlaying?.title || station.name} className="w-12 h-12 rounded-lg shadow-lg object-cover" onError={handleImageError} />
                 <div className="flex-1 min-w-0">
-                    <Marquee text={nowPlaying?.title || station.name} className="font-bold text-white" />
-                    <Marquee text={nowPlaying?.artist || 'Live Stream'} className="text-sm text-gray-300" />
+                    <Marquee text={currentNowPlaying?.title || station.name} className="font-bold text-white" />
+                    <Marquee text={currentNowPlaying?.artist || 'Live Stream'} className="text-sm text-gray-300" />
                 </div>
             </div>
             <div className="flex items-center gap-2 ml-4">
+                 <div className="hidden lg:flex flex-col items-end mr-4">
+                    <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Network Hype</span>
+                        <div className={`w-2 h-2 rounded-full ${isHypeStormActive ? 'bg-orange-500 animate-ping' : 'bg-gray-600'}`}></div>
+                    </div>
+                    <div className="w-24 h-1.5 bg-gray-700 rounded-full overflow-hidden border border-white/5">
+                        <div className={`h-full transition-all duration-1000 ${isHypeStormActive ? 'bg-gradient-to-r from-orange-400 to-yellow-300 w-full animate-pulse' : 'bg-cyan-500'}`} style={{width: isHypeStormActive ? '100%' : `${globalHype}%`}}></div>
+                    </div>
+                 </div>
                  <button onClick={(e) => { e.stopPropagation(); onHype(); }} className="relative p-1 rounded-full transition-all duration-200 active:scale-90 text-orange-500 hover:text-orange-300 overflow-hidden" aria-label="Hype">
                     <div className="absolute bottom-0 left-0 right-0 bg-orange-500/30 transition-all duration-300" style={{height: `${hypeScore}%`}}></div>
                     <FireIcon className="w-6 h-6 relative z-10"/>
                 </button>
-                 <button onClick={(e) => { e.stopPropagation(); if(isSong) onVote(nowPlaying.songId, 'like'); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} ${userVote === 'like' ? 'text-green-400 drop-shadow-[0_0_4px_rgba(74,222,128,0.8)]' : 'text-gray-400 hover:text-white'}`} aria-label="Like song">
-                    <ThumbUpIcon className="w-6 h-6"/>
-                </button>
-                 <button onClick={(e) => { e.stopPropagation(); if(isSong) onVote(nowPlaying.songId, 'dislike'); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} ${userVote === 'dislike' ? 'text-red-400 drop-shadow-[0_0_4px_rgba(248,113,113,0.8)]' : 'text-gray-400 hover:text-white'}`} aria-label="Dislike song">
-                    <ThumbDownIcon className="w-6 h-6"/>
-                </button>
-                 <button onClick={(e) => { e.stopPropagation(); setIsShareModalOpen(true); }} className="p-1 rounded-full transition-all duration-200 active:scale-90 text-gray-400 hover:text-white" aria-label="Share">
-                    <ShareIcon className="w-6 h-6"/>
-                </button>
+                 <button onClick={(e) => { e.stopPropagation(); if(isSong) onVote(currentNowPlaying.songId, 'like'); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} ${userVote === 'like' ? 'text-green-400 drop-shadow-[0_0_4px_rgba(74,222,128,0.8)]' : 'text-gray-400 hover:text-white'}`} aria-label="Like song"><ThumbUpIcon className="w-6 h-6"/></button>
+                 <button onClick={(e) => { e.stopPropagation(); if(isSong) onVote(currentNowPlaying.songId, 'dislike'); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} ${userVote === 'dislike' ? 'text-red-400 drop-shadow-[0_0_4px_rgba(248,113,113,0.8)]' : 'text-gray-400 hover:text-white'}`} aria-label="Dislike song"><ThumbDownIcon className="w-6 h-6"/></button>
                  <div className="hidden md:flex items-center gap-2">
-                    <button onClick={(e) => { e.stopPropagation(); setVolume(volume > 0 ? 0 : 0.75); }} className="text-gray-400 hover:text-white" aria-label={volume > 0 ? "Mute" : "Unmute"}>
-                        {volume > 0 ? <VolumeUpIcon /> : <VolumeOffIcon />}
-                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); setVolume(volume > 0 ? 0 : 0.75); }} className="text-gray-400 hover:text-white" aria-label={volume > 0 ? "Mute" : "Unmute"}>{volume > 0 ? <VolumeUpIcon /> : <VolumeOffIcon />}</button>
                     <input type="range" min="0" max="1" step="0.05" value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))} className="w-24 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-[var(--accent-color)]" onClick={e => e.stopPropagation()} />
                 </div>
-                <button onClick={(e) => { e.stopPropagation(); togglePlayPause(); }} className="w-12 h-12 flex items-center justify-center text-white hover:text-[var(--accent-color)] transition-colors" aria-label={isPlaying ? 'Pause' : 'Play'}>
-                  <div className="w-8 h-8">{isPlaying ? <PauseIcon/> : <PlayIcon/>}</div>
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); setIsExpanded(true); }} className="text-gray-400 hover:text-white hidden md:block" aria-label="Expand player">
-                    <ChevronUpIcon />
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); onHidePlayer(); }} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-700/50" aria-label="Hide player">
-                    <ChevronDownIcon />
-                </button>
+                <button onClick={(e) => { e.stopPropagation(); togglePlayPause(); }} className="w-12 h-12 flex items-center justify-center text-white hover:text-[var(--accent-color)] transition-colors" aria-label={isPlaying ? 'Pause' : 'Play'}><div className="w-8 h-8">{isPlaying ? <PauseIcon/> : <PlayIcon/>}</div></button>
+                <button onClick={(e) => { e.stopPropagation(); setIsExpanded(true); }} className="text-gray-400 hover:text-white hidden md:block" aria-label="Expand player"><ChevronUpIcon /></button>
+                <button onClick={(e) => { e.stopPropagation(); onHidePlayer(); }} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-700/50" aria-label="Hide player"><ChevronDownIcon /></button>
             </div>
         </div>
     </div>
     <style>{`
-      @keyframes raid-progress {
-        from { transform: translateX(-100%); }
-        to { transform: translateX(0); }
-      }
-      .animate-raid-progress {
-        animation: raid-progress 5s linear forwards;
-      }
+      @keyframes raid-progress { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+      .animate-raid-progress { animation: raid-progress 5s linear forwards; }
     `}</style>
     </>
   );
@@ -635,12 +491,9 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
     <>
       <audio ref={audioRef} crossOrigin="anonymous" />
       {renderContent()}
-      {/* Use React.Suspense for lazy loaded component */}
-      <React.Suspense fallback={<div>Loading Song Info...</div>}>
-        <SongInfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} nowPlaying={nowPlaying} />
-      </React.Suspense>
+      <React.Suspense fallback={<div>Loading Song Info...</div>}><SongInfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} nowPlaying={currentNowPlaying} /></React.Suspense>
       <EqualizerModal isOpen={isEqModalOpen} onClose={() => setIsEqModalOpen(false)} settings={eqSettings} onSettingsChange={setEqSettings} />
-      <ShareModal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} nowPlaying={nowPlaying || { artist: station.name, title: station.name, songId: 'station-share', albumArt: station.coverArt }} station={station} />
+      <ShareModal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} nowPlaying={currentNowPlaying || { artist: station.name, title: station.name, songId: 'station-share', albumArt: station.coverArt }} station={station} />
       <RaidModal isOpen={isRaidModalOpen} onClose={() => setIsRaidModalOpen(false)} allStations={allStations} currentStation={station} onStartRaid={onStartRaid} />
     </>
   );

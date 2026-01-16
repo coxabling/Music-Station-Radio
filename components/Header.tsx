@@ -1,6 +1,6 @@
 import React from 'react';
 import type { User } from '../types';
-import { StarIcon, UserIcon } from '../constants';
+import { StarIcon, UserIcon, FireIcon } from '../constants';
 import { RoleBadge } from './RoleBadge';
 
 interface HeaderProps {
@@ -9,16 +9,28 @@ interface HeaderProps {
     points: number;
     onGoToHome: () => void;
     isVisible: boolean;
-    customAvatarUrl?: string; // New prop for custom avatar
+    customAvatarUrl?: string;
+    isHypeStormActive?: boolean;
+    stormRemaining?: number;
 }
 
 const MusicIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 accent-color-text" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" /></svg>;
 const LogoutIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>;
 
-export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, points, onGoToHome, isVisible, customAvatarUrl }) => {
+export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, points, onGoToHome, isVisible, customAvatarUrl, isHypeStormActive, stormRemaining }) => {
   return (
     <header className={`fixed top-0 left-0 w-full bg-gray-950/60 backdrop-blur-xl px-4 border-b border-white/10 flex-shrink-0 h-16 z-30 transition-transform duration-300 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
-      <div className="container mx-auto flex items-center justify-between h-full">
+      <div className="container mx-auto flex items-center justify-between h-full relative">
+        {isHypeStormActive && (
+            <div className="absolute inset-x-0 -bottom-8 flex justify-center pointer-events-none">
+                <div className="bg-gradient-to-r from-orange-600 via-yellow-500 to-orange-600 px-6 py-1.5 rounded-b-xl shadow-lg border-x border-b border-white/20 animate-bounce text-black font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-3">
+                    <FireIcon className="w-4 h-4" />
+                    NETWORK VIBE TAKEOVER: {stormRemaining}S REMAINING (2x POINTS)
+                    <FireIcon className="w-4 h-4" />
+                </div>
+            </div>
+        )}
+
         <div className="flex items-center gap-4 flex-1">
            {currentUser && (
             <button

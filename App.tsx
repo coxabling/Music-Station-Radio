@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -23,7 +22,7 @@ import { AdminDashboardView } from './components/AdminDashboardView';
 import { StationManagerDashboardView } from './components/StationManagerDashboardView';
 import { ArtistDashboardView } from './components/ArtistDashboardView';
 import { RightPanel } from './components/RightPanel';
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, CARDS_DB, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, BOUNTIES, ShieldCheckIcon, UploadIcon, CheckCircleIcon, XCircleIcon, MusicNoteIcon, CollectionIcon, TrophyIcon } from './constants';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, CARDS_DB, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, BOUNTIES, ShieldCheckIcon, UploadIcon, CheckCircleIcon, XCircleIcon, MusicNoteIcon, CollectionIcon, TrophyIcon, MYSTERY_TRACK } from './constants';
 import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, CollectorCard, Lounge, UserProfile, AvatarFrame, SkinID, Bounty, Jingle, PlayerSkin, GuestbookEntry, Quest } from './types';
 import { getDominantColor } from './utils/colorExtractor';
 import { LandingPage } from './components/LandingPage';
@@ -126,6 +125,9 @@ export const App: React.FC = () => {
   const [activeFrame, setActiveFrame] = useState<string | undefined>(undefined);
   const [unlockedFrames, setUnlockedFrames] = useState<string[]>([]);
   const [hypeScore, setHypeScore] = useState(0);
+  const [globalHype, setGlobalHype] = useState(45); // Start mid-way for demo
+  const [isHypeStormActive, setIsHypeStormActive] = useState(false);
+  const [stormTimeRemaining, setStormTimeRemaining] = useState(60);
   const [isHypeActive, setIsHypeActive] = useState(false);
   const [isCoinActive, setIsCoinActive] = useState(false);
   
@@ -180,6 +182,40 @@ export const App: React.FC = () => {
     initStations();
   }, []);
 
+  // Global Hype Sim
+  useEffect(() => {
+      const hypeInterval = setInterval(() => {
+          if (!isHypeStormActive) {
+            setGlobalHype(prev => {
+                const next = prev + (Math.random() * 0.5);
+                if (next >= 100) {
+                    setIsHypeStormActive(true);
+                    setStormTimeRemaining(60);
+                    setToasts(t => [...t, { id: Date.now(), title: 'VIBE TAKEOVER STARTED!', message: '2x Points Multiplier Active!', icon: FireIcon, type: 'hype' }]);
+                    return 0;
+                }
+                return next;
+            });
+          }
+      }, 5000);
+      return () => clearInterval(hypeInterval);
+  }, [isHypeStormActive]);
+
+  // Storm Timer
+  useEffect(() => {
+      if (!isHypeStormActive) return;
+      const timer = setInterval(() => {
+          setStormTimeRemaining(prev => {
+              if (prev <= 1) {
+                  setIsHypeStormActive(false);
+                  return 0;
+              }
+              return prev - 1;
+          });
+      }, 1000);
+      return () => clearInterval(timer);
+  }, [isHypeStormActive]);
+
   // Listen Time & Quest Progress tracking
   useEffect(() => {
     if (currentStation && isPlaying && currentUser) {
@@ -190,8 +226,15 @@ export const App: React.FC = () => {
                 const sUrl = currentStation.streamUrl;
                 const sStats = next.stationPlays[sUrl] || { name: currentStation.name, genre: currentStation.genre, time: 0 };
                 next.stationPlays[sUrl] = { ...sStats, time: sStats.time + 1 };
+                
+                // Point calculation with Hype Storm Multiplier
                 if (next.totalTime > 0 && next.totalTime % 60 === 0) {
-                    next.points = (next.points || 0) + 5;
+                    const basePoints = 5;
+                    const multiplier = isHypeStormActive ? 2 : 1;
+                    next.points = (next.points || 0) + (basePoints * multiplier);
+                    if (isHypeStormActive) {
+                        setToasts(t => [...t, { id: Date.now(), title: 'Bonus Points!', message: `Earned ${basePoints * multiplier} pts (2x Multiplier)`, icon: StarIcon, type: 'points' }]);
+                    }
                 }
                 return next;
             });
@@ -223,7 +266,7 @@ export const App: React.FC = () => {
     return () => {
         if (statsUpdateInterval.current) clearInterval(statsUpdateInterval.current);
     };
-  }, [currentStation, isPlaying, currentUser]);
+  }, [currentStation, isPlaying, currentUser, isHypeStormActive]);
 
   useEffect(() => {
       if (currentUser && stats.totalTime > 0 && stats.totalTime % 10 === 0) {
@@ -555,6 +598,8 @@ export const App: React.FC = () => {
           }
           return newScore;
       });
+      // Contribute to global hype
+      setGlobalHype(prev => Math.min(100, prev + 1));
   }, []);
 
   const handleEditStation = useCallback((station: Station) => { setStationToEdit(station); setIsEditModalOpen(true); }, []);
@@ -745,7 +790,7 @@ export const App: React.FC = () => {
             '--accent-color-b': rgbComponents.b 
         } as React.CSSProperties}
     >
-      <HypeOverlay isActive={isHypeActive} onComplete={() => setIsHypeActive(false)} />
+      <HypeOverlay isActive={isHypeActive || isHypeStormActive} isStorm={isHypeStormActive} onComplete={() => setIsHypeActive(false)} />
       <CoinExplosionOverlay isActive={isCoinActive} onComplete={() => setIsCoinActive(false)} />
       <WeatherOverlay lat={currentStation?.location?.lat} lng={currentStation?.location?.lng} />
       <ToastContainer toasts={toasts} setToasts={setToasts} />
@@ -759,11 +804,20 @@ export const App: React.FC = () => {
         <div className={`absolute inset-0 bg-black/${isDataSaver ? '90' : '70'} backdrop-blur-${isDataSaver ? 'none' : '2xl'}`}></div>
 
         <div className={`relative text-gray-200 flex flex-col h-full transition-[padding-top] duration-300 ${isHeaderVisible && !isImmersiveMode ? 'pt-16' : 'pt-0'}`}>
-            <Header currentUser={currentUser} onLogout={handleLogout} points={stats.points || 0} onGoToHome={() => setActiveView('dashboard')} isVisible={isHeaderVisible && !isImmersiveMode} customAvatarUrl={currentUser?.profile?.customAvatarUrl} />
+            <Header 
+                currentUser={currentUser} 
+                onLogout={handleLogout} 
+                points={stats.points || 0} 
+                onGoToHome={() => setActiveView('dashboard')} 
+                isVisible={isHeaderVisible && !isImmersiveMode} 
+                customAvatarUrl={currentUser?.profile?.customAvatarUrl} 
+                isHypeStormActive={isHypeStormActive}
+                stormRemaining={stormTimeRemaining}
+            />
             <div className={`flex flex-1 overflow-hidden transition-opacity duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                 {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModal(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} onOpenStockMarket={() => setIsPredictionMarketOpen(true)} onOpenCollection={() => setIsCollectionOpen(true)} />}
                 <main id="main-content" className="flex-1 overflow-y-auto pb-24">{renderActiveView()}</main>
-                <RightPanel station={stationForDetail} currentStation={currentStation} allStations={allStations} currentUser={currentUser} stats={stats} onAddReview={() => {}} onSelectStation={handleSelectStation} onRateStation={() => {}} onEdit={handleEditStation} onOpenMusicSubmissionModal={(s) => { setStationForSubmission(s); setIsMusicSubmissionModalOpen(true); }} onOpenClaimModal={(s) => { setStationToClaim(s); setIsClaimModalOpen(true); }} onToggleFavorite={handleToggleFavorite} nowPlaying={nowPlaying} bounties={bounties} onOpenJingleModal={() => setIsJingleModalOpen(true)} onAddGuestbookEntry={handleAddGuestbookEntry} />
+                <RightPanel station={stationForDetail} currentStation={currentStation} allStations={allStations} currentUser={currentUser} stats={stats} onAddReview={() => {}} onSelectStation={handleSelectStation} onRateStation={() => {}} onEdit={handleEditStation} onOpenMusicSubmissionModal={(s) => { setStationForSubmission(s); setIsMusicSubmissionModalOpen(true); }} onOpenClaimModal={(s) => { setStationToClaim(s); setIsClaimModalOpen(true); }} onToggleFavorite={handleToggleFavorite} nowPlaying={isHypeStormActive ? MYSTERY_TRACK : nowPlaying} bounties={bounties} onOpenJingleModal={() => setIsJingleModalOpen(true)} onAddGuestbookEntry={handleAddGuestbookEntry} />
             </div>
             {isImmersiveMode && currentStation && (
                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -775,8 +829,8 @@ export const App: React.FC = () => {
                      </div>
                  </div>
              )}
-             {currentStation && <RadioPlayer station={currentStation} allStations={allStations} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(!isImmersiveMode)} songVotes={songVotes} onVote={handleSongVote} onRateStation={() => {}} userRating={0} onOpenTippingModal={() => {}} onSelectStation={handleSelectStation} onToggleChat={() => setIsChatOpen(!isChatOpen)} onStartRaid={() => {}} raidStatus="idle" raidTarget={null} onHidePlayer={() => setIsPlayerVisible(false)} isVisible={isPlayerVisible} onOpenBuyNow={() => setIsBuyNowModalOpen(true)} isHeaderVisible={isHeaderVisible} onToggleHeader={handleToggleHeader} onHype={handleHype} hypeScore={hypeScore} isPlaying={isPlaying} onPlayPause={setIsPlaying} isDataSaver={isDataSaver} sleepTimerTarget={sleepTimerTarget} userSongVotes={stats.songUserVotes} activeSkin={activeSkin} />}
-             {currentStation && <ListeningPartyChat station={currentStation} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} nowPlaying={nowPlaying} onSuperChat={handleSendSuperChat} userPoints={stats.points || 0} activeFrame={activeFrame} onUserClick={(u) => { setTargetGiftUser(u); setIsGiftModalOpen(true); }} currentUserAvatarUrl={currentUser?.profile?.customAvatarUrl} />}
+             {currentStation && <RadioPlayer station={currentStation} allStations={allStations} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(!isImmersiveMode)} songVotes={songVotes} onVote={handleSongVote} onRateStation={() => {}} userRating={0} onOpenTippingModal={() => {}} onSelectStation={handleSelectStation} onToggleChat={() => setIsChatOpen(!isChatOpen)} onStartRaid={() => {}} raidStatus="idle" raidTarget={null} onHidePlayer={() => setIsPlayerVisible(false)} isVisible={isPlayerVisible} onOpenBuyNow={() => setIsBuyNowModalOpen(true)} isHeaderVisible={isHeaderVisible} onToggleHeader={handleToggleHeader} onHype={handleHype} hypeScore={hypeScore} isPlaying={isPlaying} onPlayPause={setIsPlaying} isDataSaver={isDataSaver} sleepTimerTarget={sleepTimerTarget} userSongVotes={stats.songUserVotes} activeSkin={activeSkin} globalHype={globalHype} isHypeStormActive={isHypeStormActive} />}
+             {currentStation && <ListeningPartyChat station={currentStation} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} nowPlaying={isHypeStormActive ? MYSTERY_TRACK : nowPlaying} onSuperChat={handleSendSuperChat} userPoints={stats.points || 0} activeFrame={activeFrame} onUserClick={(u) => { setTargetGiftUser(u); setIsGiftModalOpen(true); }} currentUserAvatarUrl={currentUser?.profile?.customAvatarUrl} />}
         </div>
       </div>
       
