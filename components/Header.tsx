@@ -51,7 +51,7 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, points, o
         >
           <MusicIcon />
           <h1 className="ml-3 text-xl font-bold font-orbitron tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-color)] to-purple-500 uppercase">
-            Music Station
+            Music Station Radio
           </h1>
         </button>
         <div className="flex-1 flex items-center justify-end gap-2 sm:gap-4 text-gray-400">

@@ -18,27 +18,27 @@ const AIIcon = ({className = "h-6 w-6"}) => (
 );
 
 const roles = [
-    { id: 'listener', title: 'Curator', icon: <UserIcon className="w-8 h-8"/>, desc: "Tune in to high-grade selections and shape the global charts.", color: "from-yellow-400 to-amber-600" },
-    { id: 'artist', title: 'Creator', icon: <MusicNoteIcon className="w-8 h-8"/>, desc: "Submit your rhythms directly to the High Grade syndicate.", color: "from-orange-500 to-red-600" },
-    { id: 'manager', title: 'Owner', icon: <BriefcaseIcon className="w-8 h-8"/>, desc: "Command the soundwaves and manage your own station.", color: "from-gray-400 to-gray-700" },
+    { id: 'listener', title: 'Curator', icon: <UserIcon className="w-8 h-8"/>, desc: "Discover world-class radio and shape the global charts with your votes.", color: "from-cyan-400 to-blue-600" },
+    { id: 'artist', title: 'Creator', icon: <MusicNoteIcon className="w-8 h-8"/>, desc: "Submit your rhythms directly to station managers and build your audience.", color: "from-purple-500 to-pink-600" },
+    { id: 'manager', title: 'Director', icon: <BriefcaseIcon className="w-8 h-8"/>, desc: "Claim, manage, and monetize your own station on our enterprise network.", color: "from-yellow-400 to-orange-600" },
 ];
 
 const FeaturedStationCard: React.FC<{station: typeof stations[0], index: number}> = ({station, index}) => (
     <div 
-      className="relative w-64 h-80 rounded-2xl p-5 flex flex-col justify-end text-white overflow-hidden transition-all duration-700 hover:scale-105 group ring-1 ring-white/5 hover:ring-yellow-500/40 bg-gray-900 shadow-2xl"
+      className="relative w-64 h-80 rounded-2xl p-5 flex flex-col justify-end text-white overflow-hidden transition-all duration-700 hover:scale-105 group ring-1 ring-white/5 hover:ring-cyan-500/40 bg-gray-900 shadow-2xl"
     >
         <img src={station.coverArt} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 opacity-60 group-hover:opacity-100" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#030712] via-[#030712]/60 to-transparent opacity-90 group-hover:opacity-80 transition-opacity" />
         
         <div className="relative z-10 transform transition-all duration-500 group-hover:-translate-y-2">
-            <div className="inline-block px-2.5 py-1 rounded-md bg-yellow-500/20 backdrop-blur-md text-[10px] font-black uppercase mb-3 border border-yellow-500/30 text-yellow-400 tracking-tighter">
+            <div className="inline-block px-2.5 py-1 rounded-md bg-cyan-500/20 backdrop-blur-md text-[10px] font-black uppercase mb-3 border border-cyan-500/30 text-cyan-400 tracking-tighter">
                 {station.genre.split(',')[0]}
             </div>
             <h4 className="font-bold text-2xl leading-tight mb-2 shadow-black drop-shadow-lg font-orbitron">{station.name}</h4>
             <p className="text-xs text-gray-400 line-clamp-2 font-medium">{station.description}</p>
         </div>
-        <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-md rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            <ExploreIcon className="w-4 h-4 text-yellow-500" />
+        <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-md rounded-full p-1.5 opacity-0 group-hover:opacity-10 transition-opacity">
+            <ExploreIcon className="w-4 h-4 text-cyan-500" />
         </div>
     </div>
 );
@@ -94,7 +94,7 @@ const FeatureSection: React.FC<{
 const NavItem: React.FC<{ icon: React.ReactNode; label: string; href: string; active: boolean }> = ({ icon, label, href, active }) => (
     <a 
         href={href} 
-        className={`group relative flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${active ? 'bg-yellow-500 text-black shadow-[0_0_20px_rgba(234,179,8,0.4)]' : 'bg-white/5 text-gray-500 hover:bg-white/10 hover:text-white'}`}
+        className={`group relative flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${active ? 'bg-cyan-500 text-black shadow-[0_0_20px_rgba(6,182,212,0.4)]' : 'bg-white/5 text-gray-500 hover:bg-white/10 hover:text-white'}`}
     >
         {icon}
         <span className="absolute left-20 px-3 py-1.5 bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-white/10 shadow-2xl whitespace-nowrap z-50">
@@ -124,16 +124,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
     }, []);
 
   return (
-    <div className="min-h-screen bg-[#030712] text-white font-poppins selection:bg-yellow-500 selection:text-black overflow-x-hidden">
+    <div className="min-h-screen bg-[#030712] text-white font-poppins selection:bg-cyan-500 selection:text-black overflow-x-hidden">
       
       {/* LEFT NAVIGATION MENU */}
       <nav className="fixed left-6 top-1/2 -translate-y-1/2 z-[100] hidden xl:flex flex-col gap-4 animate-fade-in-left">
           <div className="flex flex-col gap-4 p-2 bg-black/40 backdrop-blur-2xl rounded-[2rem] border border-white/5 shadow-2xl">
               <NavItem icon={<HomeIcon className="w-6 h-6"/>} label="Home" href="#hero" active={activeSection === 'hero'} />
-              <NavItem icon={<MusicNoteIcon className="w-6 h-6"/>} label="Signature" href="#signature" active={activeSection === 'signature'} />
-              <NavItem icon={<HighFiIcon className="w-6 h-6"/>} label="Features" href="#features" active={activeSection === 'features'} />
+              <NavItem icon={<MusicNoteIcon className="w-6 h-6"/>} label="Network" href="#signature" active={activeSection === 'signature'} />
+              <NavItem icon={<HighFiIcon className="w-6 h-6"/>} label="Tech" href="#features" active={activeSection === 'features'} />
               <NavItem icon={<UserGroupIcon className="w-6 h-6"/>} label="Join" href="#roles" active={activeSection === 'roles'} />
-              <NavItem icon={<RocketIcon className="w-6 h-6"/>} label="Upgrade" href="#upgrade" active={activeSection === 'upgrade'} />
+              <NavItem icon={<RocketIcon className="w-6 h-6"/>} label="Enter" href="#upgrade" active={activeSection === 'upgrade'} />
           </div>
           <div className="h-20 w-[1px] bg-gradient-to-b from-white/10 to-transparent mx-auto"></div>
       </nav>
@@ -155,42 +155,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
         </div>
         
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#030712]/90 to-[#030712]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-yellow-900/10 via-transparent to-transparent opacity-60"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-cyan-900/10 via-transparent to-transparent opacity-60"></div>
 
         <div className="relative z-10 container mx-auto px-4 text-center flex flex-col items-center animate-fade-in-up">
-             <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl text-yellow-500 text-[10px] font-black tracking-[0.2em] mb-10 shadow-[0_0_40px_rgba(234,179,8,0.15)] uppercase">
+             <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl text-cyan-500 text-[10px] font-black tracking-[0.2em] mb-10 shadow-[0_0_40px_rgba(6,182,212,0.15)] uppercase">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
                 </span>
-                Flagship: High Grade Radio
+                Global Audio Network
              </div>
 
              <h1 className="text-7xl md:text-9xl lg:text-[11rem] font-black font-orbitron tracking-tighter leading-none mb-4 text-white drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-                HIGH GRADE
+                MUSIC STATION
              </h1>
-             <p className="text-3xl md:text-5xl font-light text-yellow-500 font-orbitron tracking-[0.4em] uppercase mb-12 drop-shadow-[0_0_20px_rgba(234,179,8,0.4)]">
-                 AUDIO SYNDICATE
+             <p className="text-3xl md:text-5xl font-light text-cyan-500 font-orbitron tracking-[0.4em] uppercase mb-12 drop-shadow-[0_0_20px_rgba(6,182,212,0.4)]">
+                 RADIO NETWORK
              </p>
              
              <p className="text-lg md:text-2xl text-gray-400 max-w-3xl mx-auto leading-relaxed mb-16 font-medium">
-                The absolute peak of independent broadcasting. Explore the syndicate's high-fidelity streams, featuring the legendary High Grade Radio.
+                The ultimate destination for independent broadcasting. Connect with thousands of high-fidelity streams and a global community of music lovers.
              </p>
 
              <div className="flex flex-col sm:flex-row gap-6 w-full max-w-lg mx-auto">
                  <button 
                     onClick={onEnter}
-                    className="flex-1 bg-yellow-500 text-black font-black text-xl py-5 rounded-2xl hover:bg-yellow-400 transition-all hover:scale-105 hover:shadow-[0_0_50px_rgba(234,179,8,0.4)] flex items-center justify-center gap-3 group"
+                    className="flex-1 bg-cyan-500 text-black font-black text-xl py-5 rounded-2xl hover:bg-cyan-400 transition-all hover:scale-105 hover:shadow-[0_0_50px_rgba(6,182,212,0.4)] flex items-center justify-center gap-3 group"
                  >
                      <ExploreIcon className="w-6 h-6 transform group-hover:rotate-12 transition-transform" />
-                     Start Listening
+                     Explore Network
                  </button>
                  <button 
                     onClick={onEnter}
                     className="flex-1 bg-white/5 text-white font-bold text-xl py-5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all backdrop-blur-md flex items-center justify-center gap-3"
                  >
                      <RocketIcon className="w-6 h-6 text-gray-400" />
-                     Enter App
+                     Enter Platform
                  </button>
              </div>
         </div>
@@ -200,20 +200,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
             <div className="animate-scroll flex items-center gap-20 px-8 whitespace-nowrap text-xs font-black tracking-widest text-gray-500 uppercase">
                 {[...Array(6)].map((_, i) => (
                     <React.Fragment key={i}>
-                        <span className="flex items-center gap-3"><span className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(234,179,8,1)]"></span> HIGH GRADE SYNDICATE: LIVE</span>
-                        <span className="flex items-center gap-3"><HighFiIcon className="w-4 h-4 text-cyan-400"/> ADTONOS ADS ACTIVE</span>
-                        <span className="flex items-center gap-3"><StarIcon className="w-4 h-4 text-yellow-400"/> PREMIUM BITRATE ENABLED</span>
-                        <span className="flex items-center gap-3"><ChatBubbleIcon className="w-4 h-4 text-purple-400"/> GLOBAL VIBES FLOWING</span>
+                        <span className="flex items-center gap-3"><span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(6,182,212,1)]"></span> MUSIC STATION RADIO: LIVE</span>
+                        <span className="flex items-center gap-3"><HighFiIcon className="w-4 h-4 text-purple-400"/> PREMIUM ENCODING ACTIVE</span>
+                        <span className="flex items-center gap-3"><StarIcon className="w-4 h-4 text-yellow-400"/> SYNDICATE STATIONS GROWING</span>
+                        <span className="flex items-center gap-3"><ChatBubbleIcon className="w-4 h-4 text-cyan-400"/> GLOBAL VIBES FLOWING</span>
                     </React.Fragment>
                 ))}
             </div>
         </div>
       </header>
 
-      {/* SIGNATURE SOUNDS STRIP */}
+      {/* NETWORK STRIP */}
       <section id="signature" className="bg-black py-24 relative z-20 overflow-hidden border-b border-white/5">
           <div className="container mx-auto px-4 mb-12 flex items-center justify-between">
-              <h3 className="text-xs font-black font-orbitron text-gray-500 tracking-[0.3em] uppercase">The Syndicate Lineup</h3>
+              <h3 className="text-xs font-black font-orbitron text-gray-500 tracking-[0.3em] uppercase">Featured Stations</h3>
               <div className="h-[1px] flex-1 bg-white/10 ml-8"></div>
           </div>
           <div className="flex gap-8 animate-scroll group cursor-grab active:cursor-grabbing hover:pause px-8">
@@ -229,37 +229,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
       <section id="features" className="bg-[#030712] relative z-20">
           <FeatureSection 
             id="feat-visual"
-            title="Premium Player"
-            description="Our custom engine renders high-fidelity audio with a stunning 3D visualizer. Experience the future of radio on any device."
+            title="High-Fi Player"
+            description="Our custom audio engine delivers lossless-quality streaming with a stunning 3D visualizer. Experience radio as it was meant to be seen."
             icon={<HighFiIcon className="w-8 h-8"/>}
             align="left"
             color="cyan"
-            features={['Custom Skins & Themes', 'AdTonos Targeted Integration', 'PiP (Picture-in-Picture) Support']}
+            features={[' Lossless Audio Support', 'Interactive 3D Visualizer', 'Picture-in-Picture Mode']}
           />
           
           <FeatureSection 
             id="feat-ai"
             title="AI Curation"
-            description="Music Station Radio uses Gemini AI to decode the global soundscape. Translate lyrics instantly and discover your next favorite vibe."
+            description="Powered by Gemini AI, Music Station Radio provides real-time lyric translation and deep contextual info for every track on the network."
             icon={<AIIcon className="w-8 h-8"/>}
             align="right"
             color="purple"
-            features={['Instant Translation', 'Contextual Intelligence', 'Vibe-Based Search']}
+            features={['Live Lyric Translation', 'Artist Contextual Intelligence', 'Vibe-Based Discovery']}
           />
       </section>
 
       {/* ROLE SELECTION */}
       <section id="roles" className="py-40 px-4 relative overflow-hidden bg-black">
-         <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(234,179,8,0.05),_transparent)] pointer-events-none"></div>
+         <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(6,182,212,0.05),_transparent)] pointer-events-none"></div>
          <div className="container mx-auto max-w-6xl relative z-10">
             <div className="text-center mb-24">
-                <h2 className="text-5xl md:text-7xl font-black font-orbitron mb-8 tracking-tighter uppercase text-yellow-500">Join the Syndicate</h2>
-                <p className="text-gray-500 max-w-xl mx-auto text-xl font-medium">Claim your space in the world's highest grade audio network.</p>
+                <h2 className="text-5xl md:text-7xl font-black font-orbitron mb-8 tracking-tighter uppercase text-white">Join the Network</h2>
+                <p className="text-gray-500 max-w-xl mx-auto text-xl font-medium">Find your role in the world's most advanced digital radio ecosystem.</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
                 {roles.map((role) => (
-                    <div key={role.id} className="group relative p-10 rounded-3xl bg-gray-900 border border-white/5 hover:border-yellow-500/30 transition-all duration-500 hover:-translate-y-4 shadow-2xl">
+                    <div key={role.id} className="group relative p-10 rounded-3xl bg-gray-900 border border-white/5 hover:border-cyan-500/30 transition-all duration-500 hover:-translate-y-4 shadow-2xl">
                         <div className={`absolute top-0 right-0 w-48 h-48 bg-gradient-to-br ${role.color} opacity-0 group-hover:opacity-10 rounded-bl-full transition-opacity duration-700`}></div>
                         
                         <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${role.color} flex items-center justify-center text-black shadow-xl mb-10 group-hover:scale-110 transition-transform duration-700`}>
@@ -270,7 +270,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
                         <p className="text-gray-400 mb-10 leading-relaxed font-medium">{role.desc}</p>
                         
                         <button onClick={onEnter} className="flex items-center gap-3 text-sm font-black text-white tracking-widest group-hover:gap-6 transition-all uppercase">
-                            Get Involved <span className="text-yellow-500">&rarr;</span>
+                            Get Started <span className="text-cyan-500">&rarr;</span>
                         </button>
                     </div>
                 ))}
@@ -282,14 +282,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
       <footer className="bg-black text-center py-20 border-t border-white/5">
         <div className="container mx-auto px-4">
             <div className="flex flex-col items-center justify-center gap-6 mb-12">
-               <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-2xl flex items-center justify-center text-black font-black text-2xl shadow-2xl shadow-yellow-900/20 font-orbitron">H</div>
-               <span className="font-orbitron font-bold text-2xl tracking-[0.5em] text-white">HIGH GRADE RADIO</span>
+               <div className="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center text-black font-black text-2xl shadow-2xl shadow-cyan-900/20 font-orbitron">M</div>
+               <span className="font-orbitron font-bold text-2xl tracking-[0.5em] text-white">MUSIC STATION RADIO</span>
             </div>
             <p className="text-[10px] text-gray-800 font-bold tracking-widest uppercase mb-4">
-                Powered by Music Station Syndicate & AdTonos
+                Global Independent Broadcasting Platform
             </p>
             <p className="text-[10px] text-gray-900 font-bold tracking-widest uppercase">
-                &copy; {new Date().getFullYear()} High Grade Audio Syndicate. All Rights Reserved.
+                &copy; {new Date().getFullYear()} Music Station Radio. All Rights Reserved.
             </p>
         </div>
       </footer>
@@ -301,10 +301,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
             grid-template-rows: repeat(4, 1fr);
             width: 100%;
             height: 100%;
-        }
-        @keyframes bg-pulse {
-            0% { opacity: 0.05; transform: scale(1); }
-            100% { opacity: 0.2; transform: scale(1.05); }
         }
         @keyframes scroll {
           from { transform: translateX(0); }

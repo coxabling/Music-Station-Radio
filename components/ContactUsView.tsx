@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { SendIcon, StarIcon, ChatBubbleIcon, GlobeIcon } from '../constants';
 
@@ -22,7 +21,7 @@ export const ContactUsView: React.FC<ContactUsViewProps> = ({ onSuccess }) => {
         // Simulate API call
         setTimeout(() => {
             setIsSubmitting(false);
-            onSuccess("Thank you! Our support team will get back to you within 24 hours.");
+            onSuccess("Thank you for reaching out to Music Station Radio! Our support team will get back to you within 24 hours.");
             setFormData({ name: '', email: '', subject: 'support', message: '' });
         }, 1500);
     };
@@ -33,10 +32,10 @@ export const ContactUsView: React.FC<ContactUsViewProps> = ({ onSuccess }) => {
                 <header className="text-center mb-12 relative">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[var(--accent-color)]/10 rounded-full blur-[100px] pointer-events-none"></div>
                     <h1 className="text-4xl md:text-5xl font-bold font-orbitron text-white mb-4 relative z-10">
-                        Get In Touch
+                        Network Inquiries
                     </h1>
                     <p className="text-gray-400 max-w-xl mx-auto relative z-10">
-                        Have a question, feedback, or just want to talk music? Our team is standing by to help you amplify your experience.
+                        Have a question, partnership proposal, or feedback for the Music Station Radio team? We're here to amplify your experience.
                     </p>
                 </header>
 
@@ -45,7 +44,7 @@ export const ContactUsView: React.FC<ContactUsViewProps> = ({ onSuccess }) => {
                     <div className="space-y-6">
                         <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-3xl backdrop-blur-xl">
                             <h3 className="text-xl font-bold text-white font-orbitron mb-6 flex items-center gap-3">
-                                <span className="text-[var(--accent-color)]">01.</span> Contact Info
+                                <span className="text-[var(--accent-color)]">01.</span> Reach Out
                             </h3>
                             <div className="space-y-8">
                                 <div className="flex items-start gap-4 group">
@@ -53,8 +52,8 @@ export const ContactUsView: React.FC<ContactUsViewProps> = ({ onSuccess }) => {
                                         <ChatBubbleIcon className="w-6 h-6"/>
                                     </div>
                                     <div>
-                                        <p className="text-xs font-black uppercase tracking-widest text-gray-500 mb-1">Email Us</p>
-                                        <p className="text-white font-bold text-lg">support@musicstationradio.com</p>
+                                        <p className="text-xs font-black uppercase tracking-widest text-gray-500 mb-1">Email Our Team</p>
+                                        <p className="text-white font-bold text-lg">ops@musicstationradio.com</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-4 group">
@@ -62,8 +61,8 @@ export const ContactUsView: React.FC<ContactUsViewProps> = ({ onSuccess }) => {
                                         <GlobeIcon className="w-6 h-6"/>
                                     </div>
                                     <div>
-                                        <p className="text-xs font-black uppercase tracking-widest text-gray-500 mb-1">HQ Location</p>
-                                        <p className="text-white font-bold text-lg">Digital Nomad Hub, Lagos</p>
+                                        <p className="text-xs font-black uppercase tracking-widest text-gray-500 mb-1">Network HQ</p>
+                                        <p className="text-white font-bold text-lg">Innovation District, Global Hub</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-4 group">
@@ -71,17 +70,17 @@ export const ContactUsView: React.FC<ContactUsViewProps> = ({ onSuccess }) => {
                                         <StarIcon className="w-6 h-6"/>
                                     </div>
                                     <div>
-                                        <p className="text-xs font-black uppercase tracking-widest text-gray-500 mb-1">Office Hours</p>
-                                        <p className="text-white font-bold text-lg">Mon - Fri: 09:00 - 18:00 (GMT+1)</p>
+                                        <p className="text-xs font-black uppercase tracking-widest text-gray-500 mb-1">Network Hours</p>
+                                        <p className="text-white font-bold text-lg">Mon - Fri: 24/7 Global Ops</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div className="p-8 bg-gradient-to-br from-[var(--accent-color)]/10 to-transparent border border-white/5 rounded-3xl">
-                            <h4 className="font-bold text-white mb-2">Platform Support</h4>
+                            <h4 className="font-bold text-white mb-2">Network Status</h4>
                             <p className="text-sm text-gray-400 leading-relaxed">
-                                Looking for technical documentation? Visit our <span className="text-[var(--accent-color)] cursor-pointer hover:underline">Knowledge Base</span> for instant answers.
+                                Our engineers are monitoring the network around the clock. Current Status: <span className="text-green-400 font-bold uppercase tracking-tighter">Operational</span>
                             </p>
                         </div>
                     </div>
@@ -89,58 +88,58 @@ export const ContactUsView: React.FC<ContactUsViewProps> = ({ onSuccess }) => {
                     {/* Right: Form */}
                     <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-3xl backdrop-blur-xl shadow-2xl">
                         <h3 className="text-xl font-bold text-white font-orbitron mb-8 flex items-center gap-3">
-                            <span className="text-[var(--accent-color)]">02.</span> Send a Message
+                            <span className="text-[var(--accent-color)]">02.</span> Dispatch Ticket
                         </h3>
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Full Name</label>
+                                    <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Identifier</label>
                                     <input 
                                         type="text" 
                                         required
                                         value={formData.name}
                                         onChange={e => setFormData({...formData, name: e.target.value})}
                                         className="w-full bg-black/40 border border-gray-700 rounded-2xl py-4 px-5 text-white focus:outline-none focus:border-[var(--accent-color)] focus:ring-1 focus:ring-[var(--accent-color)] transition-all" 
-                                        placeholder="John Vibe"
+                                        placeholder="Full Name"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Email Address</label>
+                                    <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Return Address</label>
                                     <input 
                                         type="email" 
                                         required
                                         value={formData.email}
                                         onChange={e => setFormData({...formData, email: e.target.value})}
                                         className="w-full bg-black/40 border border-gray-700 rounded-2xl py-4 px-5 text-white focus:outline-none focus:border-[var(--accent-color)] focus:ring-1 focus:ring-[var(--accent-color)] transition-all" 
-                                        placeholder="john@vibe.fm"
+                                        placeholder="Email Address"
                                     />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Subject</label>
+                                <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Department</label>
                                 <select 
                                     value={formData.subject}
                                     onChange={e => setFormData({...formData, subject: e.target.value})}
                                     className="w-full bg-black/40 border border-gray-700 rounded-2xl py-4 px-5 text-white focus:outline-none focus:border-[var(--accent-color)] appearance-none cursor-pointer transition-all"
                                 >
-                                    <option value="support" className="bg-gray-900">Technical Support</option>
-                                    <option value="artist" className="bg-gray-900">Artist Inquiry</option>
-                                    <option value="station" className="bg-gray-900">Station Management</option>
-                                    <option value="advertising" className="bg-gray-900">Advertising</option>
-                                    <option value="other" className="bg-gray-900">Other</option>
+                                    <option value="support" className="bg-gray-900">Platform Support</option>
+                                    <option value="artist" className="bg-gray-900">Artist Relations</option>
+                                    <option value="station" className="bg-gray-900">Network Management</option>
+                                    <option value="advertising" className="bg-gray-900">Sponsorships</option>
+                                    <option value="other" className="bg-gray-900">General Inquiry</option>
                                 </select>
                             </div>
 
                             <div>
-                                <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Your Message</label>
+                                <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Message Payload</label>
                                 <textarea 
                                     required
                                     rows={5}
                                     value={formData.message}
                                     onChange={e => setFormData({...formData, message: e.target.value})}
                                     className="w-full bg-black/40 border border-gray-700 rounded-2xl py-4 px-5 text-white focus:outline-none focus:border-[var(--accent-color)] focus:ring-1 focus:ring-[var(--accent-color)] transition-all" 
-                                    placeholder="How can we help you today?"
+                                    placeholder="Communicate your request to the Music Station Radio team..."
                                 />
                             </div>
 
@@ -154,7 +153,7 @@ export const ContactUsView: React.FC<ContactUsViewProps> = ({ onSuccess }) => {
                                 ) : (
                                     <>
                                         <SendIcon className="w-5 h-5"/>
-                                        Launch Ticket
+                                        Dispatch Message
                                     </>
                                 )}
                             </button>
