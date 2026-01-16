@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -23,6 +24,7 @@ import { StationManagerDashboardView } from './components/StationManagerDashboar
 import { ArtistDashboardView } from './components/ArtistDashboardView';
 import { RightPanel } from './components/RightPanel';
 import { TradingPostView } from './components/TradingPostView';
+import { PredictionMarketView } from './components/PredictionMarketView';
 import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, CARDS_DB, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, BOUNTIES, ShieldCheckIcon, UploadIcon, CheckCircleIcon, XCircleIcon, MusicNoteIcon, CollectionIcon, TrophyIcon, MYSTERY_TRACK } from './constants';
 import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, CollectorCard, Lounge, UserProfile, AvatarFrame, SkinID, Bounty, Jingle, PlayerSkin, GuestbookEntry, Quest, MarketListing } from './types';
 import { getDominantColor } from './utils/colorExtractor';
@@ -33,7 +35,6 @@ import { MusicSubmissionModal } from './components/MusicSubmissionModal';
 import { ClaimOwnershipModal } from './components/ClaimOwnershipModal';
 import { BuyNowModal } from './components/BuyNowModal';
 import { DashboardView } from './components/DashboardView';
-import { PredictionMarketModal } from './components/PredictionMarketModal';
 import { CollectionModal } from './components/CollectionModal';
 import { GiftPointsModal } from './components/GiftPointsModal';
 import { HypeOverlay } from './components/HypeOverlay';
@@ -101,7 +102,6 @@ export const App: React.FC = () => {
   const [stationToClaim, setStationToClaim] = useState<Station | null>(null);
   const [isBuyNowModalOpen, setIsBuyNowModalOpen] = useState(false);
   const [isJingleModalOpen, setIsJingleModalOpen] = useState(false);
-  const [isPredictionMarketOpen, setIsPredictionMarketOpen] = useState(false);
   const [isCollectionOpen, setIsCollectionOpen] = useState(false);
   const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
   const [targetGiftUser, setTargetGiftUser] = useState<string | null>(null);
@@ -319,7 +319,10 @@ export const App: React.FC = () => {
 
       const newPoints = (stats.points || 0) + quest.reward;
       setStats(prev => ({ ...prev, points: newPoints }));
-      setQuests(prev => prev.map(q => q.id === questId ? { ...q, isClaimed: true } : q));
+      setQuests(prev => prev.map(q => {
+          if (q.id === questId) return { ...q, isClaimed: true };
+          return q;
+      }));
       setToasts(t => [...t, { id: Date.now(), title: 'Reward Claimed!', message: `Earned ${quest.reward} pts`, icon: StarIcon, type: 'success' }]);
       setIsCoinActive(true);
   }, [quests, stats]);
@@ -793,6 +796,8 @@ export const App: React.FC = () => {
         return <ContactUsView onSuccess={(msg) => setToasts(t => [...t, { id: Date.now(), title: 'Ticket Sent', message: msg, icon: CheckCircleIcon, type: 'success' }])} onBack={handleBackToHome} />;
       case 'trading_post':
         return <TradingPostView onBack={handleBackToHome} listings={marketListings} onBuy={handleBuyCard} userPoints={stats.points || 0} currentUser={currentUser} />;
+      case 'prediction_market':
+        return <PredictionMarketView onBack={handleBackToHome} userPoints={stats.points || 0} activeBets={activeBets} onPlaceBet={handlePlaceBet} trendingSongs={Object.values(songVotes)} />;
       default: 
         return (
             <StationList 
@@ -856,7 +861,7 @@ export const App: React.FC = () => {
                 stormRemaining={stormTimeRemaining}
             />
             <div className={`flex flex-1 overflow-hidden transition-opacity duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-                {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModal(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} onOpenStockMarket={() => setIsPredictionMarketOpen(true)} onOpenCollection={() => setIsCollectionOpen(true)} />}
+                {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModal(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} onOpenStockMarket={() => setActiveView('prediction_market')} onOpenCollection={() => setIsCollectionOpen(true)} />}
                 <main id="main-content" className="flex-1 overflow-y-auto pb-24">{renderActiveView()}</main>
                 <RightPanel station={stationForDetail} currentStation={currentStation} allStations={allStations} currentUser={currentUser} stats={stats} onAddReview={() => {}} onSelectStation={handleSelectStation} onRateStation={() => {}} onEdit={handleEditStation} onOpenMusicSubmissionModal={(s) => { setStationForSubmission(s); setIsMusicSubmissionModalOpen(true); }} onOpenClaimModal={(s) => { setStationToClaim(s); setIsClaimModalOpen(true); }} onToggleFavorite={handleToggleFavorite} nowPlaying={isHypeStormActive ? MYSTERY_TRACK : nowPlaying} bounties={bounties} onOpenJingleModal={() => setIsJingleModalOpen(true)} onAddGuestbookEntry={handleAddGuestbookEntry} />
             </div>
@@ -890,7 +895,6 @@ export const App: React.FC = () => {
       <SongHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} history={stats.songHistory} />
       <MusicSubmissionModal isOpen={isMusicSubmissionModalOpen} onClose={() => setIsMusicSubmissionModalOpen(false)} onSubmit={handleAddMusicSubmission} station={stationForSubmission} userPoints={stats.points || 0} />
       
-      <PredictionMarketModal isOpen={isPredictionMarketOpen} onClose={() => setIsPredictionMarketOpen(false)} userPoints={stats.points || 0} activeBets={activeBets} onPlaceBet={handlePlaceBet} trendingSongs={Object.values(songVotes)} />
       <CollectionModal isOpen={isCollectionOpen} onClose={() => setIsCollectionOpen(false)} collection={collection} onListCard={handleListCard} />
       <GiftPointsModal isOpen={isGiftModalOpen} onClose={() => setIsGiftModalOpen(false)} targetUser={targetGiftUser || ''} userPoints={stats.points || 0} onSendGift={handleSendGift} />
     </div>

@@ -31,7 +31,7 @@ export const SpeakerIcon: React.FC<{className?: string}> = ({className = ''}) =>
 export const ExploreIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className: className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M4.5 12a7.5 7.5 0 0015 0m-15 0a7.5 7.5 0 1115 0m-15 0H3m18 0h-1.5m-15 0a7.5 7.5 0 1115 0m-15 0H3m18 0h-1.5m-15 0a7.5 7.5 0 1115 0m-15 0H3m18 0h-1.5"}));
 export const HomeIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className: className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"}));
 /* Fix: Replaced equals sign with a colon to correct object property assignment syntax in CommunityIcon. */
-export const CommunityIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className: className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"}));
+export const CommunityIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className: className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoinMode: "round", d: "M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"}));
 export const StoreIcon: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className: className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.25a.75.75 0 01-.75-.75V10.5a.75.75 0 01.75-.75h19.5a.75.75 0 01.75.75v9.75a.75.75 0 01-.75-.75h-4.5m-4.5 0H9m-3.75 0H5.625m5.625 0v-7.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21m12.75 0v-7.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21"}));
 export const LeaderboardIconSidebar: React.FC<{className?: string}> = ({className = ''}) => React.createElement('svg', {xmlns: "http://www.w3.org/2000/svg", className: className, fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor"}, React.createElement('path', {strokeLinecap: "round", strokeLinejoin: "round", d: "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"}));
 /* Fix: Replaced equals sign with a colon to correct object property assignment syntax in ChatBubbleIcon. */
@@ -50,18 +50,26 @@ export const MYSTERY_TRACK = {
 };
 
 export const MOCK_MARKET_TRENDS: MarketTrend[] = [
-    { songId: 't1', title: 'Essence', artist: 'Wizkid', change: 4.2, volume: 15400 },
-    { songId: 't2', title: 'Last Last', artist: 'Burna Boy', change: -1.5, volume: 12100 },
-    { songId: 't3', title: 'Calm Down', artist: 'Rema', change: 8.7, volume: 22000 },
-    { songId: 't4', title: 'Buga', artist: 'Kizz Daniel', change: 0.8, volume: 8400 },
-    { songId: 't5', title: 'One Love', artist: 'Bob Marley', change: 2.1, volume: 5600 },
+    { songId: 't1', title: 'Essence', artist: 'Wizkid', change: 4.2, volume: 15400, sparkline: [10, 15, 8, 22, 19, 30, 25] },
+    { songId: 't2', title: 'Last Last', artist: 'Burna Boy', change: -1.5, volume: 12100, sparkline: [40, 35, 38, 30, 28, 32, 29] },
+    { songId: 't3', title: 'Calm Down', artist: 'Rema', change: 8.7, volume: 22000, sparkline: [5, 12, 18, 15, 25, 35, 45] },
+    { songId: 't4', title: 'Buga', artist: 'Kizz Daniel', change: 0.8, volume: 8400, sparkline: [20, 22, 21, 24, 23, 25, 26] },
+    { songId: 't5', title: 'One Love', artist: 'Bob Marley', change: 2.1, volume: 5600, sparkline: [12, 10, 15, 14, 18, 17, 20] },
+];
+
+export const MOCK_MARKET_NEWS = [
+    { id: 'n1', title: 'Wizkid track gains 500% volume in Nigeria', timestamp: new Date().toISOString() },
+    { id: 'n2', title: 'Burna Boy dips slightly as new Rema single drops', timestamp: new Date().toISOString() },
+    { id: 'n3', title: 'Reggae Collective hit peak liquidity in Kingston', timestamp: new Date().toISOString() },
 ];
 
 export const MOCK_PROSPECTS = [
-    { id: 'p1', title: 'Sunshine City', artist: 'Reggae Collective', odds: 3.5, albumArt: 'https://picsum.photos/seed/p1/200' },
-    { id: 'p2', title: 'Lagos Night', artist: 'Afro Kings', odds: 12.0, albumArt: 'https://picsum.photos/seed/p2/200' },
-    { id: 'p3', title: 'Durban Heat', artist: 'Gqom Queen', odds: 1.8, albumArt: 'https://picsum.photos/seed/p3/200' },
-    { id: 'p4', title: 'Roots Prayer', artist: 'Elder Spirit', odds: 25.0, albumArt: 'https://picsum.photos/seed/p4/200' },
+    { id: 'p1', title: 'Sunshine City', artist: 'Reggae Collective', odds: 3.5, albumArt: 'https://picsum.photos/seed/p1/200', sparkline: [1, 2, 4, 3, 5, 8, 10] },
+    { id: 'p2', title: 'Lagos Night', artist: 'Afro Kings', odds: 12.0, albumArt: 'https://picsum.photos/seed/p2/200', sparkline: [2, 1, 1, 2, 1, 3, 2] },
+    { id: 'p3', title: 'Durban Heat', artist: 'Gqom Queen', odds: 1.8, albumArt: 'https://picsum.photos/seed/p3/200', sparkline: [20, 25, 30, 45, 55, 60, 70] },
+    { id: 'p4', title: 'Roots Prayer', artist: 'Elder Spirit', odds: 25.0, albumArt: 'https://picsum.photos/seed/p4/200', sparkline: [1, 1, 1, 1, 1, 1, 1] },
+    { id: 'p5', title: 'Safari Beat', artist: 'Wild Souls', odds: 5.2, albumArt: 'https://picsum.photos/seed/p5/200', sparkline: [5, 6, 4, 7, 8, 9, 8] },
+    { id: 'p6', title: 'High Life Soul', artist: 'The Guardians', odds: 9.8, albumArt: 'https://picsum.photos/seed/p6/200', sparkline: [10, 8, 9, 7, 6, 8, 7] },
 ];
 
 export const ACHIEVEMENTS: Record<AchievementID, Achievement> = {

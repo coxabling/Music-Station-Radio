@@ -230,7 +230,7 @@ export interface FriendActivity {
     customAvatarUrl?: string; // New: Custom avatar URL for friends
 }
 
-export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard' | 'help' | 'contact' | 'trading_post';
+export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard' | 'help' | 'contact' | 'trading_post' | 'prediction_market';
 
 export interface Bet {
   id: string;
@@ -250,6 +250,7 @@ export interface MarketTrend {
     artist: string;
     change: number; // percentage
     volume: number; // total points bet
+    sparkline?: number[]; // Mini history for chart
 }
 
 export interface Quest {

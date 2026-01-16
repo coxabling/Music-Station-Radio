@@ -77,7 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, onO
                 
                 <div className="w-full h-px bg-gray-700 my-2 flex-shrink-0" />
                 
-                <NavButton label="Market" icon={<TrendingUpIcon />} isActive={false} onClick={onOpenStockMarket} />
+                <NavButton label="Market" icon={<TrendingUpIcon />} isActive={activeView === 'prediction_market'} onClick={() => setActiveView('prediction_market')} />
                 <NavButton label="Trade" icon={<ShopIcon />} isActive={activeView === 'trading_post'} onClick={() => setActiveView('trading_post')} />
                 <NavButton label="Cards" icon={<CollectionIcon className="w-6 h-6" />} isActive={false} onClick={onOpenCollection} />
                 <NavButton label="Song Chart" icon={<ChartBarIcon className="w-6 h-6"/>} isActive={false} onClick={onOpenSongChart} />
