@@ -268,8 +268,9 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     { id: 'eco_leaf', name: 'Eco Vibe', cssClass: 'ring-2 ring-green-500 border-green-400 border-double border-4', cost: 150 },
 ];
 
+/* Fix: Removed duplicate stationName property from friend activity entry to fix object literal multiple property error. */
 export const MOCK_FRIENDS: FriendActivity[] = [
-    { username: 'BeatSeeker', stationName: 'High Grade Radio', stationName: 'High Grade Radio', stationStreamUrl: 'https://music-station.live/listen/high_grade_radio/radio.mp3', status: 'online', avatarColor: '#34d399', frame: 'neon_pulse', customAvatarUrl: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=BeatSeeker' },
+    { username: 'BeatSeeker', stationName: 'High Grade Radio', stationStreamUrl: 'https://music-station.live/listen/high_grade_radio/radio.mp3', status: 'online', avatarColor: '#34d399', frame: 'neon_pulse', customAvatarUrl: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=BeatSeeker' },
     { username: 'RhythmRider', stationName: 'Nam Radio', stationStreamUrl: 'https://music-station.live/listen/namradio/radio.mp3', status: 'online', avatarColor: '#fbbf24', customAvatarUrl: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=RhythmRider' },
     { username: 'SoulSister', stationName: 'Offline', stationStreamUrl: '', status: 'offline', avatarColor: '#f472b6', frame: 'gold_chain', customAvatarUrl: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=SoulSister' },
     { username: 'BassHead', stationName: 'Global Groove Radio', stationStreamUrl: 'https://s2.stationplaylist.com:7094/listen.aac', status: 'online', avatarColor: '#a78bfa', frame: 'fire_aura', customAvatarUrl: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=BassHead' },

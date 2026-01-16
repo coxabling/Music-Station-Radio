@@ -1,14 +1,17 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import type { CollectorCard } from '../types';
 
 interface CollectionModalProps {
   isOpen: boolean;
   onClose: () => void;
   collection: CollectorCard[];
+  onListCard: (cardId: string, price: number) => void;
 }
 
-export const CollectionModal: React.FC<CollectionModalProps> = ({ isOpen, onClose, collection }) => {
+export const CollectionModal: React.FC<CollectionModalProps> = ({ isOpen, onClose, collection, onListCard }) => {
+  const [listingId, setListingId] = useState<string | null>(null);
+  const [listingPrice, setListingPrice] = useState(500);
+
   if (!isOpen) return null;
 
   const getRarityColor = (rarity: string) => {
@@ -18,6 +21,13 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({ isOpen, onClos
           case 'rare': return 'border-blue-500 shadow-blue-500/50 bg-gradient-to-br from-blue-900/50 to-black';
           default: return 'border-gray-500 shadow-gray-500/20 bg-gray-800';
       }
+  };
+
+  const handleListSubmit = () => {
+    if (listingId && listingPrice > 0) {
+        onListCard(listingId, listingPrice);
+        setListingId(null);
+    }
   };
 
   return (
@@ -55,7 +65,14 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({ isOpen, onClos
                                 </div>
                                 <div className="mt-auto bg-black/60 backdrop-blur-sm p-2 rounded-lg text-center">
                                     <p className="font-bold text-white text-sm leading-tight">{card.name}</p>
-                                    <p className="text-[10px] text-gray-300 mt-1 leading-tight line-clamp-2">{card.description}</p>
+                                    <p className="text-[10px] text-gray-300 mt-1 leading-tight line-clamp-1">{card.description}</p>
+                                    
+                                    <button 
+                                        onClick={() => setListingId(card.id)}
+                                        className="mt-2 w-full py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-[10px] font-bold uppercase rounded transition-colors opacity-0 group-hover:opacity-100"
+                                    >
+                                        Sell Card
+                                    </button>
                                 </div>
                             </div>
                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" style={{backgroundSize: '200% 200%'}}></div>
@@ -64,6 +81,28 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({ isOpen, onClos
                 </div>
             )}
         </div>
+
+        {/* Listing Modal Overlay */}
+        {listingId && (
+            <div className="absolute inset-0 bg-black/90 z-20 flex items-center justify-center p-6 animate-fade-in">
+                <div className="bg-gray-800 p-8 rounded-2xl border border-gray-700 max-w-sm w-full">
+                    <h3 className="text-xl font-bold text-white mb-4">List Card for Sale</h3>
+                    <div className="mb-6">
+                        <label className="block text-xs text-gray-400 uppercase tracking-widest mb-2">Asking Price (Points)</label>
+                        <input 
+                            type="number" 
+                            value={listingPrice}
+                            onChange={(e) => setListingPrice(Math.max(1, parseInt(e.target.value) || 0))}
+                            className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-cyan-500 outline-none"
+                        />
+                    </div>
+                    <div className="flex gap-4">
+                        <button onClick={() => setListingId(null)} className="flex-1 py-3 text-gray-400 font-bold">Cancel</button>
+                        <button onClick={handleListSubmit} className="flex-1 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg transition-all">List Card</button>
+                    </div>
+                </div>
+            </div>
+        )}
       </div>
       <style>{`
         @keyframes fade-in-fast { from { opacity: 0; } to { opacity: 1; } }

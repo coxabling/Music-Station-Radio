@@ -22,8 +22,9 @@ import { AdminDashboardView } from './components/AdminDashboardView';
 import { StationManagerDashboardView } from './components/StationManagerDashboardView';
 import { ArtistDashboardView } from './components/ArtistDashboardView';
 import { RightPanel } from './components/RightPanel';
+import { TradingPostView } from './components/TradingPostView';
 import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, CARDS_DB, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, BOUNTIES, ShieldCheckIcon, UploadIcon, CheckCircleIcon, XCircleIcon, MusicNoteIcon, CollectionIcon, TrophyIcon, MYSTERY_TRACK } from './constants';
-import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, CollectorCard, Lounge, UserProfile, AvatarFrame, SkinID, Bounty, Jingle, PlayerSkin, GuestbookEntry, Quest } from './types';
+import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, CollectorCard, Lounge, UserProfile, AvatarFrame, SkinID, Bounty, Jingle, PlayerSkin, GuestbookEntry, Quest, MarketListing } from './types';
 import { getDominantColor } from './utils/colorExtractor';
 import { LandingPage } from './components/LandingPage';
 import { getUserData, updateUserData, createUserData, followUser, unfollowUser, fetchRadioBrowserStations } from './services/apiService';
@@ -136,6 +137,11 @@ export const App: React.FC = () => {
   const [portfolio, setPortfolio] = useState<Record<string, number>>({});
   const [bounties, setBounties] = useState<Bounty[]>(BOUNTIES);
   const [jingles, setJingles] = useState<Jingle[]>([]);
+
+  const [marketListings, setMarketListings] = useState<MarketListing[]>([
+      { id: 'm1', seller: 'RetroFan', price: 1200, listedAt: new Date().toISOString(), card: { ...CARDS_DB[1], id: 'card_legacy_1', acquiredAt: '' } },
+      { id: 'm2', seller: 'MusicCollector', price: 5000, listedAt: new Date().toISOString(), card: { ...CARDS_DB[0], id: 'card_legacy_2', acquiredAt: '' } }
+  ]);
 
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
@@ -274,6 +280,38 @@ export const App: React.FC = () => {
       }
   }, [stats.totalTime, currentUser, stats, quests, collection]);
 
+  // Marketplace Handlers
+  const handleBuyCard = useCallback((listingId: string) => {
+    const listing = marketListings.find(m => m.id === listingId);
+    if (!listing || !currentUser || (stats.points || 0) < listing.price) return;
+
+    const newPoints = (stats.points || 0) - listing.price;
+    setStats(prev => ({ ...prev, points: newPoints }));
+    setCollection(prev => [...prev, { ...listing.card, acquiredAt: new Date().toISOString() }]);
+    setMarketListings(prev => prev.filter(m => m.id !== listingId));
+    
+    setToasts(t => [...t, { id: Date.now(), title: 'Card Acquired!', message: `Purchased ${listing.card.name}`, icon: CollectionIcon, type: 'success' }]);
+    setIsCoinActive(true);
+  }, [marketListings, stats.points, currentUser]);
+
+  const handleListCard = useCallback((cardId: string, price: number) => {
+    if (!currentUser) return;
+    const cardToList = collection.find(c => c.id === cardId);
+    if (!cardToList) return;
+
+    const newListing: MarketListing = {
+        id: `listing_${Date.now()}`,
+        card: cardToList,
+        seller: currentUser.username,
+        price,
+        listedAt: new Date().toISOString()
+    };
+
+    setCollection(prev => prev.filter(c => c.id !== cardId));
+    setMarketListings(prev => [newListing, ...prev]);
+    setToasts(t => [...t, { id: Date.now(), title: 'Card Listed!', message: `Your ${cardToList.name} is now on the Trading Post`, icon: CollectionIcon, type: 'info' }]);
+  }, [collection, currentUser]);
+
   // Quests & Betting Handlers
   const handleClaimQuest = useCallback((questId: string) => {
       const quest = quests.find(q => q.id === questId);
@@ -382,12 +420,12 @@ export const App: React.FC = () => {
         handleLogout();
         return;
     }
-    const favUrls = new Set<string>((data.favoriteStationUrls as string[]) || []);
+    const favUrls = new Set<string>((data.favoriteStationUrls as string[]) || ([] as string[]));
     const user: User = { username, role: data.role };
     setCurrentUser(user);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
-    setUnlockedThemes(new Set<ThemeName>((data.unlockedThemes as ThemeName[]) || ['dynamic', 'reggae']));
+    setUnlockedThemes(new Set<ThemeName>((data.unlockedThemes as ThemeName[]) || (['dynamic', 'reggae'] as ThemeName[])));
     setStats(data.stats as ListeningStats);
     setAlarm(data.alarm);
     setSongVotes(data.songVotes);
@@ -395,15 +433,16 @@ export const App: React.FC = () => {
     setQuests(data.quests || INITIAL_QUESTS);
     setCollection(data.collection || []);
     setActiveFrame(data.activeFrame);
-    setUnlockedFrames((data.unlockedFrames as string[]) || []);
+    // Fix: Explicitly cast unlockedFrames as string[] and provide typed fallback to resolve unknown[] assignment error.
+    setUnlockedFrames((data.unlockedFrames as string[]) || ([] as string[]));
     const profileData: UserProfile = (data.profile as UserProfile) || { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' };
     setUserProfile(profileData);
     setCustomThemes(data.customThemes || []);
     setActiveSkin(data.activeSkin || 'modern');
-    setUnlockedSkins((data.unlockedSkins as SkinID[]) || ['modern']);
+    setUnlockedSkins((data.unlockedSkins as SkinID[]) || (['modern'] as SkinID[]));
     setPortfolio(data.portfolio || {});
     setJingles(data.jingles || []);
-    const completedBounties = (data.completedBounties as string[]) || [];
+    const completedBounties = (data.completedBounties as string[]) || ([] as string[]);
     if(completedBounties.length > 0) {
         setBounties(prev => prev.map(b => completedBounties.includes(b.id) ? { ...b, completed: true } : b));
     }
@@ -752,6 +791,8 @@ export const App: React.FC = () => {
         return <HelpFAQ onContactClick={() => setActiveView('contact')} onBack={handleBackToHome} />;
       case 'contact':
         return <ContactUsView onSuccess={(msg) => setToasts(t => [...t, { id: Date.now(), title: 'Ticket Sent', message: msg, icon: CheckCircleIcon, type: 'success' }])} onBack={handleBackToHome} />;
+      case 'trading_post':
+        return <TradingPostView onBack={handleBackToHome} listings={marketListings} onBuy={handleBuyCard} userPoints={stats.points || 0} currentUser={currentUser} />;
       default: 
         return (
             <StationList 
@@ -850,7 +891,7 @@ export const App: React.FC = () => {
       <MusicSubmissionModal isOpen={isMusicSubmissionModalOpen} onClose={() => setIsMusicSubmissionModalOpen(false)} onSubmit={handleAddMusicSubmission} station={stationForSubmission} userPoints={stats.points || 0} />
       
       <PredictionMarketModal isOpen={isPredictionMarketOpen} onClose={() => setIsPredictionMarketOpen(false)} userPoints={stats.points || 0} activeBets={activeBets} onPlaceBet={handlePlaceBet} trendingSongs={Object.values(songVotes)} />
-      <CollectionModal isOpen={isCollectionOpen} onClose={() => setIsCollectionOpen(false)} collection={collection} />
+      <CollectionModal isOpen={isCollectionOpen} onClose={() => setIsCollectionOpen(false)} collection={collection} onListCard={handleListCard} />
       <GiftPointsModal isOpen={isGiftModalOpen} onClose={() => setIsGiftModalOpen(false)} targetUser={targetGiftUser || ''} userPoints={stats.points || 0} onSendGift={handleSendGift} />
     </div>
   );

@@ -230,7 +230,7 @@ export interface FriendActivity {
     customAvatarUrl?: string; // New: Custom avatar URL for friends
 }
 
-export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard' | 'help' | 'contact';
+export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard' | 'help' | 'contact' | 'trading_post';
 
 export interface Bet {
   id: string;
@@ -289,6 +289,14 @@ export interface CollectorCard {
   image: string;
   description: string;
   acquiredAt: string;
+}
+
+export interface MarketListing {
+  id: string;
+  card: CollectorCard;
+  seller: string;
+  price: number;
+  listedAt: string;
 }
 
 export interface Lounge {
