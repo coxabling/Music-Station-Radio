@@ -1,8 +1,10 @@
+
 import React, { useState } from 'react';
 import type { Station, StationReview, User, Bounty } from '../types';
 import { StarRating } from './StarRating';
 import { formatTimeAgo } from '../utils/time';
-import { UploadIcon, ShieldCheckIcon, HeartIcon, FireIcon, CheckCircleIcon } from '../constants';
+// Added StarIcon to the imports from constants
+import { UploadIcon, ShieldCheckIcon, HeartIcon, FireIcon, CheckCircleIcon, ClockIcon, StarIcon } from '../constants';
 import { RoleBadge } from './RoleBadge';
 import { StationGuestbook } from './StationGuestbook';
 import { RequestSongModal } from './RequestSongModal';
@@ -14,6 +16,7 @@ interface StationInfoPanelProps {
   userReviews: StationReview[];
   onAddReview: (stationUrl: string, review: Omit<StationReview, 'createdAt' | 'author' | 'authorRole'>) => void;
   onSelectStation: (station: Station) => void;
+  onReviewSubmission: (stationStreamUrl: string, submissionId: string, status: 'approved' | 'rejected', comment?: string) => void;
   onRateStation: (stationUrl: string, rating: number) => void;
   onToggleFavorite: (station: Station) => void;
   userRating: number;
@@ -30,7 +33,9 @@ interface StationInfoPanelProps {
 const PlayIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.546l-6.38 8.195A2 2 0 005.46 15H14.54a2 2 0 001.84-3.259L10 3.546z" transform="rotate(90 10 10)" /></svg>;
 const EditIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L16.732 3.732z" /></svg>;
 const RequestIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25L12 12m0 0l-5.25 3.75M12 12V21" /></svg>;
-const JingleIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" /></svg>;
+const JingleIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" /></svg>;
+const ChevronDownIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>;
+const ChevronUpIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" /></svg>;
 
 const getTagColor = (t: string) => {
     const colors = [
@@ -101,6 +106,7 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
   const { station, allStations, mockReviews, userReviews, onAddReview, onSelectStation, onRateStation, userRating, isOwner, onEdit, currentUser, onOpenMusicSubmissionModal, onOpenClaimModal, onToggleFavorite, bounties, onOpenJingleModal, onAddGuestbookEntry } = props;
   const [activeTab, setActiveTab] = useState<ActiveTab>('info');
   const [isRequestSongModalOpen, setIsRequestSongModalOpen] = useState(false);
+  const [isBountiesCollapsed, setIsBountiesCollapsed] = useState(false);
 
   const allReviewsForStation = React.useMemo(() => {
     if (!station) return [];
@@ -114,7 +120,10 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
   const relevantBounties = React.useMemo(() => {
     if (!bounties || !station) return [];
     return bounties.filter(b => 
-        !b.completed && b.targetType === 'station' && b.targetValue === station.name
+        !b.completed && (
+            (b.targetType === 'station' && b.targetValue === station.name) ||
+            (b.targetType === 'genre' && station.genre.toLowerCase().includes(b.targetValue.toLowerCase()))
+        )
     );
   }, [bounties, station]);
   
@@ -177,12 +186,43 @@ export const StationInfoPanel: React.FC<StationInfoPanelProps> = (props) => {
       </div>
       
       {relevantBounties.length > 0 && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-yellow-500/20 to-orange-500/10 border border-yellow-500/30 rounded-xl text-yellow-300 text-sm flex items-center gap-3 animate-fade-in shadow-lg shadow-yellow-900/10">
-              <div className="p-2 bg-yellow-500/20 rounded-lg"><FireIcon className="h-6 w-6 animate-bounce"/></div>
-              <div>
-                  <p className="font-black text-xs uppercase tracking-widest">Active Station Bounty</p>
-                  <p className="text-[11px] text-yellow-200/80 font-medium">Earn {relevantBounties[0].reward} pts just for listening today.</p>
-              </div>
+          <div className="mb-6 bg-gray-900/60 border border-yellow-500/30 rounded-xl overflow-hidden shadow-lg transition-all duration-300">
+              <button 
+                onClick={() => setIsBountiesCollapsed(!isBountiesCollapsed)}
+                className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-yellow-500/20 to-orange-500/10 hover:bg-yellow-500/20 transition-colors"
+              >
+                  <div className="flex items-center gap-3">
+                      <div className="p-2 bg-yellow-500/20 rounded-lg">
+                          <FireIcon className="h-5 w-5 text-yellow-400 animate-pulse"/>
+                      </div>
+                      <div className="text-left">
+                          <p className="font-black text-xs uppercase tracking-widest text-yellow-300">Active Station Missions</p>
+                          <p className="text-[10px] text-yellow-200/60 font-medium">{relevantBounties.length} available today</p>
+                      </div>
+                  </div>
+                  {isBountiesCollapsed ? <ChevronDownIcon className="h-4 w-4 text-yellow-500" /> : <ChevronUpIcon className="h-4 w-4 text-yellow-500" />}
+              </button>
+              
+              {!isBountiesCollapsed && (
+                  <div className="p-3 space-y-2 animate-fade-in border-t border-yellow-500/20">
+                      {relevantBounties.map(bounty => (
+                          <div key={bounty.id} className="p-3 bg-black/40 rounded-lg border border-white/5 flex items-center justify-between group hover:border-yellow-500/40 transition-colors">
+                              <div className="flex-1 min-w-0 pr-3">
+                                  <p className="text-xs font-bold text-white leading-tight">{bounty.description}</p>
+                                  <div className="flex items-center gap-2 mt-1.5">
+                                      <span className={`text-[9px] px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 uppercase font-black`}>{bounty.targetType}</span>
+                                  </div>
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                  <div className="flex items-center gap-1 text-yellow-300 font-black text-sm">
+                                      <span>+{bounty.reward}</span>
+                                      <StarIcon className="h-3 w-3" />
+                                  </div>
+                              </div>
+                          </div>
+                      ))}
+                  </div>
+              )}
           </div>
       )}
 

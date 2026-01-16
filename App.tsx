@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
 import { StationList } from './components/StationList';
@@ -22,7 +23,7 @@ import { AdminDashboardView } from './components/AdminDashboardView';
 import { StationManagerDashboardView } from './components/StationManagerDashboardView';
 import { ArtistDashboardView } from './components/ArtistDashboardView';
 import { RightPanel } from './components/RightPanel';
-import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, BOUNTIES, ShieldCheckIcon, UploadIcon, CheckCircleIcon } from './constants';
+import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, BOUNTIES, ShieldCheckIcon, UploadIcon, CheckCircleIcon, XCircleIcon, MusicNoteIcon } from './constants';
 import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, CollectorCard, Lounge, UserProfile, AvatarFrame, SkinID, Bounty, Jingle, PlayerSkin, GuestbookEntry, Quest } from './types';
 import { getDominantColor } from './utils/colorExtractor';
 import { LandingPage } from './components/LandingPage';
@@ -448,7 +449,8 @@ export const App: React.FC = () => {
       }
   }, [currentUser, userProfile]);
 
-  const handleClaimStation = useCallback((station: Station, reason: string) => {
+  // handleClaimOwnership - Fixed name to match line 711 usage
+  const handleClaimOwnership = useCallback((station: Station, reason: string) => {
       if (!currentUser) return;
       setAllStations(prev => prev.map(s => s.streamUrl === station.streamUrl ? { ...s, claimRequest: { username: currentUser.username, reason, submittedAt: new Date().toISOString() } } : s));
       setToasts(t => [...t, { id: Date.now(), title: 'Claim Submitted', message: 'Admins will review your request.', icon: ShieldCheckIcon, type: 'success' }]);
@@ -491,6 +493,77 @@ export const App: React.FC = () => {
       setToasts(t => [...t, { id: Date.now(), title: 'Station Updated!', icon: ShieldCheckIcon, type: 'success' }]);
   }, [currentUser, userStations]);
 
+  // --- Administrative Functions ---
+  const handleApproveClaim = useCallback(async (station: Station, claimantUsername: string) => {
+      setAllStations(prev => prev.map(s => s.streamUrl === station.streamUrl ? { ...s, owner: claimantUsername, claimRequest: undefined } : s));
+      const userData = await getUserData(claimantUsername);
+      if (userData && userData.role === 'user') {
+          await updateUserData(claimantUsername, { role: 'owner' });
+      }
+      setToasts(t => [...t, { id: Date.now(), title: 'Claim Approved!', message: `${claimantUsername} is now the manager of ${station.name}.`, icon: ShieldCheckIcon, type: 'success' }]);
+  }, []);
+
+  const handleDenyClaim = useCallback((station: Station) => {
+      setAllStations(prev => prev.map(s => s.streamUrl === station.streamUrl ? { ...s, claimRequest: undefined } : s));
+      setToasts(t => [...t, { id: Date.now(), title: 'Claim Denied', icon: XCircleIcon, type: 'info' }]);
+  }, []);
+
+  const handleUpdateUserRole = useCallback(async (username: string, role: UserData['role']) => {
+      await updateUserData(username, { role });
+      if (currentUser?.username === username) {
+          setCurrentUser({ ...currentUser, role });
+      }
+      setToasts(t => [...t, { id: Date.now(), title: 'Role Updated', message: `${username} is now a ${role}.`, icon: ShieldCheckIcon, type: 'success' }]);
+  }, [currentUser]);
+
+  const handleDeleteStation = useCallback((station: Station) => {
+      setAllStations(prev => prev.filter(s => s.streamUrl !== station.streamUrl));
+      setToasts(t => [...t, { id: Date.now(), title: 'Station Removed', icon: XCircleIcon, type: 'info' }]);
+  }, []);
+
+  const handleReviewSubmission = useCallback((stationStreamUrl: string, submissionId: string, status: 'approved' | 'rejected', managerComment?: string) => {
+      setAllStations(prev => prev.map(s => {
+          if (s.streamUrl === stationStreamUrl) {
+              const updatedSubmissions = (s.submissions || []).map(sub =>
+                  sub.id === submissionId ? { ...sub, status, managerComment, reviewedAt: new Date().toISOString() } : sub
+              );
+              return { ...s, submissions: updatedSubmissions };
+          }
+          return s;
+      }));
+      setToasts(t => [...t, { id: Date.now(), title: `Submission ${status}`, icon: status === 'approved' ? CheckCircleIcon : XCircleIcon, type: 'success' }]);
+  }, []);
+
+  const handleReviewJingle = useCallback((jingleId: string, status: 'approved' | 'rejected') => {
+      setJingles(prev => prev.map(j => j.id === jingleId ? { ...j, status } : j));
+      setToasts(t => [...t, { id: Date.now(), title: `Jingle ${status}`, icon: MusicNoteIcon, type: 'success' }]);
+  }, []);
+
+  const handleDeleteGuestbookEntry = useCallback((stationStreamUrl: string, entryId: string) => {
+      setAllStations(prev => prev.map(s => {
+          if (s.streamUrl === stationStreamUrl) {
+              return { ...s, guestbook: (s.guestbook || []).filter(e => e.id !== entryId) };
+          }
+          return s;
+      }));
+      setToasts(t => [...t, { id: Date.now(), title: 'Entry Deleted', icon: XCircleIcon, type: 'info' }]);
+  }, []);
+
+  const handleAddJingle = useCallback((blob: Blob) => {
+    if (!currentUser || !currentStation) return;
+    const jingleId = `jingle_${Date.now()}`;
+    const newJingle: Jingle = {
+        id: jingleId,
+        url: URL.createObjectURL(blob),
+        stationUrl: currentStation.streamUrl,
+        creator: currentUser.username,
+        status: 'pending',
+        timestamp: new Date().toISOString()
+    };
+    setJingles(prev => [...prev, newJingle]);
+    setToasts(t => [...t, { id: Date.now(), title: 'Jingle Submitted!', message: 'Awaiting manager approval.', icon: MusicNoteIcon, type: 'success' }]);
+  }, [currentUser, currentStation]);
+
   useEffect(() => {
       const decay = setInterval(() => setHypeScore(prev => Math.max(0, prev - 1)), 200);
       return () => clearInterval(decay);
@@ -531,9 +604,9 @@ export const App: React.FC = () => {
       case 'artist_dashboard': 
         return <ArtistDashboardView user={currentUser} stats={stats} submissions={allMusicSubmissions.filter(s => s.submittedBy === currentUser?.username)} setActiveView={setActiveView} />;
       case 'station_manager_dashboard': 
-        return <StationManagerDashboardView user={currentUser} allStations={allStations} onReviewSubmission={()=>{}} onEditStation={handleEditStation} jingles={jingles} onReviewJingle={()=>{}} onDeleteGuestbookEntry={()=>{}} />;
+        return <StationManagerDashboardView user={currentUser} allStations={allStations} onReviewSubmission={handleReviewSubmission} onEditStation={handleEditStation} jingles={jingles} onReviewJingle={handleReviewJingle} onDeleteGuestbookEntry={handleDeleteGuestbookEntry} />;
       case 'admin': 
-        return <AdminDashboardView stations={allStations} onApproveClaim={()=>{}} onDenyClaim={() => {}} onUpdateUserRole={()=>{}} onEditStation={()=>{}} onDeleteStation={()=>{}} currentUser={currentUser} onOpenProfile={handleOpenProfile} onReviewSubmission={()=>{}} jingles={jingles} onReviewJingle={()=>{}} onDeleteGuestbookEntry={()=>{}} />;
+        return <AdminDashboardView stations={allStations} onApproveClaim={handleApproveClaim} onDenyClaim={handleDenyClaim} onUpdateUserRole={handleUpdateUserRole} onEditStation={handleEditStation} onDeleteStation={handleDeleteStation} currentUser={currentUser} onOpenProfile={handleOpenProfile} onReviewSubmission={handleReviewSubmission} jingles={jingles} onReviewJingle={handleReviewJingle} onDeleteGuestbookEntry={handleDeleteGuestbookEntry} />;
       case 'store': 
         return (
             <StoreView 
@@ -636,8 +709,8 @@ export const App: React.FC = () => {
       <BuyNowModal isOpen={isBuyNowModalOpen} onClose={() => setIsBuyNowModalOpen(false)} nowPlaying={nowPlaying} />
       <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} isDataSaver={isDataSaver} onToggleDataSaver={() => setIsDataSaver(!isDataSaver)} sleepTimerTarget={sleepTimerTarget} onSetSleepTimer={(min) => setSleepTimerTarget(min ? Date.now() + min * 60000 : null)} />
       <UserProfileModal isOpen={!!viewingProfile} onClose={() => setViewingProfile(null)} username={viewingProfile || ''} currentUser={currentUser} profile={targetUserProfile} onUpdateProfile={()=>{}} onMessage={()=>{}} onFollow={()=>{}} isFollowing={false} />
-      <JingleModal isOpen={isJingleModalOpen} onClose={() => setIsJingleModalOpen(false)} onSubmit={()=>{}} />
-      <ClaimOwnershipModal isOpen={isClaimModalOpen} onClose={() => setIsClaimModalOpen(false)} station={stationToClaim} onSubmit={handleClaimStation} />
+      <JingleModal isOpen={isJingleModalOpen} onClose={() => setIsJingleModalOpen(false)} onSubmit={handleAddJingle} />
+      <ClaimOwnershipModal isOpen={isClaimModalOpen} onClose={() => setIsClaimModalOpen(false)} station={stationToClaim} onSubmit={handleClaimOwnership} />
       <EditStationModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} onSubmit={handleUpdateStation} station={stationToEdit} />
       <LoginModal isOpen={isLoginModalOpen} onLogin={handleLogin} />
       <SubmitStationModal isOpen={isSubmitModalOpen} onClose={() => setIsSubmitModalOpen(false)} onSubmit={()=>{}} />

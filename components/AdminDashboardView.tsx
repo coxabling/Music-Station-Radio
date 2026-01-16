@@ -171,7 +171,7 @@ const SubmissionCard: React.FC<{
     );
 };
 
-// Fix: Export JingleCard to make it accessible for StationManagerDashboardView
+// Added export to fix import in StationManagerDashboardView
 export const JingleCard: React.FC<{
     jingle: Jingle & { stationName: string };
     onReview: (jingleId: string, status: 'approved' | 'rejected') => void;
@@ -209,7 +209,7 @@ export const JingleCard: React.FC<{
     );
 };
 
-// Fix: Export GuestbookEntryCard to make it accessible for StationManagerDashboardView
+// Added export to fix import in StationManagerDashboardView
 export const GuestbookEntryCard: React.FC<{
     entry: GuestbookEntry;
     onDelete: (stationStreamUrl: string, entryId: string) => void;
