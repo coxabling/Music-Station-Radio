@@ -20,12 +20,14 @@ interface BlendAnalysis {
 const SyncIcon = ({className = ""}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h5M20 20v-5h-5M4 4l1.5 1.5A9 9 0 0120.5 10.5M20 20l-1.5-1.5A9 9 0 003.5 13.5" /></svg>;
 const BackIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>;
 const PulseIcon = ({className = ""}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>;
+const AutoIcon = ({className = ""}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>;
 
 export const MorphView: React.FC<MorphViewProps> = ({ allStations, favoriteStationUrls, onBack, currentUser }) => {
     const [stationA, setStationA] = useState<Station | null>(null);
     const [stationB, setStationB] = useState<Station | null>(null);
     const [balance, setBalance] = useState(0.5);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [isAutomixing, setIsAutomixing] = useState(false);
     const [analysis, setAnalysis] = useState<BlendAnalysis | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isSynced, setIsSynced] = useState(false);
@@ -33,6 +35,8 @@ export const MorphView: React.FC<MorphViewProps> = ({ allStations, favoriteStati
     const audioARef = useRef<HTMLAudioElement>(null);
     const audioBRef = useRef<HTMLAudioElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const automixRafRef = useRef<number>(0);
+    const automixStartTimeRef = useRef<number>(0);
 
     const availableStations = useMemo(() => {
         return allStations.slice(0, 20); 
@@ -58,6 +62,30 @@ export const MorphView: React.FC<MorphViewProps> = ({ allStations, favoriteStati
             audioBRef.current?.pause();
         }
     }, [isPlaying, stationA, stationB]);
+
+    // Automix Oscillation Logic
+    useEffect(() => {
+        if (!isAutomixing || !isPlaying) {
+            if (automixRafRef.current) cancelAnimationFrame(automixRafRef.current);
+            return;
+        }
+
+        automixStartTimeRef.current = performance.now();
+        
+        const updateAutomix = (time: number) => {
+            const elapsed = (time - automixStartTimeRef.current) / 1000;
+            // Oscillate balance using a slow sine wave (8 second period)
+            const newBalance = (Math.sin(elapsed * (Math.PI * 2) / 8) + 1) / 2;
+            setBalance(newBalance);
+            automixRafRef.current = requestAnimationFrame(updateAutomix);
+        };
+
+        automixRafRef.current = requestAnimationFrame(updateAutomix);
+
+        return () => {
+            if (automixRafRef.current) cancelAnimationFrame(automixRafRef.current);
+        };
+    }, [isAutomixing, isPlaying]);
 
     // Matrix Visualizer Logic
     useEffect(() => {
@@ -251,19 +279,32 @@ export const MorphView: React.FC<MorphViewProps> = ({ allStations, favoriteStati
                                     max="1" 
                                     step="0.001" 
                                     value={balance} 
+                                    disabled={isAutomixing}
                                     onChange={(e) => setBalance(parseFloat(e.target.value))}
-                                    className="morph-slider w-full bg-transparent appearance-none cursor-pointer relative z-10"
+                                    className={`morph-slider w-full bg-transparent appearance-none cursor-pointer relative z-10 ${isAutomixing ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 />
                             </div>
                         </div>
 
-                        <button 
-                            onClick={() => setIsPlaying(!isPlaying)}
-                            disabled={!stationA || !stationB}
-                            className={`w-28 h-28 rounded-full flex items-center justify-center transition-all shadow-[0_0_60px_rgba(0,0,0,0.8)] border-4 group/play ${isPlaying ? 'bg-pink-500 border-pink-400 animate-pulse scale-105' : 'bg-white border-gray-200 text-black hover:scale-110 disabled:opacity-20 active:scale-95'}`}
-                        >
-                            {isPlaying ? <PauseIcon className="w-12 h-12" /> : <PlayIcon className="w-12 h-12" />}
-                        </button>
+                        <div className="flex items-center gap-6">
+                            <button 
+                                onClick={() => setIsPlaying(!isPlaying)}
+                                disabled={!stationA || !stationB}
+                                className={`w-24 h-24 rounded-full flex items-center justify-center transition-all shadow-[0_0_60px_rgba(0,0,0,0.8)] border-4 group/play ${isPlaying ? 'bg-pink-500 border-pink-400 animate-pulse scale-105' : 'bg-white border-gray-200 text-black hover:scale-110 disabled:opacity-20 active:scale-95'}`}
+                            >
+                                {isPlaying ? <PauseIcon className="w-10 h-10" /> : <PlayIcon className="w-10 h-10" />}
+                            </button>
+
+                            <button 
+                                onClick={() => setIsAutomixing(!isAutomixing)}
+                                disabled={!stationA || !stationB || !isPlaying}
+                                className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all border-2 disabled:opacity-20 ${isAutomixing ? 'bg-cyan-500 border-cyan-400 text-black shadow-[0_0_20px_rgba(6,182,212,0.5)]' : 'bg-gray-900 border-white/10 text-gray-500 hover:text-white'}`}
+                                title="Neural Automix"
+                            >
+                                <AutoIcon className="w-6 h-6" />
+                                <span className="text-[8px] font-black uppercase tracking-tighter">Auto</span>
+                            </button>
+                        </div>
 
                         <div className="text-center w-full min-h-[140px] flex flex-col justify-center">
                             {analysis ? (

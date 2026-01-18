@@ -42,6 +42,12 @@ import { RequestSongModal } from './components/RequestSongModal';
 import { JingleModal } from './components/JingleModal';
 import { HelpFAQ } from './components/HelpFAQ';
 import { ContactUsView } from './components/ContactUsView';
+// Add missing imports
+import { StoreView } from './components/StoreView';
+import { LeaderboardView } from './components/LeaderboardView';
+import { Sidebar } from './components/Sidebar';
+import { EventsModal } from './components/EventsModal';
+import { SongHistoryModal } from './components/SongHistoryModal';
 
 const hexToRgb = (hex: string) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -437,13 +443,13 @@ export const App: React.FC = () => {
     setUnlockedFrames((data.unlockedFrames as string[]) || ([] as string[]));
     // Fix: explicitly construct profileData with type casting for all nested arrays to resolve unknown[] assignment errors.
     const profileData: UserProfile = data.profile ? {
-        bio: data.profile.bio || '',
+        bio: String(data.profile.bio || ''),
         topArtists: (data.profile.topArtists as string[]) || [],
         favoriteGenres: (data.profile.favoriteGenres as string[]) || [],
         following: (data.profile.following as string[]) || [],
         followers: (data.profile.followers as string[]) || [],
-        location: data.profile.location,
-        customAvatarUrl: data.profile.customAvatarUrl
+        location: data.profile.location ? String(data.profile.location) : undefined,
+        customAvatarUrl: data.profile.customAvatarUrl ? String(data.profile.customAvatarUrl) : undefined
     } : { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' };
     setUserProfile(profileData);
     setCustomThemes(data.customThemes || []);
