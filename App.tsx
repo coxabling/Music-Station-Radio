@@ -423,51 +423,48 @@ export const App: React.FC = () => {
         return;
     }
 
-    // Fix: Explicitly cast the returned object to UserData to resolve inference issues
-    const userData = data as UserData;
+    // Fix: Explicitly cast the returned object to UserData and handle narrowing/assignments carefully.
+    const userData: UserData = data as UserData;
 
-    // Fix: Explicitly cast property arrays to string[] to satisfy Set constructor and strict typing requirements.
-    const favUrls = new Set<string>((userData.favoriteStationUrls as string[]) || ([] as string[]));
-    // Explicitly cast role to satisfy the User interface.
-    const user: User = { username, role: userData.role as User['role'] };
+    // Fix: cast properties with defaults for safe loading from JSON storage
+    const favUrls = new Set<string>((userData.favoriteStationUrls as string[]) || []);
+    const user: User = { username, role: userData.role };
     setCurrentUser(user);
     setFavoriteStationUrls(favUrls);
-    // Fix: cast activeTheme to ThemeName
     setActiveTheme(userData.activeTheme as ThemeName);
-    // Fix: explicitly cast data.unlockedThemes to ThemeName[] to satisfy Set constructor requirements and resolve unknown[] assignment issues.
-    setUnlockedThemes(new Set<ThemeName>((userData.unlockedThemes as ThemeName[]) || (['dynamic', 'reggae'] as ThemeName[])));
+    setUnlockedThemes(new Set<ThemeName>((userData.unlockedThemes as ThemeName[]) || ['dynamic', 'reggae']));
     setStats(userData.stats as ListeningStats);
-    setAlarm(userData.alarm);
-    setSongVotes(userData.songVotes);
-    setUnlockedAchievements(userData.unlockedAchievements);
+    setAlarm(userData.alarm || null);
+    setSongVotes(userData.songVotes || {});
+    setUnlockedAchievements(userData.unlockedAchievements || {});
     setQuests((userData.quests as Quest[]) || INITIAL_QUESTS);
-    // Fix: explicitly cast userData.collection to CollectorCard[]
-    setCollection((userData.collection as CollectorCard[]) || ([] as CollectorCard[]));
+    setCollection((userData.collection as CollectorCard[]) || []);
     setActiveFrame(userData.activeFrame);
-    // Fix: cast userData.unlockedFrames to string[] explicitly to satisfy strict typing and resolve the unknown[] assignment error.
-    setUnlockedFrames((userData.unlockedFrames as string[]) || ([] as string[]));
-    // Fix: explicitly construct profileData with type casting for all nested arrays to resolve unknown[] assignment errors.
+    setUnlockedFrames((userData.unlockedFrames as string[]) || []);
+    
+    // Fix: ensure profile is safely constructed
     const profileData: UserProfile = userData.profile ? {
         bio: String(userData.profile.bio || ''),
-        topArtists: (userData.profile.topArtists as string[]) || ([] as string[]),
-        favoriteGenres: (userData.profile.favoriteGenres as string[]) || ([] as string[]),
-        following: (userData.profile.following as string[]) || ([] as string[]),
-        followers: (userData.profile.followers as string[]) || ([] as string[]),
+        topArtists: (userData.profile.topArtists as string[]) || [],
+        favoriteGenres: (userData.profile.favoriteGenres as string[]) || [],
+        following: (userData.profile.following as string[]) || [],
+        followers: (userData.profile.followers as string[]) || [],
         location: userData.profile.location ? String(userData.profile.location) : undefined,
         customAvatarUrl: userData.profile.customAvatarUrl ? String(userData.profile.customAvatarUrl) : undefined
-    } : { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' };
+    } : { bio: '', topArtists: [], favoriteGenres: [], following: [], followers: [], customAvatarUrl: '' };
+    
     setUserProfile(profileData);
-    setCustomThemes((userData.customThemes as Theme[]) || ([] as Theme[]));
+    setCustomThemes((userData.customThemes as Theme[]) || []);
     setActiveSkin(userData.activeSkin || 'modern');
-    // Fix: Cast unlockedSkins to SkinID[] explicitly to avoid unknown[] assignment errors.
-    setUnlockedSkins((userData.unlockedSkins as SkinID[]) || (['modern'] as SkinID[]));
+    setUnlockedSkins((userData.unlockedSkins as SkinID[]) || ['modern']);
     setPortfolio(userData.portfolio || {});
-    setJingles((userData.jingles as Jingle[]) || ([] as Jingle[]));
-    // Fix: Cast completedBounties to string[] to resolve the unknown[] assignment error.
-    const completedBounties = (userData.completedBounties as string[]) || ([] as string[]);
+    setJingles((userData.jingles as Jingle[]) || []);
+    
+    const completedBounties = (userData.completedBounties as string[]) || [];
     if(completedBounties.length > 0) {
         setBounties(prev => prev.map(b => completedBounties.includes(b.id) ? { ...b, completed: true } : b));
     }
+    
     setActiveView('explore');
     setIsDataLoading(false);
 

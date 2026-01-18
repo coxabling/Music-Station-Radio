@@ -63,7 +63,6 @@ export const MorphView: React.FC<MorphViewProps> = ({ allStations, favoriteStati
     const resonatorBankBRef = useRef<BiquadFilterNode[]>([]);
 
     const automixRafRef = useRef<number>(0);
-    const automixStartTimeRef = useRef<number>(0);
     const driftTargetRef = useRef<number>(0.5);
 
     const availableStations = useMemo(() => allStations.slice(0, 30), [allStations]);
@@ -126,7 +125,48 @@ export const MorphView: React.FC<MorphViewProps> = ({ allStations, favoriteStati
         bankB.last.connect(modB).connect(anaB).connect(filterB).connect(gainB).connect(ctx.destination);
     };
 
-    // Dynamic Engine Update Loop
+    // The actual Automix Logic: Moves the Balance slider
+    useEffect(() => {
+        if (!isAutomixing || !isPlaying) {
+            if (automixRafRef.current) cancelAnimationFrame(automixRafRef.current);
+            return;
+        }
+
+        const startTime = performance.now();
+        const update = (time: number) => {
+            const elapsed = (time - startTime) / 1000;
+            let nextBalance = balance;
+
+            switch (automixMode) {
+                case 'oscillate':
+                    // Slow sine wave: 16 second cycle
+                    nextBalance = (Math.sin(elapsed * (Math.PI * 2) / 16) + 1) / 2;
+                    break;
+                case 'drift':
+                    // Random walking towards a target
+                    if (Math.abs(balance - driftTargetRef.current) < 0.01) {
+                        driftTargetRef.current = Math.random();
+                    }
+                    nextBalance = balance + (driftTargetRef.current - balance) * 0.003;
+                    break;
+                case 'pulse':
+                    // Hard switches on a rhythmic interval
+                    const beat = Math.floor(elapsed * (124 / 60));
+                    nextBalance = (beat % 2 === 0) ? 0.75 : 0.25;
+                    break;
+            }
+
+            setBalance(nextBalance);
+            automixRafRef.current = requestAnimationFrame(update);
+        };
+
+        automixRafRef.current = requestAnimationFrame(update);
+        return () => {
+            if (automixRafRef.current) cancelAnimationFrame(automixRafRef.current);
+        };
+    }, [isAutomixing, isPlaying, automixMode]);
+
+    // Dynamic Engine Update Loop (Beat Pumping)
     useEffect(() => {
         if (!isPlaying || !audioCtxRef.current) return;
         
@@ -157,11 +197,13 @@ export const MorphView: React.FC<MorphViewProps> = ({ allStations, favoriteStati
         if (!gainANodeRef.current || !gainBNodeRef.current || !filterANodeRef.current || !filterBNodeRef.current) return;
         const now = audioCtxRef.current?.currentTime || 0;
         
+        // Equal-power crossfade
         const volA = Math.cos(balance * 0.5 * Math.PI);
         const volB = Math.sin(balance * 0.5 * Math.PI);
         gainANodeRef.current.gain.setTargetAtTime(volA, now, 0.1);
         gainBNodeRef.current.gain.setTargetAtTime(volB, now, 0.1);
 
+        // Filter sweeps
         const freqA = 20000 * Math.pow(1 - balance, 1.5) + 150; 
         const freqB = 20 + (Math.pow(balance, 1.5) * 6000);
         filterANodeRef.current.frequency.setTargetAtTime(freqA, now, 0.2);
