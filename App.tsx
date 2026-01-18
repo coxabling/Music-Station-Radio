@@ -11,13 +11,6 @@ import { LoginModal } from './components/LoginModal';
 import { TippingModal } from './components/TippingModal';
 import { GenreSpotlightModal } from './components/GenreSpotlightModal';
 import { SongChartModal } from './components/SongChartModal';
-import { EventsModal } from './components/EventsModal';
-import { Sidebar } from './components/Sidebar';
-import { CommunityFeed } from './components/CommunityFeed';
-import { StoreView } from './components/StoreView';
-import { LeaderboardView } from './components/LeaderboardView';
-import { MapView } from './components/MapView';
-import { SongHistoryModal } from './components/SongHistoryModal';
 import { GenreChatView } from './components/GenreChatView';
 import { AdminDashboardView } from './components/AdminDashboardView';
 import { StationManagerDashboardView } from './components/StationManagerDashboardView';
@@ -368,7 +361,6 @@ export const App: React.FC = () => {
       setActiveView('explore');
   }, []);
 
-  /* Fix: Added handleToggleFavorite function to manage favoriting stations and persisting to storage. */
   const handleToggleFavorite = useCallback(async (station: Station) => {
     if (!currentUser) {
       setIsLoginModalOpen(true);
@@ -424,11 +416,14 @@ export const App: React.FC = () => {
         handleLogout();
         return;
     }
-    const favUrls = new Set<string>((data.favoriteStationUrls as string[]) || ([] as string[]));
-    const user: User = { username, role: data.role };
+    // Fix: Explicitly cast array to string[] to satisfy Set constructor requirements.
+    const favUrls = new Set<string>((data.favoriteStationUrls as string[]) || []);
+    // Fix: Explicitly cast role to satisfy the User interface.
+    const user: User = { username, role: data.role as User['role'] };
     setCurrentUser(user);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
+    // Fix: cast data.unlockedThemes to ThemeName[] to satisfy Set constructor requirements.
     setUnlockedThemes(new Set<ThemeName>((data.unlockedThemes as ThemeName[]) || (['dynamic', 'reggae'] as ThemeName[])));
     setStats(data.stats as ListeningStats);
     setAlarm(data.alarm);
@@ -453,9 +448,11 @@ export const App: React.FC = () => {
     setUserProfile(profileData);
     setCustomThemes(data.customThemes || []);
     setActiveSkin(data.activeSkin || 'modern');
+    // Fix: Cast unlockedSkins to SkinID[] explicitly to avoid unknown[] assignment errors.
     setUnlockedSkins((data.unlockedSkins as SkinID[]) || (['modern'] as SkinID[]));
     setPortfolio(data.portfolio || {});
     setJingles(data.jingles || []);
+    // Fix: Cast completedBounties to string[] to resolve the unknown[] assignment error.
     const completedBounties = (data.completedBounties as string[]) || ([] as string[]);
     if(completedBounties.length > 0) {
         setBounties(prev => prev.map(b => completedBounties.includes(b.id) ? { ...b, completed: true } : b));
@@ -876,7 +873,7 @@ export const App: React.FC = () => {
                 />
             </header>
             <div className={`flex flex-1 overflow-hidden transition-opacity duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-                {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenSongChart={() => setIsSongChartModal(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} onOpenStockMarket={() => setActiveView('prediction_market')} onOpenCollection={() => setIsCollectionOpen(true)} />}
+                {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} onOpenSongChart={() => setIsSongChartModal(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenStockMarket={() => setActiveView('prediction_market')} onOpenCollection={() => setIsCollectionOpen(true)} />}
                 <main id="main-content" className="flex-1 overflow-y-auto pb-24">{renderActiveView()}</main>
                 <RightPanel station={stationForDetail} currentStation={currentStation} allStations={allStations} currentUser={currentUser} stats={stats} onAddReview={() => {}} onSelectStation={handleSelectStation} onRateStation={() => {}} onEdit={handleEditStation} onOpenMusicSubmissionModal={(s) => { setStationForSubmission(s); setIsMusicSubmissionModalOpen(true); }} onOpenClaimModal={(s) => { setStationToClaim(s); setIsClaimModalOpen(true); }} onToggleFavorite={handleToggleFavorite} nowPlaying={isHypeStormActive ? MYSTERY_TRACK : nowPlaying} bounties={bounties} onOpenJingleModal={() => setIsJingleModalOpen(true)} onAddGuestbookEntry={handleAddGuestbookEntry} />
             </div>
