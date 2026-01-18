@@ -422,44 +422,44 @@ export const App: React.FC = () => {
         handleLogout();
         return;
     }
-    // Fix: Explicitly cast array to string[] to satisfy Set constructor requirements.
+    // Explicitly cast array to string[] to satisfy Set constructor requirements.
     const favUrls = new Set<string>((data.favoriteStationUrls as string[]) || []);
-    // Fix: Explicitly cast role to satisfy the User interface.
+    // Explicitly cast role to satisfy the User interface.
     const user: User = { username, role: data.role as User['role'] };
     setCurrentUser(user);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
-    // Fix: cast data.unlockedThemes to ThemeName[] to satisfy Set constructor requirements.
+    // Explicitly cast data.unlockedThemes to ThemeName[] to satisfy Set constructor requirements.
     setUnlockedThemes(new Set<ThemeName>((data.unlockedThemes as ThemeName[]) || (['dynamic', 'reggae'] as ThemeName[])));
     setStats(data.stats as ListeningStats);
     setAlarm(data.alarm);
     setSongVotes(data.songVotes);
     setUnlockedAchievements(data.unlockedAchievements);
-    setQuests(data.quests || INITIAL_QUESTS);
-    // Fix: Explicitly cast collection to CollectorCard[] to resolve unknown array assignment issues.
-    setCollection((data.collection as CollectorCard[]) || ([] as CollectorCard[]));
+    setQuests((data.quests as Quest[]) || INITIAL_QUESTS);
+    // Line 396 fix: explicitly cast with unknown to resolve strictly 'unknown[]' to 'CollectorCard[]' assignment issue if inferred as unknown.
+    setCollection((data.collection as unknown as CollectorCard[]) || ([] as CollectorCard[]));
     setActiveFrame(data.activeFrame);
     // Fix: cast data.unlockedFrames to string[] explicitly to satisfy strict typing and resolve the unknown[] assignment error.
-    setUnlockedFrames((data.unlockedFrames as string[]) || ([] as string[]));
+    setUnlockedFrames((data.unlockedFrames as unknown as string[]) || ([] as string[]));
     // Fix: explicitly construct profileData with type casting for all nested arrays to resolve unknown[] assignment errors.
     const profileData: UserProfile = data.profile ? {
         bio: String(data.profile.bio || ''),
-        topArtists: (data.profile.topArtists as string[]) || [],
-        favoriteGenres: (data.profile.favoriteGenres as string[]) || [],
-        following: (data.profile.following as string[]) || [],
-        followers: (data.profile.followers as string[]) || [],
+        topArtists: (data.profile.topArtists as unknown as string[]) || [],
+        favoriteGenres: (data.profile.favoriteGenres as unknown as string[]) || [],
+        following: (data.profile.following as unknown as string[]) || [],
+        followers: (data.profile.followers as unknown as string[]) || [],
         location: data.profile.location ? String(data.profile.location) : undefined,
         customAvatarUrl: data.profile.customAvatarUrl ? String(data.profile.customAvatarUrl) : undefined
     } : { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' };
     setUserProfile(profileData);
-    setCustomThemes(data.customThemes || []);
+    setCustomThemes((data.customThemes as Theme[]) || []);
     setActiveSkin(data.activeSkin || 'modern');
     // Fix: Cast unlockedSkins to SkinID[] explicitly to avoid unknown[] assignment errors.
     setUnlockedSkins((data.unlockedSkins as SkinID[]) || (['modern'] as SkinID[]));
     setPortfolio(data.portfolio || {});
-    setJingles(data.jingles || []);
+    setJingles((data.jingles as Jingle[]) || []);
     // Fix: Cast completedBounties to string[] to resolve the unknown[] assignment error.
-    const completedBounties = (data.completedBounties as string[]) || ([] as string[]);
+    const completedBounties = (data.completedBounties as unknown as string[]) || ([] as string[]);
     if(completedBounties.length > 0) {
         setBounties(prev => prev.map(b => completedBounties.includes(b.id) ? { ...b, completed: true } : b));
     }
@@ -669,7 +669,12 @@ export const App: React.FC = () => {
 
   // --- Administrative Functions ---
   const handleApproveClaim = useCallback(async (station: Station, claimantUsername: string) => {
-      setAllStations(prev => prev.map(s => s.streamUrl === station.streamUrl ? { ...s, owner: claimantUsername, claimRequest: undefined } : s));
+      setAllStations(prev => prev.map(s => {
+          if (s.streamUrl === station.streamUrl) {
+              return { ...s, owner: claimantUsername, claimRequest: undefined };
+          }
+          return s;
+      }));
       const userData = await getUserData(claimantUsername);
       if (userData && userData.role === 'user') {
           await updateUserData(claimantUsername, { role: 'owner' });
