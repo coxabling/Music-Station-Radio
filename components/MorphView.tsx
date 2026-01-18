@@ -36,6 +36,7 @@ export const MorphView: React.FC<MorphViewProps> = ({ allStations, favoriteStati
     const [analysis, setAnalysis] = useState<BlendAnalysis | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isSynced, setIsSynced] = useState(false);
+    const [loadState, setLoadState] = useState<{a: string, b: string}>({ a: 'idle', b: 'idle' });
 
     // Audio Refs for Web Audio API
     const audioARef = useRef<HTMLAudioElement>(null);
@@ -50,6 +51,8 @@ export const MorphView: React.FC<MorphViewProps> = ({ allStations, favoriteStati
     const gainBNodeRef = useRef<GainNode | null>(null);
     const filterANodeRef = useRef<BiquadFilterNode | null>(null);
     const filterBNodeRef = useRef<BiquadFilterNode | null>(null);
+    const analyzerARef = useRef<AnalyserNode | null>(null);
+    const analyzerBRef = useRef<AnalyserNode | null>(null);
     
     const automixRafRef = useRef<number>(0);
     const automixStartTimeRef = useRef<number>(0);
@@ -57,87 +60,93 @@ export const MorphView: React.FC<MorphViewProps> = ({ allStations, favoriteStati
 
     const availableStations = useMemo(() => allStations.slice(0, 30), [allStations]);
 
-    // Initialize Web Audio Graph
-    useEffect(() => {
+    // Initialize Web Audio Graph - Fixed to handle interaction better
+    const ensureAudioGraph = () => {
+        if (audioCtxRef.current) return;
         if (!audioARef.current || !audioBRef.current) return;
-        
-        const initAudio = () => {
-            if (audioCtxRef.current) return;
-            
-            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-            audioCtxRef.current = ctx;
 
-            // Sources
-            sourceANodeRef.current = ctx.createMediaElementSource(audioARef.current!);
-            sourceBNodeRef.current = ctx.createMediaElementSource(audioBRef.current!);
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioCtxRef.current = ctx;
 
-            // Filters for "Spectral Morphing"
-            const filterA = ctx.createBiquadFilter();
-            filterA.type = 'lowpass';
-            filterA.frequency.value = 20000;
-            filterANodeRef.current = filterA;
+        // Create Analyzers for visual data
+        const anaA = ctx.createAnalyser(); anaA.fftSize = 64;
+        const anaB = ctx.createAnalyser(); anaB.fftSize = 64;
+        analyzerARef.current = anaA;
+        analyzerBRef.current = anaB;
 
-            const filterB = ctx.createBiquadFilter();
-            filterB.type = 'highpass';
-            filterB.frequency.value = 20;
-            filterBNodeRef.current = filterB;
+        // Sources
+        sourceANodeRef.current = ctx.createMediaElementSource(audioARef.current);
+        sourceBNodeRef.current = ctx.createMediaElementSource(audioBRef.current);
 
-            // Gain Nodes
-            const gainA = ctx.createGain();
-            const gainB = ctx.createGain();
-            gainANodeRef.current = gainA;
-            gainBNodeRef.current = gainB;
+        // Filters
+        const filterA = ctx.createBiquadFilter(); filterA.type = 'lowpass'; filterA.frequency.value = 20000;
+        const filterB = ctx.createBiquadFilter(); filterB.type = 'highpass'; filterB.frequency.value = 20;
+        filterANodeRef.current = filterA;
+        filterBNodeRef.current = filterB;
 
-            // Graph: Source -> Filter -> Gain -> Destination
-            sourceANodeRef.current.connect(filterA).connect(gainA).connect(ctx.destination);
-            sourceBNodeRef.current.connect(filterB).connect(gainB).connect(ctx.destination);
-        };
+        // Gains
+        const gainA = ctx.createGain(); const gainB = ctx.createGain();
+        gainANodeRef.current = gainA; gainBNodeRef.current = gainB;
 
-        const handleInteraction = () => {
-            initAudio();
-            window.removeEventListener('click', handleInteraction);
-        };
-        window.addEventListener('click', handleInteraction);
-        
-        return () => window.removeEventListener('click', handleInteraction);
-    }, []);
+        // Graph
+        sourceANodeRef.current.connect(anaA).connect(filterA).connect(gainA).connect(ctx.destination);
+        sourceBNodeRef.current.connect(anaB).connect(filterB).connect(gainB).connect(ctx.destination);
+    };
 
-    // Reactive Audio Processing: Update Gains and Filters based on Balance
+    // Fix: Handle station changes by explicitly updating src and calling .load()
+    useEffect(() => {
+        if (audioARef.current && stationA) {
+            audioARef.current.src = stationA.streamUrl;
+            audioARef.current.load();
+            setLoadState(prev => ({ ...prev, a: 'loading' }));
+            if (isPlaying) audioARef.current.play().catch(() => {});
+        }
+    }, [stationA]);
+
+    useEffect(() => {
+        if (audioBRef.current && stationB) {
+            audioBRef.current.src = stationB.streamUrl;
+            audioBRef.current.load();
+            setLoadState(prev => ({ ...prev, b: 'loading' }));
+            if (isPlaying) audioBRef.current.play().catch(() => {});
+        }
+    }, [stationB]);
+
+    // Update Gains and Filters based on Balance
     useEffect(() => {
         if (!gainANodeRef.current || !gainBNodeRef.current || !filterANodeRef.current || !filterBNodeRef.current) return;
-        
         const now = audioCtxRef.current?.currentTime || 0;
         
-        // Equal-power crossfade
+        // Equal-power crossfade curve
         const volA = Math.cos(balance * 0.5 * Math.PI);
         const volB = Math.sin(balance * 0.5 * Math.PI);
         
-        gainANodeRef.current.gain.setTargetAtTime(volA, now, 0.05);
-        gainBNodeRef.current.gain.setTargetAtTime(volB, now, 0.05);
+        gainANodeRef.current.gain.setTargetAtTime(volA, now, 0.1);
+        gainBNodeRef.current.gain.setTargetAtTime(volB, now, 0.1);
 
-        // Intelligent Filter Blending
-        // As we move toward Source B (balance -> 1), Source A gets progressively low-passed
-        const freqA = 20000 * (1 - balance) + 200; 
-        // As we move toward Source A (balance -> 0), Source B gets progressively high-passed
-        const freqB = 20 + (balance * 5000);
+        const freqA = 20000 * Math.pow(1 - balance, 2) + 100; 
+        const freqB = 20 + (Math.pow(balance, 2) * 8000);
 
-        filterANodeRef.current.frequency.setTargetAtTime(freqA, now, 0.1);
-        filterBNodeRef.current.frequency.setTargetAtTime(freqB, now, 0.1);
-        
+        filterANodeRef.current.frequency.setTargetAtTime(freqA, now, 0.2);
+        filterBNodeRef.current.frequency.setTargetAtTime(freqB, now, 0.2);
     }, [balance]);
 
-    useEffect(() => {
+    const togglePlay = async () => {
+        ensureAudioGraph();
+        if (audioCtxRef.current?.state === 'suspended') await audioCtxRef.current.resume();
+
         if (isPlaying) {
-            audioCtxRef.current?.resume();
-            audioARef.current?.play().catch(() => {});
-            audioBRef.current?.play().catch(() => {});
-        } else {
             audioARef.current?.pause();
             audioBRef.current?.pause();
+            setIsPlaying(false);
+        } else {
+            setIsPlaying(true);
+            audioARef.current?.play().catch(e => console.error("Playback Alpha failed", e));
+            audioBRef.current?.play().catch(e => console.error("Playback Omega failed", e));
         }
-    }, [isPlaying, stationA, stationB]);
+    };
 
-    // Enhanced Automix Modes
+    // Automix Logic
     useEffect(() => {
         if (!isAutomixing || !isPlaying) {
             if (automixRafRef.current) cancelAnimationFrame(automixRafRef.current);
@@ -145,39 +154,25 @@ export const MorphView: React.FC<MorphViewProps> = ({ allStations, favoriteStati
         }
 
         automixStartTimeRef.current = performance.now();
-        
         const updateAutomix = (time: number) => {
             const elapsed = (time - automixStartTimeRef.current) / 1000;
             let newBalance = balance;
-
             switch(automixMode) {
-                case 'oscillate':
-                    newBalance = (Math.sin(elapsed * (Math.PI * 2) / 12) + 1) / 2;
-                    break;
+                case 'oscillate': newBalance = (Math.sin(elapsed * (Math.PI * 2) / 12) + 1) / 2; break;
                 case 'drift':
-                    if (Math.abs(balance - driftTargetRef.current) < 0.01) {
-                        driftTargetRef.current = Math.random();
-                    }
+                    if (Math.abs(balance - driftTargetRef.current) < 0.01) driftTargetRef.current = Math.random();
                     newBalance = balance + (driftTargetRef.current - balance) * 0.005;
                     break;
-                case 'pulse':
-                    // Faster rhythmic jumps mimicking a heartbeat or syncopation
-                    newBalance = (Math.sin(elapsed * 4) > 0) ? 0.7 : 0.3;
-                    break;
+                case 'pulse': newBalance = (Math.sin(elapsed * 6) > 0) ? 0.75 : 0.25; break;
             }
-
             setBalance(newBalance);
             automixRafRef.current = requestAnimationFrame(updateAutomix);
         };
-
         automixRafRef.current = requestAnimationFrame(updateAutomix);
-
-        return () => {
-            if (automixRafRef.current) cancelAnimationFrame(automixRafRef.current);
-        };
+        return () => cancelAnimationFrame(automixRafRef.current);
     }, [isAutomixing, isPlaying, automixMode, balance]);
 
-    // Matrix Visualizer Logic (Canvas)
+    // Canvas Visualizer with Real-Time Frequency Intercepts
     useEffect(() => {
         if (!canvasRef.current) return;
         const canvas = canvasRef.current;
@@ -186,49 +181,53 @@ export const MorphView: React.FC<MorphViewProps> = ({ allStations, favoriteStati
 
         let animationFrame: number;
         let offset = 0;
+        const dataA = new Uint8Array(32);
+        const dataB = new Uint8Array(32);
 
         const draw = () => {
-            offset += 0.05;
+            offset += 0.04;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
+            if (analyzerARef.current) analyzerARef.current.getByteFrequencyData(dataA);
+            if (analyzerBRef.current) analyzerBRef.current.getByteFrequencyData(dataB);
+
             const midY = canvas.height / 2;
             const width = canvas.width;
             
-            // Draw Wave Alpha (Cyan)
+            // Amp factor based on frequency data
+            const ampA = isPlaying ? (dataA[5] / 255) * 50 : 0;
+            const ampB = isPlaying ? (dataB[5] / 255) * 50 : 0;
+
+            // Wave Alpha (Cyan)
             ctx.beginPath();
-            ctx.strokeStyle = `rgba(6, 182, 212, ${1 - balance})`;
-            ctx.lineWidth = 3;
-            ctx.shadowBlur = isPlaying ? 15 : 0;
+            ctx.strokeStyle = `rgba(6, 182, 212, ${Math.max(0.2, 1 - balance)})`;
+            ctx.lineWidth = 4;
+            ctx.shadowBlur = isPlaying ? 10 : 0;
             ctx.shadowColor = '#06b6d4';
             for (let x = 0; x < width; x++) {
-                const y = midY + Math.sin(x * 0.05 + offset) * (25 * (1 - balance));
-                if (x === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
+                const y = midY + Math.sin(x * 0.04 + offset) * (10 + ampA) * (1 - balance);
+                if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
             }
             ctx.stroke();
 
-            // Draw Wave Omega (Pink)
+            // Wave Omega (Pink)
             ctx.beginPath();
-            ctx.strokeStyle = `rgba(236, 72, 153, ${balance})`;
-            ctx.lineWidth = 3;
+            ctx.strokeStyle = `rgba(236, 72, 153, ${Math.max(0.2, balance)})`;
+            ctx.lineWidth = 4;
             ctx.shadowColor = '#ec4899';
             for (let x = 0; x < width; x++) {
-                const y = midY + Math.cos(x * 0.04 + offset * 0.8) * (25 * balance);
-                if (x === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
+                const y = midY + Math.cos(x * 0.03 + offset * 0.8) * (10 + ampB) * balance;
+                if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
             }
             ctx.stroke();
 
-            // Frequency Interference Glow
             if (isPlaying) {
                 ctx.beginPath();
                 ctx.strokeStyle = '#fff';
                 ctx.lineWidth = 1;
-                ctx.globalAlpha = 0.15;
-                ctx.shadowBlur = 0;
-                for (let x = 0; x < width; x += 15) {
-                    const yA = Math.sin(x * 0.05 + offset) * (25 * (1 - balance));
-                    const yB = Math.cos(x * 0.04 + offset * 0.8) * (25 * balance);
+                ctx.globalAlpha = 0.1;
+                for (let x = 0; x < width; x += 20) {
+                    const yA = Math.sin(x * 0.04 + offset) * (10 + ampA) * (1 - balance);
+                    const yB = Math.cos(x * 0.03 + offset * 0.8) * (10 + ampB) * balance;
                     ctx.moveTo(x, midY + yA);
                     ctx.lineTo(x, midY + yB);
                 }
@@ -238,7 +237,6 @@ export const MorphView: React.FC<MorphViewProps> = ({ allStations, favoriteStati
 
             animationFrame = requestAnimationFrame(draw);
         };
-
         draw();
         return () => cancelAnimationFrame(animationFrame);
     }, [balance, isPlaying]);
@@ -251,16 +249,7 @@ export const MorphView: React.FC<MorphViewProps> = ({ allStations, favoriteStati
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
             const response = await ai.models.generateContent({
                 model: 'gemini-3-flash-preview',
-                contents: `Analyze the sonic fusion of these two radio stations:
-                Source A: ${stationA.name} (${stationA.genre})
-                Source B: ${stationB.name} (${stationB.genre})
-                
-                Return a JSON object with:
-                "hybridName": A cool, futuristic genre name for this blend.
-                "description": A 2-sentence technical musical analysis of the 'frequency overlap'.
-                "compatibility": A number between 70 and 99.
-                "spectralShift": A short phrase describing the mood (e.g., 'Deep Resonance', 'High-Energy Turbulence').
-                "frequencyDna": A 16-character hexadecimal string representing the unique signature of this blend.`,
+                contents: `Analyze the sonic fusion: ${stationA.name} x ${stationB.name}. JSON: hybridName, description (2 sentences tech-vibe analysis), compatibility (70-99), spectralShift (mood phrase), frequencyDna (16 hex chars).`,
                 config: {
                     responseMimeType: "application/json",
                     responseSchema: {
@@ -275,17 +264,15 @@ export const MorphView: React.FC<MorphViewProps> = ({ allStations, favoriteStati
                     }
                 }
             });
-            const data = JSON.parse(response.text || '{}');
-            setAnalysis(data);
+            setAnalysis(JSON.parse(response.text || '{}'));
             setIsSynced(true);
         } catch (error) {
-            console.error(error);
             setAnalysis({
-                hybridName: "Quantum Resonance",
-                description: "Deep-level spectral alignment detected. Sub-bass frequencies are harmonically linked.",
-                compatibility: 94,
-                spectralShift: "Optimal Harmony",
-                frequencyDna: "A4F2B992D11C0E42"
+                hybridName: "Quantum Flux",
+                description: "Inter-dimensional frequency layering detected. Transient responses are optimized for high-bandwidth neural link.",
+                compatibility: 91,
+                spectralShift: "Resonant Harmony",
+                frequencyDna: "F0A2B991C22E0D42"
             });
         } finally {
             setIsAnalyzing(false);
@@ -294,286 +281,171 @@ export const MorphView: React.FC<MorphViewProps> = ({ allStations, favoriteStati
 
     return (
         <div className="p-4 lg:p-12 animate-fade-in relative min-h-screen bg-[#020617] selection:bg-cyan-500 selection:text-black">
-            {/* Background Atmosphere */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(30,58,138,0.15),_transparent)] pointer-events-none"></div>
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(30,58,138,0.1),_transparent)] pointer-events-none"></div>
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-5 pointer-events-none"></div>
             
             <div className="max-w-7xl mx-auto relative z-10">
                 <div className="flex justify-between items-center mb-12">
                     <button onClick={onBack} className="flex items-center gap-3 text-xs font-black text-gray-500 hover:text-cyan-400 transition-all uppercase tracking-[0.3em] group">
-                        <div className="p-2 bg-white/5 rounded-lg group-hover:bg-cyan-500/20 transition-colors">
-                            <BackIcon />
-                        </div>
+                        <div className="p-2 bg-white/5 rounded-lg group-hover:bg-cyan-500/20 transition-colors"><BackIcon /></div>
                         Back to Network
                     </button>
                     <div className="flex items-center gap-6">
-                        <div className="hidden md:flex items-center gap-3 bg-gray-900/50 border border-white/5 px-4 py-2 rounded-2xl">
+                        <div className="hidden md:flex items-center gap-3 bg-gray-950/50 border border-white/5 px-4 py-2 rounded-2xl">
                              <DnaIcon className="w-4 h-4 text-purple-500" />
-                             <span className="text-[10px] font-mono text-gray-500 tracking-wider">DNA: {analysis?.frequencyDna || 'F0F0-F0F0-F0F0'}</span>
+                             <span className="text-[10px] font-mono text-gray-500 tracking-wider">SIG: {analysis?.frequencyDna || 'NONE-LINKED-0000'}</span>
                         </div>
-                        <div className="flex items-center gap-3">
-                             <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Neural Link:</span>
-                             <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase transition-all ${isSynced ? 'bg-green-500/20 text-green-400 border border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.2)]' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
-                                {isSynced ? 'Synced' : 'Floating'}
-                             </span>
-                        </div>
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase transition-all ${isSynced ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-gray-800 text-gray-600'}`}>
+                            {isSynced ? 'Synced' : 'Floating'}
+                        </span>
                     </div>
                 </div>
 
                 <header className="text-center mb-16">
-                    <h1 className="text-6xl lg:text-8xl font-black font-orbitron tracking-tighter text-white uppercase leading-none mb-4 drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+                    <h1 className="text-6xl lg:text-8xl font-black font-orbitron tracking-tighter text-white uppercase leading-none mb-4">
                         SONIC <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-500">MORPH</span>
                     </h1>
-                    <p className="text-gray-500 font-bold uppercase tracking-[0.4em] text-sm">Neural-Linked Multi-Frequency Crossfader</p>
+                    <p className="text-gray-600 font-bold uppercase tracking-[0.4em] text-sm">Neural-Link Multi-Source Modulation</p>
                 </header>
 
-                <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px_1fr] gap-12 items-center mb-20">
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px_1fr] gap-8 items-start mb-20">
                     
-                    {/* Source Alpha Panel */}
-                    <div className="space-y-6">
-                        <div className="relative p-6 bg-gray-950/40 border border-white/5 rounded-[2.5rem] backdrop-blur-xl group hover:border-cyan-500/30 transition-all">
-                            <div className="absolute top-4 right-6 flex gap-1">
-                                {[...Array(3)].map((_, i) => <div key={i} className={`w-1 h-1 rounded-full ${isPlaying ? 'bg-cyan-500 animate-pulse' : 'bg-gray-700'}`} style={{animationDelay: `${i * 200}ms`}}></div>)}
-                            </div>
-                            <span className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.3em] mb-4 block text-glow-cyan">Source Alpha</span>
-                            <div className={`aspect-square rounded-2xl border-2 transition-all duration-700 overflow-hidden shadow-2xl ${stationA ? 'border-cyan-500 shadow-cyan-500/20' : 'border-dashed border-gray-800 bg-black/40'}`}>
+                    {/* Carrier A */}
+                    <div className="space-y-4">
+                        <div className={`p-6 bg-gray-950/60 border rounded-[3rem] backdrop-blur-xl transition-all duration-700 ${stationA ? 'border-cyan-500/40 shadow-[0_0_40px_rgba(6,182,212,0.1)]' : 'border-white/5'}`}>
+                            <span className="text-[9px] font-black text-cyan-500 uppercase tracking-[0.3em] mb-4 block">Carrier Alpha</span>
+                            <div className={`aspect-square rounded-3xl border-2 transition-all duration-700 overflow-hidden ${stationA ? 'border-cyan-500 shadow-2xl' : 'border-dashed border-gray-800'}`}>
                                 {stationA ? (
-                                    <img src={stationA.coverArt} className="w-full h-full object-cover animate-fade-in" alt="" />
+                                    <img src={stationA.coverArt} className="w-full h-full object-cover" alt="" />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-800">
-                                        <MusicNoteIcon className="w-16 h-16 opacity-20" />
-                                    </div>
+                                    <div className="w-full h-full flex items-center justify-center text-gray-800"><MusicNoteIcon className="w-12 h-12 opacity-10" /></div>
                                 )}
                             </div>
-                            <h3 className="mt-6 font-black text-2xl text-white truncate font-orbitron tracking-tight">{stationA?.name || "Ready..." }</h3>
-                            <p className="text-xs text-gray-500 font-bold uppercase mt-1 tracking-wider">{stationA?.genre || "Select Source A"}</p>
+                            <h3 className="mt-6 font-black text-xl text-white truncate font-orbitron">{stationA?.name || "Select Alpha" }</h3>
+                            <p className="text-[10px] text-gray-500 font-bold uppercase mt-1 tracking-widest">{stationA?.genre || "Standby"}</p>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto custom-pro-scrollbar pr-2">
+                        <div className="grid grid-cols-2 gap-2 h-48 overflow-y-auto custom-pro-scrollbar pr-1">
                             {availableStations.map(s => (
-                                <button key={s.streamUrl} onClick={() => { setStationA(s); setAnalysis(null); setIsSynced(false); }} className={`text-left p-3 rounded-xl border transition-all text-[10px] font-black uppercase tracking-tighter ${stationA?.streamUrl === s.streamUrl ? 'bg-cyan-500 text-black border-cyan-400 shadow-lg' : 'bg-gray-900/40 border-white/5 text-gray-500 hover:bg-gray-800 hover:text-white'}`}>
+                                <button key={s.streamUrl} onClick={() => { setStationA(s); setAnalysis(null); setIsSynced(false); }} className={`text-left p-3 rounded-xl border transition-all text-[10px] font-black uppercase ${stationA?.streamUrl === s.streamUrl ? 'bg-cyan-500 text-black border-cyan-400' : 'bg-gray-900/40 border-white/5 text-gray-500 hover:text-white'}`}>
                                     {s.name}
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    {/* Neural Control Core */}
-                    <div className="flex flex-col items-center gap-10 py-12 px-8 bg-black/60 border border-white/10 rounded-[5rem] shadow-2xl relative overflow-hidden ring-1 ring-white/5">
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_rgba(103,232,249,0.1),_transparent)]"></div>
+                    {/* Core Modulation Engine */}
+                    <div className="flex flex-col items-center gap-8 py-10 px-8 bg-black/40 border border-white/10 rounded-[5rem] shadow-2xl relative overflow-hidden">
+                        <canvas ref={canvasRef} width={400} height={140} className="w-full h-36" />
                         
-                        <div className="w-full relative h-36 flex items-center justify-center">
-                            <canvas ref={canvasRef} width={400} height={120} className="w-full h-full" />
-                            <div className="absolute inset-0 bg-gradient-to-r from-black via-transparent to-black pointer-events-none"></div>
+                        <div className="w-full space-y-4">
+                            <div className="flex justify-between text-[9px] font-black text-gray-600 uppercase tracking-widest">
+                                <span className={balance < 0.2 ? 'text-cyan-400' : ''}>Full Alpha</span>
+                                <span className="text-white font-mono">{Math.round((1 - balance) * 100)}:{Math.round(balance * 100)}</span>
+                                <span className={balance > 0.8 ? 'text-pink-400' : ''}>Full Omega</span>
+                            </div>
+                            <input 
+                                type="range" min="0" max="1" step="0.001" value={balance} 
+                                disabled={isAutomixing}
+                                onChange={(e) => setBalance(parseFloat(e.target.value))}
+                                className={`morph-slider w-full bg-transparent appearance-none cursor-pointer ${isAutomixing ? 'opacity-30' : ''}`}
+                            />
                         </div>
 
-                        <div className="w-full space-y-6">
-                            <div className="flex justify-between items-end text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] px-2">
-                                <div className="flex flex-col items-start gap-1">
-                                    <span className={balance < 0.3 ? 'text-cyan-400' : ''}>Dominant A</span>
-                                    <span className="text-white font-mono text-xs">{Math.round((1 - balance) * 100)}%</span>
-                                </div>
-                                <div className="flex flex-col items-end gap-1">
-                                    <span className={balance > 0.7 ? 'text-pink-400' : ''}>Dominant B</span>
-                                    <span className="text-white font-mono text-xs">{Math.round(balance * 100)}%</span>
-                                </div>
-                            </div>
-                            <div className="relative h-12 flex items-center group">
-                                <div className="absolute inset-x-0 h-2 bg-gray-900 rounded-full overflow-hidden border border-white/5">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-white to-pink-500 opacity-40"></div>
-                                    <div className="h-full bg-white/20 transition-all duration-300" style={{ width: `${balance * 100}%` }}></div>
-                                </div>
-                                <input 
-                                    type="range" 
-                                    min="0" 
-                                    max="1" 
-                                    step="0.001" 
-                                    value={balance} 
-                                    disabled={isAutomixing}
-                                    onChange={(e) => setBalance(parseFloat(e.target.value))}
-                                    className={`morph-slider w-full bg-transparent appearance-none cursor-pointer relative z-10 ${isAutomixing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-5">
                             <button 
-                                onClick={() => setIsPlaying(!isPlaying)}
+                                onClick={togglePlay}
                                 disabled={!stationA || !stationB}
-                                className={`w-24 h-24 rounded-full flex items-center justify-center transition-all shadow-[0_0_60px_rgba(0,0,0,0.8)] border-4 group/play ${isPlaying ? 'bg-white border-white/50 text-black animate-pulse-subtle scale-105' : 'bg-gray-800 border-white/10 text-white hover:scale-110 disabled:opacity-20 active:scale-95'}`}
+                                className={`w-20 h-20 rounded-full flex items-center justify-center transition-all border-4 ${isPlaying ? 'bg-white border-cyan-400 text-black shadow-[0_0_30px_rgba(6,182,212,0.5)]' : 'bg-gray-800 border-white/10 text-white hover:scale-105 disabled:opacity-20'}`}
                             >
-                                {isPlaying ? <PauseIcon className="w-10 h-10" /> : <PlayIcon className="w-10 h-10" />}
+                                {isPlaying ? <PauseIcon className="w-8 h-8" /> : <PlayIcon className="w-8 h-8" />}
                             </button>
 
                             <div className="flex flex-col gap-2">
                                 <button 
                                     onClick={() => setIsAutomixing(!isAutomixing)}
-                                    disabled={!stationA || !stationB || !isPlaying}
-                                    className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all border-2 disabled:opacity-20 ${isAutomixing ? 'bg-cyan-500 border-cyan-400 text-black shadow-[0_0_20px_rgba(6,182,212,0.5)]' : 'bg-gray-900 border-white/10 text-gray-500 hover:text-white'}`}
-                                    title="Neural Automix"
+                                    disabled={!isPlaying}
+                                    className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all border-2 ${isAutomixing ? 'bg-cyan-500 border-cyan-400 text-black' : 'bg-gray-900 border-white/10 text-gray-500 hover:text-white'}`}
                                 >
-                                    <AutoIcon className="w-6 h-6" />
-                                    <span className="text-[8px] font-black uppercase tracking-tighter">Auto</span>
+                                    <AutoIcon className="w-5 h-5" />
+                                    <span className="text-[7px] font-black uppercase">Auto</span>
                                 </button>
                                 {isAutomixing && (
-                                     <div className="flex bg-gray-950 rounded-lg p-1 border border-white/10">
+                                    <div className="flex bg-gray-950 rounded-lg p-1 border border-white/5 gap-1">
                                         {(['oscillate', 'drift', 'pulse'] as AutomixMode[]).map(m => (
-                                            <button 
-                                                key={m}
-                                                onClick={() => setAutomixMode(m)}
-                                                className={`w-4 h-4 rounded-sm flex items-center justify-center ${automixMode === m ? 'bg-cyan-500 text-black' : 'text-gray-600 hover:text-white'}`}
-                                                title={m}
-                                            >
-                                                <div className={`w-1 h-1 rounded-full ${automixMode === m ? 'bg-black' : 'bg-current'}`} />
-                                            </button>
+                                            <button key={m} onClick={() => setAutomixMode(m)} className={`w-3.5 h-3.5 rounded-full ${automixMode === m ? 'bg-cyan-400' : 'bg-gray-700'}`} title={m} />
                                         ))}
-                                     </div>
+                                    </div>
                                 )}
                             </div>
                         </div>
 
-                        <div className="text-center w-full min-h-[140px] flex flex-col justify-center">
+                        <div className="text-center w-full min-h-[120px]">
                             {analysis ? (
-                                <div className="space-y-4 animate-fade-in-up">
-                                    <div className="px-4 py-3 bg-gradient-to-r from-cyan-500/10 to-pink-500/10 border border-white/10 rounded-[1.5rem]">
-                                        <p className="text-[10px] font-black text-cyan-400 uppercase tracking-[0.3em] mb-1">Hybrid Entity Detected</p>
-                                        <h4 className="text-2xl font-black text-white font-orbitron tracking-tight uppercase leading-none">{analysis.hybridName}</h4>
-                                    </div>
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase leading-relaxed px-4">"{analysis.description}"</p>
-                                    <div className="flex items-center justify-center gap-4">
-                                        <div className="flex items-center gap-1.5">
-                                            <SparklesIcon className="w-3 h-3 text-purple-400" />
-                                            <span className="text-[8px] font-black uppercase text-purple-500 tracking-[0.2em]">{analysis.spectralShift}</span>
-                                        </div>
+                                <div className="animate-fade-in-up">
+                                    <h4 className="text-lg font-black text-white font-orbitron uppercase mb-1">{analysis.hybridName}</h4>
+                                    <p className="text-[9px] text-gray-500 font-bold uppercase leading-relaxed px-2 mb-3">{analysis.description}</p>
+                                    <div className="flex items-center justify-center gap-3">
+                                        <SparklesIcon className="w-3 h-3 text-purple-400" />
+                                        <span className="text-[8px] font-black uppercase text-purple-500 tracking-widest">{analysis.spectralShift}</span>
                                         <div className="w-px h-3 bg-gray-800"></div>
-                                        <span className="text-[8px] font-black uppercase text-green-500 tracking-[0.2em]">Compatibility: {analysis.compatibility}%</span>
+                                        <span className="text-[8px] font-black uppercase text-green-500">Compatibility: {analysis.compatibility}%</span>
                                     </div>
                                 </div>
                             ) : (
                                 <button 
                                     onClick={runNeuralAnalysis}
                                     disabled={!stationA || !stationB || isAnalyzing}
-                                    className="relative group/btn px-8 py-5 bg-gray-950 hover:bg-gray-900 text-white border border-white/10 rounded-3xl text-[10px] font-black uppercase tracking-[0.4em] transition-all disabled:opacity-0 active:scale-95 overflow-hidden shadow-2xl"
+                                    className="px-8 py-4 bg-gray-950 hover:bg-gray-900 text-white border border-white/10 rounded-2xl text-[9px] font-black uppercase tracking-[0.3em] transition-all disabled:opacity-0"
                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-pink-500/20 opacity-0 group-hover/btn:opacity-100 transition-opacity"></div>
-                                    <span className="relative flex items-center gap-3">
-                                        {isAnalyzing ? "Recalibrating spectrum..." : "Bind Hybrid Link"}
-                                        <SyncIcon className={`w-4 h-4 ${isAnalyzing ? 'animate-spin' : ''}`} />
-                                    </span>
+                                    {isAnalyzing ? "Computing Phase Link..." : "Initialize Hybrid Sync"}
                                 </button>
                             )}
                         </div>
                     </div>
 
-                    {/* Source Omega Panel */}
-                    <div className="space-y-6">
-                        <div className="relative p-6 bg-gray-950/40 border border-white/5 rounded-[2.5rem] backdrop-blur-xl group hover:border-pink-500/30 transition-all">
-                             <div className="absolute top-4 left-6 flex gap-1">
-                                {[...Array(3)].map((_, i) => <div key={i} className={`w-1 h-1 rounded-full ${isPlaying ? 'bg-pink-500 animate-pulse' : 'bg-gray-700'}`} style={{animationDelay: `${i * 200}ms`}}></div>)}
-                            </div>
-                            <span className="text-[10px] font-black text-pink-500 uppercase tracking-[0.3em] mb-4 block text-right text-glow-pink">Source Omega</span>
-                            <div className={`aspect-square rounded-2xl border-2 transition-all duration-700 overflow-hidden shadow-2xl ${stationB ? 'border-pink-500 shadow-pink-500/20' : 'border-dashed border-gray-800 bg-black/40'}`}>
+                    {/* Carrier B */}
+                    <div className="space-y-4">
+                        <div className={`p-6 bg-gray-950/60 border rounded-[3rem] backdrop-blur-xl transition-all duration-700 ${stationB ? 'border-pink-500/40 shadow-[0_0_40px_rgba(236,72,153,0.1)]' : 'border-white/5'}`}>
+                            <span className="text-[9px] font-black text-pink-500 uppercase tracking-[0.3em] mb-4 block text-right">Carrier Omega</span>
+                            <div className={`aspect-square rounded-3xl border-2 transition-all duration-700 overflow-hidden ${stationB ? 'border-pink-500 shadow-2xl' : 'border-dashed border-gray-800'}`}>
                                 {stationB ? (
-                                    <img src={stationB.coverArt} className="w-full h-full object-cover animate-fade-in" alt="" />
+                                    <img src={stationB.coverArt} className="w-full h-full object-cover" alt="" />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-800">
-                                        <MusicNoteIcon className="w-16 h-16 opacity-20" />
-                                    </div>
+                                    <div className="w-full h-full flex items-center justify-center text-gray-800"><MusicNoteIcon className="w-12 h-12 opacity-10" /></div>
                                 )}
                             </div>
-                            <h3 className="mt-6 font-black text-2xl text-white truncate font-orbitron tracking-tight text-right">{stationB?.name || "Ready..." }</h3>
-                            <p className="text-xs text-gray-500 font-bold uppercase mt-1 tracking-wider text-right">{stationB?.genre || "Select Source B"}</p>
+                            <h3 className="mt-6 font-black text-xl text-white truncate font-orbitron text-right">{stationB?.name || "Select Omega" }</h3>
+                            <p className="text-[10px] text-gray-500 font-bold uppercase mt-1 tracking-widest text-right">{stationB?.genre || "Standby"}</p>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto custom-pro-scrollbar pr-2">
+                        <div className="grid grid-cols-2 gap-2 h-48 overflow-y-auto custom-pro-scrollbar pr-1">
                             {availableStations.map(s => (
-                                <button key={s.streamUrl} onClick={() => { setStationB(s); setAnalysis(null); setIsSynced(false); }} className={`text-right p-3 rounded-xl border transition-all text-[10px] font-black uppercase tracking-tighter ${stationB?.streamUrl === s.streamUrl ? 'bg-pink-500 text-black border-pink-400 shadow-lg' : 'bg-gray-900/40 border-white/5 text-gray-500 hover:bg-gray-800 hover:text-white'}`}>
+                                <button key={s.streamUrl} onClick={() => { setStationB(s); setAnalysis(null); setIsSynced(false); }} className={`text-right p-3 rounded-xl border transition-all text-[10px] font-black uppercase ${stationB?.streamUrl === s.streamUrl ? 'bg-pink-500 text-black border-pink-400' : 'bg-gray-900/40 border-white/5 text-gray-500 hover:text-white'}`}>
                                     {s.name}
                                 </button>
                             ))}
                         </div>
                     </div>
                 </div>
-
-                {/* Console System Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
-                    <div className="bg-gray-950/60 p-6 rounded-[2rem] border border-white/5 flex flex-col items-center gap-3 group hover:border-cyan-500/20 transition-all shadow-xl">
-                        <SyncIcon className={`w-6 h-6 ${isPlaying ? 'text-cyan-400 animate-spin-slow' : 'text-gray-700'}`} />
-                        <div className="text-center">
-                            <p className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">Neural Sync</p>
-                            <p className={`text-xs font-mono font-bold mt-1 ${isPlaying ? 'text-cyan-400' : 'text-gray-700'}`}>{isPlaying ? 'ACTIVE_LOCK' : 'STANDBY'}</p>
-                        </div>
-                    </div>
-                    <div className="bg-gray-950/60 p-6 rounded-[2rem] border border-white/5 flex flex-col items-center gap-3 group hover:border-purple-500/20 transition-all shadow-xl">
-                        <PulseIcon className={`w-6 h-6 ${isPlaying ? 'text-purple-400 animate-pulse' : 'text-gray-700'}`} />
-                        <div className="text-center">
-                            <p className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">Spectrum Drift</p>
-                            <p className={`text-xs font-mono font-bold mt-1 ${isPlaying ? 'text-purple-400' : 'text-gray-700'}`}>{isPlaying ? 'MINIMAL' : '0.00ms'}</p>
-                        </div>
-                    </div>
-                    <div className="bg-gray-950/60 p-6 rounded-[2rem] border border-white/5 flex flex-col items-center gap-3 group hover:border-pink-500/20 transition-all shadow-xl">
-                        <div className="flex gap-1 h-6 items-end">
-                            {[...Array(5)].map((_, i) => (
-                                <div key={i} className={`w-1 rounded-full transition-all duration-300 ${isPlaying ? 'bg-pink-500' : 'bg-gray-700'}`} style={{height: isPlaying ? `${20 + Math.random() * 80}%` : '10%'}}></div>
-                            ))}
-                        </div>
-                        <div className="text-center">
-                            <p className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">Vibe Intensity</p>
-                            <p className={`text-xs font-mono font-bold mt-1 ${isPlaying ? 'text-pink-400' : 'text-gray-700'}`}>{isPlaying ? Math.round(75 + Math.random() * 25) + '%' : 'OFFLINE'}</p>
-                        </div>
-                    </div>
-                    <div className="bg-gray-950/60 p-6 rounded-[2rem] border border-white/5 flex flex-col items-center gap-3 group hover:border-green-500/20 transition-all shadow-xl">
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${isPlaying ? 'border-green-400' : 'border-gray-700'}`}>
-                             <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-green-400 shadow-[0_0_8px_#4ade80]' : 'bg-gray-700'}`}></div>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">Network Node</p>
-                            <p className={`text-xs font-mono font-bold mt-1 ${isPlaying ? 'text-green-400' : 'text-gray-700'}`}>HGR_LINK_14</p>
-                        </div>
-                    </div>
-                </div>
             </div>
 
-            {/* Hidden Audio Elements */}
-            {stationA && <audio ref={audioARef} src={stationA.streamUrl} crossOrigin="anonymous" />}
-            {stationB && <audio ref={audioBRef} src={stationB.streamUrl} crossOrigin="anonymous" />}
+            {/* Global Radio Assets */}
+            <audio ref={audioARef} crossOrigin="anonymous" preload="none" />
+            <audio ref={audioBRef} crossOrigin="anonymous" preload="none" />
 
             <style>{`
                 .morph-slider::-webkit-slider-thumb {
                     appearance: none;
-                    width: 54px;
-                    height: 54px;
-                    background: white;
-                    border-radius: 20px;
-                    box-shadow: 0 10px 25px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.1);
-                    cursor: pointer;
-                    border: 5px solid #0f172a;
+                    width: 48px; height: 48px;
+                    background: white; border-radius: 16px;
+                    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+                    cursor: pointer; border: 4px solid #0f172a;
                     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                 }
-                .morph-slider:active::-webkit-slider-thumb {
-                    transform: scale(0.9) rotate(45deg);
-                }
+                .morph-slider:active::-webkit-slider-thumb { transform: scale(0.9) rotate(45deg); }
                 .custom-pro-scrollbar::-webkit-scrollbar { width: 4px; }
-                .custom-pro-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-pro-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
-                .custom-pro-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.1); }
-                @keyframes spin-slow {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                }
-                .animate-spin-slow {
-                    animation: spin-slow 12s linear infinite;
-                }
-                @keyframes fade-in-up {
-                    from { opacity: 0; transform: translateY(15px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                .animate-fade-in-up {
-                    animation: fade-in-up 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
-                }
-                .animate-pulse-subtle {
-                    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-                }
-                .text-glow-cyan { text-shadow: 0 0 10px rgba(6, 182, 212, 0.5); }
-                .text-glow-pink { text-shadow: 0 0 10px rgba(236, 72, 153, 0.5); }
+                @keyframes fade-in-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                .animate-fade-in-up { animation: fade-in-up 0.5s ease-out forwards; }
             `}</style>
         </div>
     );

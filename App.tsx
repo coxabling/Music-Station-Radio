@@ -423,20 +423,21 @@ export const App: React.FC = () => {
         return;
     }
     // Explicitly cast array to string[] to satisfy Set constructor requirements.
-    const favUrls = new Set<string>((data.favoriteStationUrls as string[]) || []);
+    const favUrls = new Set<string>((data.favoriteStationUrls as unknown as string[]) || []);
     // Explicitly cast role to satisfy the User interface.
     const user: User = { username, role: data.role as User['role'] };
     setCurrentUser(user);
     setFavoriteStationUrls(favUrls);
     setActiveTheme(data.activeTheme);
     // Explicitly cast data.unlockedThemes to ThemeName[] to satisfy Set constructor requirements.
-    setUnlockedThemes(new Set<ThemeName>((data.unlockedThemes as ThemeName[]) || (['dynamic', 'reggae'] as ThemeName[])));
+    // Line 396 fix: explicitly cast with unknown to resolve strictly 'unknown[]' to 'ThemeName[]' assignment issue if inferred as unknown.
+    setUnlockedThemes(new Set<ThemeName>((data.unlockedThemes as unknown as ThemeName[]) || (['dynamic', 'reggae'] as ThemeName[])));
     setStats(data.stats as ListeningStats);
     setAlarm(data.alarm);
     setSongVotes(data.songVotes);
     setUnlockedAchievements(data.unlockedAchievements);
-    setQuests((data.quests as Quest[]) || INITIAL_QUESTS);
-    // Line 396 fix: explicitly cast with unknown to resolve strictly 'unknown[]' to 'CollectorCard[]' assignment issue if inferred as unknown.
+    setQuests((data.quests as unknown as Quest[]) || INITIAL_QUESTS);
+    // explicitly cast with unknown to resolve strictly 'unknown[]' to 'CollectorCard[]' assignment issue if inferred as unknown.
     setCollection((data.collection as unknown as CollectorCard[]) || ([] as CollectorCard[]));
     setActiveFrame(data.activeFrame);
     // Fix: cast data.unlockedFrames to string[] explicitly to satisfy strict typing and resolve the unknown[] assignment error.
@@ -452,12 +453,12 @@ export const App: React.FC = () => {
         customAvatarUrl: data.profile.customAvatarUrl ? String(data.profile.customAvatarUrl) : undefined
     } : { bio: '', topArtists: [] as string[], favoriteGenres: [] as string[], following: [] as string[], followers: [] as string[], customAvatarUrl: '' };
     setUserProfile(profileData);
-    setCustomThemes((data.customThemes as Theme[]) || []);
+    setCustomThemes((data.customThemes as unknown as Theme[]) || []);
     setActiveSkin(data.activeSkin || 'modern');
     // Fix: Cast unlockedSkins to SkinID[] explicitly to avoid unknown[] assignment errors.
-    setUnlockedSkins((data.unlockedSkins as SkinID[]) || (['modern'] as SkinID[]));
+    setUnlockedSkins((data.unlockedSkins as unknown as SkinID[]) || (['modern'] as SkinID[]));
     setPortfolio(data.portfolio || {});
-    setJingles((data.jingles as Jingle[]) || []);
+    setJingles((data.jingles as unknown as Jingle[]) || []);
     // Fix: Cast completedBounties to string[] to resolve the unknown[] assignment error.
     const completedBounties = (data.completedBounties as unknown as string[]) || ([] as string[]);
     if(completedBounties.length > 0) {
@@ -755,6 +756,7 @@ export const App: React.FC = () => {
             case 'Space': e.preventDefault(); setIsPlaying(prev => !prev); break;
             case 'KeyF': if (currentStation) handleToggleFavorite(currentStation); break;
             case 'ArrowRight': handleNextStation(); break;
+            case 'ArrowLeft': handlePreviousStation(); break;
             case 'ArrowLeft': handlePreviousStation(); break;
             case 'Escape': setIsSettingsModalOpen(false); setStationForDetail(null); setViewingProfile(null); setIsEditModalOpen(false); break;
         }
