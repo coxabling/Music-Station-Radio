@@ -22,6 +22,7 @@ import { MorphView } from './components/MorphView';
 import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, CARDS_DB, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, BOUNTIES, ShieldCheckIcon, UploadIcon, CheckCircleIcon, XCircleIcon, MusicNoteIcon, CollectionIcon, TrophyIcon, MYSTERY_TRACK } from './constants';
 import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, CollectorCard, Lounge, UserProfile, AvatarFrame, SkinID, Bounty, Jingle, PlayerSkin, GuestbookEntry, Quest, MarketListing } from './types';
 import { getDominantColor } from './utils/colorExtractor';
+import { playHypeSynthSound, playOverloadSynthSound } from './utils/audioSynth';
 import { LandingPage } from './components/LandingPage';
 import { getUserData, updateUserData, createUserData, followUser, unfollowUser, fetchRadioBrowserStations } from './services/apiService';
 import { EditStationModal } from './components/EditStationModal';
@@ -127,6 +128,10 @@ export const App: React.FC = () => {
   const [activeFrame, setActiveFrame] = useState<string | undefined>(undefined);
   const [unlockedFrames, setUnlockedFrames] = useState<string[]>([]);
   const [hypeScore, setHypeScore] = useState(0);
+  const [hypeCombo, setHypeCombo] = useState(0);
+  const [lastHypeTime, setLastHypeTime] = useState(0);
+  const [clickPositions, setClickPositions] = useState<{ x: number; y: number; id: number }[]>([]);
+  const [hypeLogs, setHypeLogs] = useState<{ id: string; username: string; text: string; combo: number; timestamp: string }[]>([]);
   const [globalHype, setGlobalHype] = useState(45); // Start mid-way for demo
   const [isHypeStormActive, setIsHypeStormActive] = useState(false);
   const [stormTimeRemaining, setStormTimeRemaining] = useState(60);
@@ -207,6 +212,50 @@ export const App: React.FC = () => {
       }, 5000);
       return () => clearInterval(hypeInterval);
   }, [isHypeStormActive]);
+
+  // Simulated Audience Hype Activity Loop
+  useEffect(() => {
+    if (!currentStation || !isPlaying) return;
+    
+    const audienceInterval = setInterval(() => {
+        // 35% chance to trigger a passive crowd hype
+        if (Math.random() > 0.65) {
+            const listeners = ["Windhoek_Gamer", "Afr0_Beat_Maniac", "P_A_R_Listener", "Kofi_Vibes", "CapeTown_Soul", "Lagos_Groover", "DJ_Namibia_Aura", "ReggaeQueen88", "High_Grade_Fan"];
+            const randomUser = listeners[Math.floor(Math.random() * listeners.length)];
+            
+            setGlobalHype(prev => {
+                const add = Math.floor(Math.random() * 3) + 1;
+                const next = prev + add;
+                if (next >= 100) {
+                    setIsHypeStormActive(true);
+                    setStormTimeRemaining(60);
+                    setToasts(t => [...t, { id: Date.now(), title: 'VIBE TAKEOVER STARTED!', message: '2x Points Multiplier Active!', icon: FireIcon, type: 'hype' }]);
+                    playOverloadSynthSound();
+                    return 0;
+                }
+                return next;
+            });
+
+            // Random combo level
+            const simulatedCombo = Math.floor(Math.random() * 4) + 1;
+            
+            // Log entry
+            const activeLogs = ["vibe-bounced the frequency! ⚡", "fired up a reaction! 🔥", "increased the hype level! 🎵", "is grooving in the chat! 💃", "is rockin' the stream! 🚀"];
+            const randomMsg = activeLogs[Math.floor(Math.random() * activeLogs.length)];
+            
+            const newLog = {
+                id: `hl_sim_${Date.now()}_${Math.random()}`,
+                username: randomUser,
+                text: randomMsg,
+                combo: simulatedCombo,
+                timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+            };
+            setHypeLogs(prev => [newLog, ...prev].slice(0, 30));
+        }
+    }, 8000); // Check every 8 seconds
+
+    return () => clearInterval(audienceInterval);
+  }, [currentStation, isPlaying, isHypeStormActive]);
 
   // Storm Timer
   useEffect(() => {
@@ -647,19 +696,80 @@ export const App: React.FC = () => {
       setAllStations(prev => prev.map(s => s.streamUrl === stationStreamUrl ? { ...s, guestbook: [...(s.guestbook || []), newEntry] } : s));
   }, [currentUser, allStations]);
 
-  const handleHype = useCallback(() => {
+  const handleHype = useCallback((clientX?: number, clientY?: number) => {
+      const now = Date.now();
+      
+      // Calculate Combo streak: if tapped within 2.5s, increase combo level
+      let nextCombo = 1;
+      setHypeCombo(prev => {
+          if (now - lastHypeTime < 2500) {
+              nextCombo = Math.min(10, prev + 1);
+          } else {
+              nextCombo = 1;
+          }
+          return nextCombo;
+      });
+      setLastHypeTime(now);
+
+      // Save click coordinate trigger for canvas bursts
+      if (clientX !== undefined && clientY !== undefined) {
+          const clickId = Date.now() + Math.random();
+          setClickPositions(prev => [...prev, { x: clientX, y: clientY, id: clickId }]);
+      }
+
+      // Calculate state updates
+      let overflowTriggered = false;
       setHypeScore(prev => {
           const newScore = prev + 10; 
           if (newScore >= 100) {
+              overflowTriggered = true;
               setIsHypeActive(true);
               setToasts(t => [...t, { id: Date.now(), title: 'HYPE OVERLOAD!', message: 'The crowd is going wild!', icon: FireIcon, type: 'hype' }]);
+              playOverloadSynthSound();
               return 0;
           }
           return newScore;
       });
+
+      // Play synthesized click noise
+      if (!overflowTriggered) {
+          playHypeSynthSound(nextCombo);
+      }
+
+      // Add a live feedback message to our Hype Log feed
+      const activeUser = currentUser ? currentUser.username : "GuestListener";
+      const newLog = {
+          id: `hl_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+          username: activeUser,
+          text: nextCombo >= 8 ? "unleashed ULTIMATE SPECTRUM VIBES! ⚡" : nextCombo >= 5 ? "is keeping the beat alive! 🔥" : "hyped the station! 🎵",
+          combo: nextCombo,
+          timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+      };
+      setHypeLogs(prev => [newLog, ...prev].slice(0, 30));
+
+      // Award points for generating high-grade hype!
+      if (currentUser) {
+          // Points = combo multiplier
+          setStats(prev => {
+              const prevPoints = prev.points || 0;
+              const pointsEarned = nextCombo;
+              const bonusText = nextCombo > 1 ? ` (Combo x${nextCombo}!)` : "";
+              
+              // Only toast occasionally to not spam
+              if (nextCombo % 4 === 0 || nextCombo === 10) {
+                  setToasts(t => [...t, { id: Date.now(), title: 'High Grade Hype!', message: `Earned +${pointsEarned} Vault points!${bonusText}`, icon: StarIcon, type: 'points' }]);
+              }
+              const updatedStats = { ...prev, points: prevPoints + pointsEarned };
+              
+              // Persist points
+              updateUserData(currentUser.username, { stats: updatedStats });
+              return updatedStats;
+          });
+      }
+
       // Contribute to global hype
       setGlobalHype(prev => Math.min(100, prev + 1));
-  }, []);
+  }, [currentUser, lastHypeTime]);
 
   const handleEditStation = useCallback((station: Station) => { setStationToEdit(station); setIsEditModalOpen(true); }, []);
 
@@ -824,6 +934,24 @@ export const App: React.FC = () => {
       case 'morph':
         return <MorphView allStations={allStations} favoriteStationUrls={favoriteStationUrls} onBack={handleBackToHome} currentUser={currentUser} />;
       case 'seo_geo':
+        if (currentUser?.role !== 'admin') {
+          return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 text-white p-8">
+              <div className="bg-red-500/10 border border-red-500/20 p-8 rounded-2xl max-w-sm text-center shadow-xl">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h3 className="text-xl font-bold font-orbitron text-red-400 mb-2">ACCESS RESTRICTED</h3>
+                <p className="text-gray-400 text-xs mb-6">
+                  The SEO & GEO Discovery Suite is only accessible to authorized administrator users.
+                </p>
+                <button onClick={handleBackToHome} className="bg-gray-800 hover:bg-gray-700 px-6 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all">
+                  Back to Explore
+                </button>
+              </div>
+            </div>
+          );
+        }
         return <SeoGeoDashboard onBack={handleBackToHome} currentPoints={stats.points || 0} />;
       default: 
         return (
@@ -863,7 +991,13 @@ export const App: React.FC = () => {
             '--accent-color-b': rgbComponents.b 
         } as React.CSSProperties}
     >
-      <HypeOverlay isActive={isHypeActive || isHypeStormActive} isStorm={isHypeStormActive} onComplete={() => setIsHypeActive(false)} />
+      <HypeOverlay 
+        isActive={isHypeActive || isHypeStormActive} 
+        isStorm={isHypeStormActive} 
+        onComplete={() => setIsHypeActive(false)} 
+        clickPositions={clickPositions}
+        onRemoveClickPosition={(id) => setClickPositions(prev => prev.filter(p => p.id !== id))}
+      />
       <CoinExplosionOverlay isActive={isCoinActive} onComplete={() => setIsCoinActive(false)} />
       <WeatherOverlay lat={currentStation?.location?.lat} lng={currentStation?.location?.lng} />
       <ToastContainer toasts={toasts} setToasts={setToasts} />
@@ -901,10 +1035,10 @@ export const App: React.FC = () => {
                          <h1 className="text-4xl font-bold text-white mb-2">{nowPlaying?.title}</h1>
                          <p className="text-xl text-gray-300">{nowPlaying?.artist}</p>
                          <div className="mt-8"><button onClick={() => setIsImmersiveMode(false)} className="px-6 py-2 bg-white/10 rounded-full hover:bg-white/20 backdrop-blur-md">Exit Zen Mode</button></div>
-                     </div>
-                 </div>
+                         </div>
+                  </div>
              )}
-             {currentStation && activeView !== 'morph' && <RadioPlayer station={currentStation} allStations={allStations} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(!isImmersiveMode)} songVotes={songVotes} onVote={handleSongVote} onRateStation={() => {}} userRating={0} onOpenTippingModal={() => {}} onSelectStation={handleSelectStation} onToggleChat={() => setIsChatOpen(!isChatOpen)} onStartRaid={() => {}} raidStatus="idle" raidTarget={null} onHidePlayer={() => setIsPlayerVisible(false)} isVisible={isPlayerVisible} onOpenBuyNow={() => setIsBuyNowModalOpen(true)} isHeaderVisible={isHeaderVisible} onToggleHeader={handleToggleHeader} onHype={handleHype} hypeScore={hypeScore} isPlaying={isPlaying} onPlayPause={setIsPlaying} isDataSaver={isDataSaver} sleepTimerTarget={sleepTimerTarget} userSongVotes={stats.songUserVotes} activeSkin={activeSkin} globalHype={globalHype} isHypeStormActive={isHypeStormActive} />}
+              {currentStation && activeView !== 'morph' && <RadioPlayer station={currentStation} allStations={allStations} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(!isImmersiveMode)} songVotes={songVotes} onVote={handleSongVote} onRateStation={() => {}} userRating={0} onOpenTippingModal={() => {}} onSelectStation={handleSelectStation} onToggleChat={() => setIsChatOpen(!isChatOpen)} onStartRaid={() => {}} raidStatus="idle" raidTarget={null} onHidePlayer={() => setIsPlayerVisible(false)} isVisible={isPlayerVisible} onOpenBuyNow={() => setIsBuyNowModalOpen(true)} isHeaderVisible={isHeaderVisible} onToggleHeader={handleToggleHeader} onHype={handleHype} hypeScore={hypeScore} isPlaying={isPlaying} onPlayPause={setIsPlaying} isDataSaver={isDataSaver} sleepTimerTarget={sleepTimerTarget} userSongVotes={stats.songUserVotes} activeSkin={activeSkin} globalHype={globalHype} isHypeStormActive={isHypeStormActive} hypeCombo={hypeCombo} hypeLogs={hypeLogs} /> }
              {currentStation && <ListeningPartyChat station={currentStation} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} nowPlaying={isHypeStormActive ? MYSTERY_TRACK : nowPlaying} onSuperChat={handleSendSuperChat} userPoints={stats.points || 0} activeFrame={activeFrame} onUserClick={(u) => { setTargetGiftUser(u); setIsGiftModalOpen(true); }} currentUserAvatarUrl={currentUser?.profile?.customAvatarUrl} />}
         </div>
       </div>

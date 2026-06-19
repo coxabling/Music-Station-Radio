@@ -80,7 +80,7 @@ interface RadioPlayerProps {
   onOpenBuyNow: () => void;
   isHeaderVisible: boolean;
   onToggleHeader: () => void;
-  onHype: () => void;
+  onHype: (clientX?: number, clientY?: number) => void;
   hypeScore: number;
   isPlaying: boolean;
   onPlayPause: (playing: boolean) => void;
@@ -89,6 +89,8 @@ interface RadioPlayerProps {
   activeSkin: SkinID;
   globalHype?: number; // New
   isHypeStormActive?: boolean; // New
+  hypeCombo?: number;
+  hypeLogs?: { id: string; username: string; text: string; combo: number; timestamp: string }[];
 }
 
 // Helper to create white noise buffer
@@ -107,7 +109,7 @@ const createNoiseBuffer = (ctx: AudioContext) => {
 let lastOut = 0;
 
 export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
-  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible, onOpenBuyNow, isHeaderVisible, onToggleHeader, onHype, hypeScore, isPlaying, onPlayPause, isDataSaver, sleepTimerTarget, activeSkin, globalHype = 0, isHypeStormActive } = props;
+  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible, onOpenBuyNow, isHeaderVisible, onToggleHeader, onHype, hypeScore, isPlaying, onPlayPause, isDataSaver, sleepTimerTarget, activeSkin, globalHype = 0, isHypeStormActive, hypeCombo = 0, hypeLogs = [] } = props;
 
   const [volume, setVolume] = useState(0.75);
   const [fadeFactor, setFadeFactor] = useState(1); 
@@ -460,7 +462,34 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
         </div>
       </div>
       
-      <div className="flex-shrink-0 flex flex-col gap-4 z-10">
+      <div className="flex-shrink-0 flex flex-col gap-4 z-10 w-full">
+        {hypeLogs && hypeLogs.length > 0 && (
+          <div className="w-full max-w-sm mx-auto bg-black/40 border border-white/5 backdrop-blur-md rounded-xl p-2.5 flex flex-col gap-1 transition-all shadow-lg animate-fade-in text-gray-200">
+            <div className="flex items-center justify-between border-b border-white/5 pb-1 mb-1">
+              <span className="text-[9px] uppercase font-bold text-orange-400 tracking-wider flex items-center gap-1.5">
+                <span className="w-2 h-2 bg-orange-500 rounded-full animate-ping"></span>
+                Global Vibe Stream
+              </span>
+              <span className="text-[8px] font-mono text-gray-400 font-bold uppercase tracking-wider">Listening Party logs</span>
+            </div>
+            <div className="flex flex-col gap-1.5 max-h-16 overflow-hidden">
+              {hypeLogs.slice(0, 2).map((log) => (
+                <div key={log.id} className="text-left text-[10px] flex items-center justify-between animate-slide-up leading-tight py-0.5">
+                  <span className="truncate flex items-center gap-1">
+                    <span className="font-black text-gray-300">@{log.username}</span>
+                    <span className="text-gray-400 font-sans">{log.text}</span>
+                  </span>
+                  {log.combo > 1 && (
+                    <span className="text-[10px] font-black text-yellow-400 font-mono ml-2 flex-shrink-0 bg-yellow-500/10 px-1.5 py-0.5 rounded border border-yellow-500/20">
+                      x{log.combo}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
         <div className="w-full max-w-sm mx-auto"><LiveReactions/></div>
         <div className="w-full h-16">
             {!isDataSaver ? <Visualizer analyser={analyserRef.current} isPlaying={isPlaying} /> : <div className="w-full h-full flex items-center justify-center bg-black/20 rounded-lg text-xs text-gray-500">Visualizer Paused (Data Saver)</div>}
@@ -479,7 +508,20 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                 <ControlButton icon={<CassetteIcon className="w-6 h-6"/>} label="Vinyl" onClick={() => setIsVinylMode(!isVinylMode)} isActive={isVinylMode}/>
                 <ControlButton icon={<SpatialAudioIcon className="w-6 h-6"/>} label="360°" onClick={() => setIsSpatialMode(!isSpatialMode)} isActive={isSpatialMode} />
                 <ControlButton icon={<ChatIcon/>} label="Chat" onClick={onToggleChat}/>
-                 <ControlButton icon={<FireIcon className={`w-5 h-5 ${activeSkin === 'modern' ? 'text-orange-500' : ''} ${hypeScore > 80 ? 'animate-bounce' : 'animate-pulse'}`}/>} label="HYPE" onClick={onHype} className={activeSkin === 'modern' ? "bg-orange-500/20 hover:bg-orange-500/40 border border-orange-500/50 text-orange-300" : ""} progress={hypeScore} />
+                 <div className="relative">
+                     {hypeCombo > 1 && (
+                         <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-yellow-500 text-black text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-lg z-20 animate-bounce border border-white/20 whitespace-nowrap">
+                             🔥 x{hypeCombo}
+                         </span>
+                     )}
+                     <ControlButton 
+                         icon={<FireIcon className={`w-5 h-5 ${activeSkin === 'modern' ? 'text-orange-500' : ''} ${hypeCombo > 6 ? 'scale-110 animate-bounce' : 'animate-pulse'}`}/>} 
+                         label="HYPE" 
+                         onClick={(e) => onHype(e.clientX, e.clientY)} 
+                         className={activeSkin === 'modern' ? "bg-orange-500/20 hover:bg-orange-500/40 border border-orange-500/50 text-orange-300 w-full" : "w-full"} 
+                         progress={hypeScore} 
+                     />
+                 </div>
                 <ControlButton icon={<ShareIcon/>} label="Share" onClick={() => setIsShareModalOpen(true)}/>
             </div>
             <div className="flex justify-center mt-2">
@@ -508,8 +550,13 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                         <div className={`h-full transition-all duration-1000 ${isHypeStormActive ? 'bg-gradient-to-r from-orange-400 to-yellow-300 w-full animate-pulse' : 'bg-cyan-500'}`} style={{width: isHypeStormActive ? '100%' : `${globalHype}%`}}></div>
                     </div>
                  </div>
-                 <button onClick={(e) => { e.stopPropagation(); onHype(); }} className="relative p-1 rounded-full transition-all duration-200 active:scale-90 text-orange-500 hover:text-orange-300 overflow-hidden" aria-label="Hype">
-                    <div className="absolute bottom-0 left-0 right-0 bg-orange-500/30 transition-all duration-300" style={{height: `${hypeScore}%`}}></div>
+                 <button onClick={(e) => { e.stopPropagation(); onHype(e.clientX, e.clientY); }} className="relative p-1 rounded-full transition-all duration-200 active:scale-90 text-orange-500 hover:text-orange-300 overflow-visible" aria-label="Hype">
+                    <div className="absolute bottom-0 left-0 right-0 bg-orange-500/30 transition-all duration-300 rounded-full" style={{height: `${hypeScore}%`}}></div>
+                    {hypeCombo > 1 && (
+                        <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-yellow-500 text-black text-[8px] font-black px-1 py-0.5 rounded shadow-lg z-20 animate-bounce tracking-tighter whitespace-nowrap border border-white/10">
+                            x{hypeCombo}
+                        </span>
+                    )}
                     <FireIcon className="w-6 h-6 relative z-10"/>
                 </button>
                  <button onClick={(e) => { e.stopPropagation(); if(isSong) onVote(currentNowPlaying.songId, 'like'); }} disabled={!isSong} className={`p-1 rounded-full transition-all duration-200 active:scale-90 ${isSong ? '' : 'opacity-30 cursor-not-allowed'} ${userVote === 'like' ? 'text-green-400 drop-shadow-[0_0_4px_rgba(74,222,128,0.8)]' : 'text-gray-400 hover:text-white'}`} aria-label="Like song"><ThumbUpIcon className="w-6 h-6"/></button>
