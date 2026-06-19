@@ -1,0 +1,28 @@
+# Robots.txt for Music Station Radio
+# Optimized for Search Engines & AI Assistant Search Agents
+
+User-agent: *
+Allow: /
+Disallow: /api/proxy
+Disallow: /admin
+
+# AI Bot Access Instructions (Allowing full training & discovery indexes)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+Sitemap: https://musicstationradio.com/sitemap.xml

@@ -15,6 +15,45 @@
     <meta name="keywords" content="Music Station Radio, Online Radio, Global Music, High Grade Radio, Reggae, Afropop, AI Radio Player, Live Streaming" />
     <link rel="canonical" href="https://musicstationradio.com/" />
 
+    <!-- Geolocation & Region Grounding (GEO & ICBM Tags) -->
+    <meta name="geo.region" content="NA-KH" />
+    <meta name="geo.placename" content="Windhoek" />
+    <meta name="geo.position" content="-22.5609;17.0836" />
+    <meta name="ICBM" content="-22.5609, 17.0836" />
+
+    <!-- AI Engine Discoverability & Meta Directives -->
+    <meta name="ai-agent-discovery" content="/.well-known/ai-plugin.json" />
+    <meta name="crawlers" content="all" />
+
+    <!-- JSON-LD Local Radio Station Structured Microdata Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "RadioStation",
+      "name": "Music Station Radio",
+      "url": "https://musicstationradio.com/",
+      "logo": "https://storage.googleapis.com/aistudio-hosting/public-assets/music-station-radio-social-card.png",
+      "description": "The world's premier independent radio network. High-fidelity rhythms from Windhoek, Namibia, Africa and the globe.",
+      "email": "namibianradio@gmail.com",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Windhoek",
+        "addressRegion": "Khomas",
+        "addressCountry": "NA"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": "-22.5609",
+        "longitude": "17.0836"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "Broadcaster Relations",
+        "email": "namibianradio@gmail.com"
+      }
+    }
+    </script>
+
     <!-- AdTonos Integration Tracking Script -->
     <script async defer src="https://cookie.adtonos.com/attc-ysJP87JREcdxL3BEz.min.js"></script>
 
@@ -98,6 +137,7 @@
   }
 }
 </script>
+<link rel="stylesheet" href="/index.css">
 </head>
   <body class="dark selection:bg-yellow-500 selection:text-black">
     <div id="root"></div>

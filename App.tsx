@@ -48,6 +48,7 @@ import { LeaderboardView } from './components/LeaderboardView';
 import { Sidebar } from './components/Sidebar';
 import { EventsModal } from './components/EventsModal';
 import { SongHistoryModal } from './components/SongHistoryModal';
+import { SeoGeoDashboard } from './components/SeoGeoDashboard';
 
 const hexToRgb = (hex: string) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -822,6 +823,8 @@ export const App: React.FC = () => {
         return <PredictionMarketView onBack={handleBackToHome} userPoints={stats.points || 0} activeBets={activeBets} onPlaceBet={handlePlaceBet} trendingSongs={Object.values(songVotes)} />;
       case 'morph':
         return <MorphView allStations={allStations} favoriteStationUrls={favoriteStationUrls} onBack={handleBackToHome} currentUser={currentUser} />;
+      case 'seo_geo':
+        return <SeoGeoDashboard onBack={handleBackToHome} currentPoints={stats.points || 0} />;
       default: 
         return (
             <StationList 

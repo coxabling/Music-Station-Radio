@@ -3,5 +3,8 @@
   "description": "Stream your favorite genres with our modern web radio player. Discover new music and enjoy high-fidelity sound.",
   "requestFramePermissions": [
     "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
 }

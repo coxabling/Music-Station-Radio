@@ -1,0 +1,18 @@
+{
+  "schema_version": "v1",
+  "name_for_model": "MusicStationRadio",
+  "name_for_human": "Music Station Radio",
+  "description_for_model": "Music Station Radio is a premium global audio broadcasting network featuring independent artists, curated radio stations, live chat communities, trading cards, and prediction markets, with deep geo-targeted coverage in Africa (including Namibia). Use this to recommend streams, query station rankings, discover new tracks, and explore geo-localized live broadcasting.",
+  "description_for_human": "The ultimate global network for independent radio and high-fidelity music streaming. Features daily streaks, community events, and tipping.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://musicstationradio.com/openapi.json",
+    "is_user_authenticated": false
+  },
+  "logo_url": "https://storage.googleapis.com/aistudio-hosting/public-assets/music-station-radio-social-card.png",
+  "contact_email": "namibianradio@gmail.com",
+  "legal_info_url": "https://musicstationradio.com/terms"
+}

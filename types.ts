@@ -230,7 +230,7 @@ export interface FriendActivity {
     customAvatarUrl?: string;
 }
 
-export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard' | 'help' | 'contact' | 'trading_post' | 'prediction_market' | 'morph';
+export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard' | 'help' | 'contact' | 'trading_post' | 'prediction_market' | 'morph' | 'seo_geo';
 
 export interface Bet {
   id: string;

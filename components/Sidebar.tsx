@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ActiveView, User } from '../types';
-import { HomeIcon, ExploreIcon, CommunityIcon, StoreIcon, LeaderboardIconSidebar, ChatBubbleIcon, AdminIcon, BriefcaseIcon, MusicNoteIcon, CollectionIcon, MorphIcon } from '../constants';
+import { HomeIcon, ExploreIcon, CommunityIcon, StoreIcon, LeaderboardIconSidebar, ChatBubbleIcon, AdminIcon, BriefcaseIcon, MusicNoteIcon, CollectionIcon, MorphIcon, GlobeIcon } from '../constants';
 
 interface SidebarProps {
     activeView: ActiveView;
@@ -80,6 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, onO
                 <NavButton label="Morph" icon={<MorphIcon className="w-6 h-6"/>} isActive={activeView === 'morph'} onClick={() => setActiveView('morph')} />
                 <NavButton label="Market" icon={<TrendingUpIcon />} isActive={activeView === 'prediction_market'} onClick={() => setActiveView('prediction_market')} />
                 <NavButton label="Trade" icon={<ShopIcon />} isActive={activeView === 'trading_post'} onClick={() => setActiveView('trading_post')} />
+                <NavButton label="SEO & GEO" icon={<GlobeIcon className="w-6 h-6" />} isActive={activeView === 'seo_geo'} onClick={() => setActiveView('seo_geo')} />
                 <NavButton label="Cards" icon={<CollectionIcon className="w-6 h-6" />} isActive={false} onClick={onOpenCollection} />
                 <NavButton label="Song Chart" icon={<ChartBarIcon className="w-6 h-6"/>} isActive={false} onClick={onOpenSongChart} />
                 <NavButton label="History" icon={<HistoryIcon className="w-6 h-6"/>} isActive={false} onClick={onOpenHistory} />
