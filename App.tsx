@@ -116,6 +116,7 @@ export const App: React.FC = () => {
 
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isImmersiveMode, setIsImmersiveMode] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const [stats, setStats] = useState<ListeningStats>({ totalTime: 0, stationPlays: {}, points: 0, songHistory: [], songUserVotes: {} });
   const [alarm, setAlarm] = useState<Alarm | null>(null);
@@ -519,8 +520,28 @@ export const App: React.FC = () => {
     setIsDataLoading(false);
 
     if (!currentStation) {
-        setCurrentStation(highGradeStation);
-        setStationForDetail(highGradeStation);
+        const params = new URLSearchParams(window.location.search);
+        const sharedStationUrl = params.get('station');
+        const sharedTrackTitle = params.get('track');
+        const sharedTrackArtist = params.get('artist');
+        
+        let targetStation = highGradeStation;
+        if (sharedStationUrl) {
+            const matched = defaultStations.find(s => s.streamUrl === sharedStationUrl || s.name.toLowerCase() === decodeURIComponent(sharedStationUrl).toLowerCase());
+            if (matched) {
+                targetStation = matched;
+                if (sharedTrackTitle && sharedTrackArtist) {
+                    setNowPlaying({
+                        title: decodeURIComponent(sharedTrackTitle),
+                        artist: decodeURIComponent(sharedTrackArtist),
+                        songId: `shared_${Date.now()}`,
+                        albumArt: matched.coverArt
+                    });
+                }
+            }
+        }
+        setCurrentStation(targetStation);
+        setStationForDetail(targetStation);
     }
   }, [handleLogout, highGradeStation, currentStation]);
 
@@ -1021,10 +1042,25 @@ export const App: React.FC = () => {
                     customAvatarUrl={currentUser?.profile?.customAvatarUrl} 
                     isHypeStormActive={isHypeStormActive}
                     stormRemaining={stormTimeRemaining}
+                    onToggleMobileMenu={() => setIsMobileSidebarOpen(prev => !prev)}
                 />
             </header>
             <div className={`flex flex-1 overflow-hidden transition-opacity duration-300 ${isImmersiveMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-                {currentUser && <Sidebar currentUser={currentUser} activeView={activeView} setActiveView={setActiveView} onOpenAlarm={() => setIsAlarmModalOpen(true)} onOpenHistory={() => setIsHistoryModalOpen(true)} onOpenSongChart={() => setIsSongChartModal(true)} onOpenEvents={() => setIsEventsModalOpen(true)} onOpenStockMarket={() => setActiveView('prediction_market')} onOpenCollection={() => setIsCollectionOpen(true)} />}
+                {currentUser && (
+                    <Sidebar 
+                        currentUser={currentUser} 
+                        activeView={activeView} 
+                        setActiveView={setActiveView} 
+                        onOpenAlarm={() => setIsAlarmModalOpen(true)} 
+                        onOpenHistory={() => setIsHistoryModalOpen(true)} 
+                        onOpenSongChart={() => setIsSongChartModal(true)} 
+                        onOpenEvents={() => setIsEventsModalOpen(true)} 
+                        onOpenStockMarket={() => setActiveView('prediction_market')} 
+                        onOpenCollection={() => setIsCollectionOpen(true)} 
+                        isMobileOpen={isMobileSidebarOpen}
+                        onCloseMobile={() => setIsMobileSidebarOpen(false)}
+                    />
+                )}
                 <main id="main-content" className="flex-1 overflow-y-auto pb-24">{renderActiveView()}</main>
                 <RightPanel station={stationForDetail} currentStation={currentStation} allStations={allStations} currentUser={currentUser} stats={stats} onAddReview={() => {}} onSelectStation={handleSelectStation} onRateStation={() => {}} onEdit={handleEditStation} onOpenMusicSubmissionModal={(s) => { setStationForSubmission(s); setIsMusicSubmissionModalOpen(true); }} onOpenClaimModal={(s) => { setStationToClaim(s); setIsClaimModalOpen(true); }} onToggleFavorite={handleToggleFavorite} nowPlaying={isHypeStormActive ? MYSTERY_TRACK : nowPlaying} bounties={bounties} onOpenJingleModal={() => setIsJingleModalOpen(true)} onAddGuestbookEntry={handleAddGuestbookEntry} />
             </div>
