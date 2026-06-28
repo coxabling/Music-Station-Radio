@@ -109,7 +109,7 @@ const createNoiseBuffer = (ctx: AudioContext) => {
 let lastOut = 0;
 
 export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
-  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible, onOpenBuyNow, isHeaderVisible, onToggleHeader, onHype, hypeScore, isPlaying, onPlayPause, isDataSaver, sleepTimerTarget, activeSkin, globalHype = 0, isHypeStormActive, hypeCombo = 0, hypeLogs = [] } = props;
+  const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, onSelectStation, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible, onOpenBuyNow, isHeaderVisible, onToggleHeader, onHype, hypeScore, isPlaying, onPlayPause, isDataSaver, sleepTimerTarget, activeSkin, globalHype = 0, isHypeStormActive, hypeCombo = 0, hypeLogs = [] } = props;
 
   const [volume, setVolume] = useState(0.75);
   const [fadeFactor, setFadeFactor] = useState(1); 
@@ -121,6 +121,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isVinylMode, setIsVinylMode] = useState(false);
   const [isSpatialMode, setIsSpatialMode] = useState(false);
+  const [isSimilarOpen, setIsSimilarOpen] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -502,12 +503,20 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
         </div>
         
         <div className="w-full max-w-sm mx-auto mt-4">
-            <div className={`grid grid-cols-4 md:grid-cols-7 relative gap-2 ${activeSkin === 'winamp' ? 'bg-[#202020] p-2 border border-[#808080]' : ''}`}>
+            <div className={`grid grid-cols-4 md:grid-cols-8 relative gap-2 ${activeSkin === 'winamp' ? 'bg-[#202020] p-2 border border-[#808080]' : ''}`}>
                 <ControlButton icon={<InfoIcon/>} label="Info" onClick={() => setIsInfoModalOpen(true)} hasFeature={isSong}/>
                 <ControlButton icon={<EqIcon/>} label="EQ" onClick={() => setIsEqModalOpen(true)}/>
                 <ControlButton icon={<CassetteIcon className="w-6 h-6"/>} label="Vinyl" onClick={() => setIsVinylMode(!isVinylMode)} isActive={isVinylMode}/>
                 <ControlButton icon={<SpatialAudioIcon className="w-6 h-6"/>} label="360°" onClick={() => setIsSpatialMode(!isSpatialMode)} isActive={isSpatialMode} />
                 <ControlButton icon={<ChatIcon/>} label="Chat" onClick={onToggleChat}/>
+                <div className="relative">
+                    <ControlButton icon={
+                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                       </svg>
+                    } label="Similar" onClick={() => setIsSimilarOpen(!isSimilarOpen)} isActive={isSimilarOpen}/>
+                    <SimilarStations isOpen={isSimilarOpen} station={station} allStations={allStations} onSelectStation={onSelectStation} onClose={() => setIsSimilarOpen(false)} />
+                </div>
                  <div className="relative">
                      {hypeCombo > 1 && (
                          <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-yellow-500 text-black text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-lg z-20 animate-bounce border border-white/20 whitespace-nowrap">

@@ -201,5 +201,23 @@ ${JSON.stringify(stationDataForPrompt, null, 2)}
   }
 };
 
+const getAIVibeExplanation = async (current: Station, suggested: Station): Promise<string> => {
+  try {
+    const ai = getAi();
+    const prompt = `You are a smooth, charismatic radio DJ. The listener is currently listening to "${current.name}" (Genre: ${current.genre}, Description: ${current.description}). You want to recommend that they check out "${suggested.name}" (Genre: ${suggested.genre}, Description: ${suggested.description}) next. 
+Write a very short, warm, and highly engaging recommendation (1 to 2 sentences max) in your signature DJ voice explaining why this transition flows perfectly. Keep it brief, stylish, and perfect for an on-air intro!`;
 
-export { fetchNowPlaying, getSongInfo, fetchLyrics, getGenreInfo, translateLyrics, getCommunityHitsSummary, findStationsByVibe };
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.5-flash',
+      contents: prompt,
+    });
+
+    return response.text || '';
+  } catch (error) {
+    console.error("Error getting AI vibe explanation:", error);
+    return `If you are enjoying the vibes of ${current.name}, you will definitely love the rhythm and selection of ${suggested.name}. Give it a tune-in!`;
+  }
+};
+
+
+export { fetchNowPlaying, getSongInfo, fetchLyrics, getGenreInfo, translateLyrics, getCommunityHitsSummary, findStationsByVibe, getAIVibeExplanation };

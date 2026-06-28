@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import type { Station, LayoutMode, SongVote, User } from '../types';
 import { StarRating } from './StarRating';
-import { findStationsByVibe } from '../services/geminiService';
+import { findStationsByVibe, getAIVibeExplanation } from '../services/geminiService';
 import { searchRadioBrowser } from '../services/apiService';
 import { GlobeIcon } from '../constants';
 
@@ -92,6 +92,109 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [isGlobalSearching, setIsGlobalSearching] = useState(false);
   const [aiError, setAiError] = useState('');
+
+  // AI Suggestion and Explanation States
+  const [aiExplainingUrl, setAiExplainingUrl] = useState<string | null>(null);
+  const [aiExplanationText, setAiExplanationText] = useState<string>('');
+  const [isAiExplainingLoading, setIsAiExplainingLoading] = useState(false);
+
+  // Dynamic heuristic-based platform suggestions
+  const platformSuggestions = useMemo(() => {
+    // 1. Get user's favorite genres
+    const favoriteStations = allStations.filter(s => s.isFavorite);
+    const favoriteGenres = new Set<string>();
+    favoriteStations.forEach(s => {
+      s.genre.split(/[\/,]/).forEach(g => favoriteGenres.add(g.trim().toLowerCase()));
+    });
+
+    const suggestions: { station: Station; matchReason: string; matchScore: number }[] = [];
+    const addedUrls = new Set<string>(favoriteStations.map(s => s.streamUrl));
+
+    // Calculate score & matching reason for all candidates
+    allStations.forEach(s => {
+      if (s.streamUrl === currentStation?.streamUrl) return; // skip current station
+
+      let score = 0;
+      let reason = "Highly Recommended Vibe";
+
+      // 1. Genre match with user favorites
+      if (favoriteGenres.size > 0) {
+        const stationGenres = s.genre.split(/[\/,]/).map(g => g.trim().toLowerCase());
+        const matches = stationGenres.filter(g => favoriteGenres.has(g));
+        if (matches.length > 0) {
+          score += 40 + matches.length * 10;
+          reason = `Because you love ${s.genre.split(/[\/,]/)[0]}`;
+        }
+      }
+
+      // 2. High rating bonus
+      if (s.rating && s.rating >= 4.5) {
+        score += 25;
+        if (score < 40) {
+          reason = `Top pick (${s.rating} ★ vibe score)`;
+        }
+      }
+
+      // 3. Featured station bonus (e.g., High Grade Radio)
+      if (s.name.includes("High Grade")) {
+        score += 35;
+        reason = "Featured Premium Broadcast";
+      }
+
+      // 4. Regional trends (e.g. Namibia/Windhoek hub)
+      if (s.countryCode === 'na') {
+        score += 20;
+        if (score < 30) {
+          reason = "Trending in Namibian Grids";
+        }
+      }
+
+      if (score > 10 && !addedUrls.has(s.streamUrl)) {
+        suggestions.push({
+          station: s,
+          matchReason: reason,
+          matchScore: Math.min(score, 99)
+        });
+      }
+    });
+
+    // If we have fewer than 3 suggestions, fill with any other stations (excluding current)
+    if (suggestions.length < 3) {
+      allStations.forEach(s => {
+        if (s.streamUrl !== currentStation?.streamUrl && !addedUrls.has(s.streamUrl) && suggestions.length < 3) {
+          suggestions.push({
+            station: s,
+            matchReason: s.rating && s.rating >= 4.3 ? "Excellent soundwaves" : "Curated playlist",
+            matchScore: s.rating ? Math.round(s.rating * 18) : 80
+          });
+          addedUrls.add(s.streamUrl);
+        }
+      });
+    }
+
+    return suggestions.sort((a, b) => b.matchScore - a.matchScore).slice(0, 3);
+  }, [allStations, currentStation]);
+
+  const handleFetchAiExplanation = async (targetStation: Station) => {
+    if (aiExplainingUrl === targetStation.streamUrl) {
+      // Toggle close
+      setAiExplainingUrl(null);
+      return;
+    }
+    setAiExplainingUrl(targetStation.streamUrl);
+    setIsAiExplainingLoading(true);
+    setAiExplanationText('');
+    try {
+      const referenceStation = currentStation || allStations.find(s => s.isFavorite) || allStations[0];
+      const explanation = await getAIVibeExplanation(referenceStation, targetStation);
+      setAiExplanationText(explanation);
+    } catch (err) {
+      console.error(err);
+      setAiExplanationText(`This station's rich audio spectrum transitions beautifully from your current session's signature groove.`);
+    } finally {
+      setIsAiExplainingLoading(false);
+    }
+  };
 
   const trendingTags = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -239,6 +342,75 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
                 />
             ))}
           </div>
+        </div>
+      )}
+
+      {!aiSearchResults && !globalSearchResults && activeTab === 'all' && platformSuggestions.length > 0 && (
+        <div className="mb-10 animate-fade-in">
+           <div className="flex items-center gap-3 mb-4">
+               <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-color)]"></div>
+               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">AI Platform Suggestions</h3>
+               <span className="text-[10px] font-mono text-cyan-400 font-black tracking-widest uppercase bg-cyan-500/10 px-2.5 py-0.5 rounded-full">Personalized Soundscapes</span>
+               <div className="flex-grow h-px bg-gray-800/50"></div>
+           </div>
+           
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+               {platformSuggestions.map(({ station: s, matchReason, matchScore }) => (
+                   <div key={s.streamUrl} className="relative group bg-gray-900/40 border border-white/5 hover:border-cyan-500/20 rounded-2xl p-4 flex flex-col justify-between transition-all duration-300">
+                       <div className="absolute top-3 right-3 bg-cyan-500/15 text-cyan-300 text-[10px] font-black px-2 py-0.5 rounded-full font-mono border border-cyan-500/20">
+                           {matchScore}% Match
+                       </div>
+                       
+                       <div className="flex gap-4 items-start">
+                           <img src={s.coverArt} alt={s.name} className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-white/10 shadow-md group-hover:scale-105 transition-all" />
+                           <div className="min-w-0">
+                               <p className="text-sm font-bold text-gray-100 group-hover:text-cyan-300 transition-all truncate">{s.name}</p>
+                               <p className="text-xs text-cyan-400 font-semibold tracking-wide mt-0.5">{matchReason}</p>
+                               <p className="text-[11px] text-gray-400 truncate mt-1">{s.genre}</p>
+                           </div>
+                       </div>
+                       
+                       <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between gap-2.5">
+                           <button 
+                               onClick={() => handleFetchAiExplanation(s)}
+                               className="flex-1 bg-gray-800/60 hover:bg-gray-800 text-[11px] text-cyan-300 font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all border border-cyan-500/10"
+                           >
+                               <span>✨ Why this pick?</span>
+                           </button>
+                           
+                           <button 
+                               onClick={() => onSelectStation(s)}
+                               className="bg-[var(--accent-color)] hover:brightness-110 text-black text-xs font-bold p-2 rounded-lg flex items-center justify-center transition-all"
+                               title="Tune In Now"
+                           >
+                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                               </svg>
+                           </button>
+                       </div>
+                       
+                       {aiExplainingUrl === s.streamUrl && (
+                           <div className="mt-3.5 bg-cyan-950/25 border border-cyan-500/15 p-3 rounded-xl text-left animate-slide-up">
+                               <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-cyan-400 mb-1.5">
+                                   <span className="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
+                                   <span>AI Matchmaker Analysis</span>
+                               </div>
+                               {isAiExplainingLoading ? (
+                                   <div className="flex items-center gap-2 py-1">
+                                       <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce"></div>
+                                       <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.2s]"></div>
+                                       <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.4s]"></div>
+                                   </div>
+                               ) : (
+                                   <p className="text-xs text-cyan-100 font-medium leading-relaxed italic">
+                                       "{aiExplanationText}"
+                                   </p>
+                               )}
+                           </div>
+                       )}
+                   </div>
+               ))}
+           </div>
         </div>
       )}
 
