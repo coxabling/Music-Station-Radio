@@ -49,6 +49,23 @@ const PinIcon: React.FC<{isPinned: boolean; className?: string}> = ({ isPinned, 
     </svg>
 );
 
+const ShareIcon: React.FC<{ className?: string }> = ({ className = 'h-6 w-6' }) => (
+    <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        className={className} 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        strokeWidth={2} 
+        strokeLinecap="round" 
+        strokeLinejoin="round"
+    >
+        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+        <polyline points="16 6 12 2 8 6" />
+        <line x1="12" y1="2" x2="12" y2="15" />
+    </svg>
+);
+
 const TabButton: React.FC<{label: string; isActive: boolean; onClick: () => void}> = ({ label, isActive, onClick }) => (
     <button onClick={onClick} className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors focus:outline-none ${ isActive ? 'bg-gray-800/50 text-[var(--accent-color)] border-b-2 accent-color-border' : 'text-gray-400 hover:text-white' }`}>{label}</button>
 );
@@ -123,6 +140,23 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
         console.error(err);
       }
       return next;
+    });
+  };
+
+  const [copiedStationUrl, setCopiedStationUrl] = useState<string | null>(null);
+
+  const handleShareStation = (e: React.MouseEvent, station: Station) => {
+    e.stopPropagation();
+    const origin = window.location.origin + window.location.pathname;
+    const params = new URLSearchParams();
+    params.set('station', station.streamUrl);
+    const shareUrl = `${origin}?${params.toString()}`;
+
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopiedStationUrl(station.streamUrl);
+      setTimeout(() => setCopiedStationUrl(null), 2000);
+    }).catch((err) => {
+        console.error('Failed to copy link: ', err);
     });
   };
   
@@ -534,6 +568,19 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
                                 {isHighGrade && <div className="absolute top-3 left-3 bg-yellow-500 text-black text-[10px] font-black px-2 py-0.5 rounded shadow-lg uppercase">Featured</div>}
                             </button>
                             <button onClick={(e) => handleTogglePin(e, station.streamUrl)} className="absolute top-3 right-14 p-2 bg-black/50 backdrop-blur-md rounded-full transition-all hover:scale-110 hover:bg-black/75 shadow-lg text-cyan-400 border border-cyan-500/30" title="Unpin Station"><PinIcon isPinned={true} className="h-5 w-5" /></button>
+                            <button 
+                                onClick={(e) => handleShareStation(e, station)} 
+                                className={`absolute top-3 right-25 p-2 bg-black/45 backdrop-blur-md rounded-full transition-all hover:scale-110 hover:bg-black/60 shadow-lg border border-white/5 flex items-center justify-center ${copiedStationUrl === station.streamUrl ? 'opacity-100 text-green-400' : 'opacity-0 group-hover:opacity-100 text-white/70 hover:text-cyan-400'}`} 
+                                title={copiedStationUrl === station.streamUrl ? "Copied Share Link!" : "Share Station"}
+                            >
+                                {copiedStationUrl === station.streamUrl ? (
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                ) : (
+                                    <ShareIcon className="h-5 w-5" />
+                                )}
+                            </button>
                             <button onClick={() => onToggleFavorite(station)} className="absolute top-3 right-3 p-2 bg-black/40 backdrop-blur-md rounded-full transition-all opacity-0 group-hover:opacity-100 hover:scale-110 hover:bg-black/60 shadow-lg"><HeartIcon isFavorite={!!station.isFavorite} className="h-5 w-5" /></button>
                         </div>
                         <div className="flex items-center justify-between mt-3 px-1">
@@ -578,6 +625,19 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
                                {isHighGrade && <div className="absolute top-3 left-3 bg-yellow-500 text-black text-[10px] font-black px-2 py-0.5 rounded shadow-lg uppercase">Featured</div>}
                            </button>
                            <button onClick={(e) => handleTogglePin(e, station.streamUrl)} className={`absolute top-3 right-14 p-2 bg-black/45 backdrop-blur-md rounded-full transition-all hover:scale-110 hover:bg-black/60 shadow-lg border border-white/5 ${isPinned ? 'opacity-100 text-cyan-400' : 'opacity-0 group-hover:opacity-100 text-white/70'}`} title="Pin Station"><PinIcon isPinned={isPinned} className="h-5 w-5" /></button>
+                           <button 
+                               onClick={(e) => handleShareStation(e, station)} 
+                               className={`absolute top-3 right-25 p-2 bg-black/45 backdrop-blur-md rounded-full transition-all hover:scale-110 hover:bg-black/60 shadow-lg border border-white/5 flex items-center justify-center ${copiedStationUrl === station.streamUrl ? 'opacity-100 text-green-400' : 'opacity-0 group-hover:opacity-100 text-white/70 hover:text-cyan-400'}`} 
+                               title={copiedStationUrl === station.streamUrl ? "Copied Share Link!" : "Share Station"}
+                           >
+                               {copiedStationUrl === station.streamUrl ? (
+                                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                   </svg>
+                               ) : (
+                                   <ShareIcon className="h-5 w-5" />
+                               )}
+                           </button>
                            <button onClick={() => onToggleFavorite(station)} className="absolute top-3 right-3 p-2 bg-black/40 backdrop-blur-md rounded-full transition-all opacity-0 group-hover:opacity-100 hover:scale-110 hover:bg-black/60 shadow-lg"><HeartIcon isFavorite={!!station.isFavorite} className="h-5 w-5" /></button>
                        </div>
                        <div className="flex items-center justify-between mt-3 px-1">
@@ -632,6 +692,19 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
                           <div className="w-px h-8 bg-gray-700/50 hidden sm:block mx-1"></div>
                           <button onClick={() => onShowDetails(station)} className="p-2.5 text-gray-500 hover:text-white rounded-full hover:bg-gray-700/50 transition-colors" title="View details"><InfoIcon className="h-6 w-6"/></button>
                           <button onClick={(e) => handleTogglePin(e, station.streamUrl)} className="p-2.5 text-cyan-400 hover:text-cyan-300 rounded-full hover:bg-gray-700/50 transition-colors" title="Unpin Station"><PinIcon isPinned={true} className="h-6 w-6" /></button>
+                           <button 
+                               onClick={(e) => handleShareStation(e, station)} 
+                               className={`p-2.5 rounded-full hover:bg-gray-700/50 transition-colors ${copiedStationUrl === station.streamUrl ? 'text-green-400' : 'text-gray-500 hover:text-cyan-400'}`} 
+                               title={copiedStationUrl === station.streamUrl ? "Copied Share Link!" : "Share Station"}
+                           >
+                               {copiedStationUrl === station.streamUrl ? (
+                                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-400 animate-bounce" viewBox="0 0 20 20" fill="currentColor">
+                                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                   </svg>
+                               ) : (
+                                   <ShareIcon className="h-6 w-6" />
+                               )}
+                           </button>
                           <button onClick={() => onToggleFavorite(station)} className="p-2.5 text-gray-500 hover:text-pink-500 rounded-full hover:bg-gray-700/50 transition-colors"><HeartIcon isFavorite={!!station.isFavorite} className="h-6 w-6" /></button>
                       </div>
                     </div>
@@ -670,6 +743,19 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
                           <div className="w-px h-8 bg-gray-700/50 hidden sm:block mx-1"></div>
                           <button onClick={() => onShowDetails(station)} className="p-2.5 text-gray-500 hover:text-white rounded-full hover:bg-gray-700/50 transition-colors" title="View details"><InfoIcon className="h-6 w-6"/></button>
                           <button onClick={(e) => handleTogglePin(e, station.streamUrl)} className={`p-2.5 rounded-full hover:bg-gray-700/50 transition-colors ${isPinned ? 'text-cyan-400' : 'text-gray-500 hover:text-white'}`} title="Pin Station"><PinIcon isPinned={isPinned} className="h-6 w-6" /></button>
+                           <button 
+                               onClick={(e) => handleShareStation(e, station)} 
+                               className={`p-2.5 rounded-full hover:bg-gray-700/50 transition-colors ${copiedStationUrl === station.streamUrl ? 'text-green-400' : 'text-gray-500 hover:text-cyan-400'}`} 
+                               title={copiedStationUrl === station.streamUrl ? "Copied Share Link!" : "Share Station"}
+                           >
+                               {copiedStationUrl === station.streamUrl ? (
+                                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-400 animate-bounce" viewBox="0 0 20 20" fill="currentColor">
+                                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                   </svg>
+                               ) : (
+                                   <ShareIcon className="h-6 w-6" />
+                               )}
+                           </button>
                           <button onClick={() => onToggleFavorite(station)} className="p-2.5 text-gray-500 hover:text-pink-500 rounded-full hover:bg-gray-700/50 transition-colors"><HeartIcon isFavorite={!!station.isFavorite} className="h-6 w-6" /></button>
                       </div>
                     </div>

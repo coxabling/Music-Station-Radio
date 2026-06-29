@@ -526,10 +526,12 @@ export const App: React.FC = () => {
         const sharedTrackArtist = params.get('artist');
         
         let targetStation = highGradeStation;
+        let shouldAutoPlay = false;
         if (sharedStationUrl) {
             const matched = defaultStations.find(s => s.streamUrl === sharedStationUrl || s.name.toLowerCase() === decodeURIComponent(sharedStationUrl).toLowerCase());
             if (matched) {
                 targetStation = matched;
+                shouldAutoPlay = true;
                 if (sharedTrackTitle && sharedTrackArtist) {
                     setNowPlaying({
                         title: decodeURIComponent(sharedTrackTitle),
@@ -542,6 +544,9 @@ export const App: React.FC = () => {
         }
         setCurrentStation(targetStation);
         setStationForDetail(targetStation);
+        if (shouldAutoPlay) {
+            setIsPlaying(true);
+        }
     }
   }, [handleLogout, highGradeStation, currentStation]);
 
