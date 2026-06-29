@@ -388,7 +388,9 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
     return (
         <button onClick={onClick} className={`${buttonClass} ${className}`} disabled={!hasFeature} title={label}>
             {progress !== undefined && activeSkin === 'modern' && (
-              <div className="absolute bottom-0 left-0 right-0 bg-orange-500/40 transition-all duration-300 ease-out" style={{ height: `${progress}%` }} />
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/5 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-orange-500 to-yellow-400 transition-all duration-300 ease-out" style={{ width: `${progress}%` }} />
+              </div>
             )}
             <div className="relative z-10 flex flex-col items-center">{icon}</div>
         </button>
@@ -560,7 +562,24 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                     </div>
                  </div>
                  <button onClick={(e) => { e.stopPropagation(); onHype(e.clientX, e.clientY); }} className="relative p-1 rounded-full transition-all duration-200 active:scale-90 text-orange-500 hover:text-orange-300 overflow-visible" aria-label="Hype">
-                    <div className="absolute bottom-0 left-0 right-0 bg-orange-500/30 transition-all duration-300 rounded-full" style={{height: `${hypeScore}%`}}></div>
+                    <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none p-0.5" viewBox="0 0 36 36">
+                        <path
+                            className="text-white/5"
+                            strokeWidth="2.5"
+                            stroke="currentColor"
+                            fill="none"
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                        <path
+                            className="text-orange-500 transition-all duration-300 ease-out"
+                            strokeDasharray={`${hypeScore}, 100`}
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            stroke="currentColor"
+                            fill="none"
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                    </svg>
                     {hypeCombo > 1 && (
                         <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-yellow-500 text-black text-[8px] font-black px-1 py-0.5 rounded shadow-lg z-20 animate-bounce tracking-tighter whitespace-nowrap border border-white/10">
                             x{hypeCombo}

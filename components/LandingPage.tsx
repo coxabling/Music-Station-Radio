@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { stations, TrophyIcon, MusicNoteIcon, BriefcaseIcon, UserIcon, ChatBubbleIcon, RocketIcon, StarIcon, ExploreIcon, UploadIcon, ClockIcon, DeviceIcon, HomeIcon, UserGroupIcon } from '../constants';
+import { BLOG_POSTS, BlogPost } from '../blogPosts';
 
 interface LandingPageProps {
   onEnter: () => void;
@@ -106,6 +107,43 @@ const NavItem: React.FC<{ icon: React.ReactNode; label: string; href: string; ac
 export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
     const backgroundStations = useMemo(() => [...stations].sort(() => 0.5 - Math.random()).slice(0, 16), []);
     const [activeSection, setActiveSection] = useState('hero');
+    const [selectedCategory, setSelectedCategory] = useState('All');
+    const [activePost, setActivePost] = useState<BlogPost | null>(null);
+    const [visibleCount, setVisibleCount] = useState(3);
+    const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
+
+    const filteredPosts = useMemo(() => {
+        if (selectedCategory === 'All') return BLOG_POSTS;
+        return BLOG_POSTS.filter(post => post.category === selectedCategory);
+    }, [selectedCategory]);
+
+    const handleShare = (e: React.MouseEvent, post: BlogPost) => {
+        e.stopPropagation();
+        const shareUrl = `${window.location.origin}${window.location.pathname}?blog=${post.id}#blog`;
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            setCopiedPostId(post.id);
+            setTimeout(() => setCopiedPostId(null), 2000);
+        }).catch((err) => {
+            console.error('Failed to copy: ', err);
+        });
+    };
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const blogId = params.get('blog');
+        if (blogId) {
+            const found = BLOG_POSTS.find(p => p.id === blogId);
+            if (found) {
+                setActivePost(found);
+                setTimeout(() => {
+                    const blogSec = document.getElementById('blog');
+                    if (blogSec) {
+                        blogSec.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }, 300);
+            }
+        }
+    }, []);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -277,6 +315,226 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
             </div>
          </div>
       </section>
+
+      {/* SUBTLE SEO BLOG SECTION */}
+      <section id="blog" className="py-24 px-4 bg-[#030712] relative z-20 border-t border-white/5">
+         <div className="container mx-auto max-w-6xl relative z-10">
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
+                <div>
+                    <h2 className="text-4xl md:text-5xl font-black font-orbitron tracking-tight text-white uppercase mb-4">Broadcast Journal</h2>
+                    <p className="text-gray-400 max-w-xl text-sm font-medium">Subtle insights, trends, and tutorials on the future of independent digital broadcasting.</p>
+                </div>
+                
+                {/* CATEGORY FILTERS */}
+                <div className="flex flex-wrap gap-2 mt-6 md:mt-0">
+                    {['All', 'Broadcasting', 'AI Tech', 'Audio Tech', 'Artist Guides', 'Culture'].map((cat) => (
+                        <button
+                            key={cat}
+                            onClick={() => { setSelectedCategory(cat); setVisibleCount(3); }}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border ${
+                                selectedCategory === cat
+                                    ? 'bg-cyan-500 text-black border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.3)]'
+                                    : 'bg-white/5 text-gray-400 border-white/5 hover:border-white/10 hover:text-white'
+                            }`}
+                        >
+                            {cat}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* BLOG GRID */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {filteredPosts.slice(0, visibleCount).map((post) => (
+                    <article 
+                        key={post.id} 
+                        onClick={() => setActivePost(post)}
+                        className="group bg-gray-900/40 backdrop-blur-md rounded-2xl border border-white/5 hover:border-cyan-500/30 transition-all duration-300 overflow-hidden cursor-pointer flex flex-col h-full"
+                    >
+                        <div className="relative aspect-video w-full overflow-hidden bg-gray-950">
+                            <img 
+                                src={post.coverImage} 
+                                alt={post.title} 
+                                referrerPolicy="no-referrer"
+                                className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-110" 
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/20 to-transparent opacity-80" />
+                            <span className="absolute top-4 left-4 bg-cyan-500/10 backdrop-blur-md border border-cyan-500/30 text-cyan-400 text-[10px] font-black uppercase px-2.5 py-1 rounded-md tracking-wider">
+                                {post.category}
+                            </span>
+                        </div>
+                        
+                        <div className="p-6 flex flex-col flex-1">
+                            <div className="flex items-center gap-3 text-[10px] font-mono text-gray-500 mb-3">
+                                <span>{post.date}</span>
+                                <span className="w-1 h-1 bg-gray-700 rounded-full" />
+                                <span>{post.readTime}</span>
+                            </div>
+                            
+                            <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors line-clamp-2 leading-snug mb-3">
+                                {post.title}
+                            </h3>
+                            
+                            <p className="text-xs text-gray-400 line-clamp-3 leading-relaxed mb-6 font-medium">
+                                {post.excerpt}
+                            </p>
+                            
+                            <div className="mt-auto flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-xs font-bold text-cyan-400 uppercase tracking-wider group-hover:gap-3 transition-all">
+                                    Read Article &rarr;
+                                </div>
+                                <button
+                                    onClick={(e) => handleShare(e, post)}
+                                    className="p-2 rounded-xl bg-white/5 hover:bg-cyan-500/20 text-gray-400 hover:text-cyan-400 border border-white/5 hover:border-cyan-500/30 transition-all text-xs flex items-center gap-1.5 font-bold uppercase tracking-wider relative z-30"
+                                    title="Share Article"
+                                >
+                                    {copiedPostId === post.id ? (
+                                        <>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-cyan-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                            <span className="text-[10px] text-cyan-400">Copied</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.062-2.031M8.684 13.258l4.062 2.031M14 11a3 3 0 11-6 0 3 3 0 016 0zm6-5a3 3 0 11-6 0 3 3 0 016 0zm0 10a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                            <span className="text-[10px]">Share</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </article>
+                ))}
+            </div>
+
+            {/* LOAD MORE BUTTON */}
+            {filteredPosts.length > visibleCount && (
+                <div className="text-center mt-12">
+                    <button 
+                        onClick={() => setVisibleCount(prev => prev + 3)}
+                        className="bg-white/5 hover:bg-white/10 text-white font-bold text-xs uppercase tracking-widest px-8 py-4 rounded-xl border border-white/10 transition-all"
+                    >
+                        Load More Articles
+                    </button>
+                </div>
+            )}
+         </div>
+
+         {/* ARTICLE MODAL POPUP */}
+         {activePost && (
+             <div className="fixed inset-0 bg-black/85 backdrop-blur-xl z-[200] flex items-center justify-center p-4 md:p-10" onClick={() => setActivePost(null)}>
+                 <div className="bg-gray-950 border border-white/10 rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative scrollbar-thin scrollbar-thumb-gray-800" onClick={(e) => e.stopPropagation()}>
+                     
+                     {/* Hero Image inside Modal */}
+                     <div className="relative h-64 md:h-80 w-full overflow-hidden bg-gray-900">
+                         <img 
+                             src={activePost.coverImage} 
+                             alt={activePost.title} 
+                             referrerPolicy="no-referrer"
+                             className="w-full h-full object-cover" 
+                         />
+                         <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/40 to-transparent" />
+                         
+                         {/* Share Button in Modal Header */}
+                         <button 
+                             onClick={(e) => handleShare(e, activePost)}
+                             className="absolute top-6 right-20 bg-black/60 backdrop-blur-md hover:bg-black text-white px-4 py-2.5 rounded-full transition-all border border-white/10 hover:scale-105 flex items-center gap-2 text-xs font-bold uppercase tracking-wider"
+                             title="Share Article"
+                         >
+                             {copiedPostId === activePost.id ? (
+                                 <>
+                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-cyan-400" viewBox="0 0 20 20" fill="currentColor">
+                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                     </svg>
+                                     <span className="text-cyan-400">Copied!</span>
+                                 </>
+                             ) : (
+                                 <>
+                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                         <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.062-2.031M8.684 13.258l4.062 2.031M14 11a3 3 0 11-6 0 3 3 0 016 0zm6-5a3 3 0 11-6 0 3 3 0 016 0zm0 10a3 3 0 11-6 0 3 3 0 016 0z" />
+                                     </svg>
+                                     <span>Share</span>
+                                 </>
+                             )}
+                         </button>
+
+                         {/* Close Button */}
+                         <button 
+                             onClick={() => setActivePost(null)}
+                             className="absolute top-6 right-6 bg-black/60 backdrop-blur-md hover:bg-black text-white p-3 rounded-full transition-all border border-white/10 hover:scale-105"
+                             aria-label="Close"
+                         >
+                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                             </svg>
+                         </button>
+
+                         <div className="absolute bottom-6 left-6 md:left-8 right-6 md:right-8">
+                             <span className="bg-cyan-500 text-black text-[10px] font-black uppercase px-2.5 py-1 rounded-md tracking-wider">
+                                 {activePost.category}
+                             </span>
+                             <h1 className="text-2xl md:text-4xl font-black font-orbitron text-white leading-tight mt-3">
+                                 {activePost.title}
+                             </h1>
+                         </div>
+                     </div>
+
+                     {/* Article Metadata & Content */}
+                     <div className="p-6 md:p-8">
+                         <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-gray-500 border-b border-white/5 pb-6 mb-6">
+                             <div className="flex items-center gap-2">
+                                 <div className="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-[10px]">{activePost.author[0]}</div>
+                                 <span className="font-semibold text-gray-300">{activePost.author}</span>
+                             </div>
+                             <span className="hidden md:inline">|</span>
+                             <span>Published: {activePost.date}</span>
+                             <span className="hidden md:inline">|</span>
+                             <span>{activePost.readTime}</span>
+                         </div>
+
+                         {/* Article Body */}
+                         <div 
+                             className="text-gray-300 text-sm md:text-base leading-relaxed space-y-6 font-medium prose prose-invert max-w-none"
+                             dangerouslySetInnerHTML={{ __html: activePost.content }}
+                         />
+
+                         <div className="mt-12 pt-8 border-t border-white/5 flex justify-between items-center">
+                             <button
+                                 onClick={(e) => handleShare(e, activePost)}
+                                 className="px-5 py-3 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-xl transition-all border border-white/10 text-xs font-bold uppercase tracking-wider flex items-center gap-2"
+                             >
+                                 {copiedPostId === activePost.id ? (
+                                     <>
+                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-cyan-400" viewBox="0 0 20 20" fill="currentColor">
+                                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                         </svg>
+                                         <span className="text-cyan-400">Copied Link!</span>
+                                     </>
+                                 ) : (
+                                     <>
+                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                             <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.062-2.031M8.684 13.258l4.062 2.031M14 11a3 3 0 11-6 0 3 3 0 016 0zm6-5a3 3 0 11-6 0 3 3 0 016 0zm0 10a3 3 0 11-6 0 3 3 0 016 0z" />
+                                         </svg>
+                                         <span>Copy Share Link</span>
+                                     </>
+                                 )}
+                             </button>
+
+                             <button 
+                                 onClick={() => setActivePost(null)}
+                                 className="bg-cyan-500 hover:bg-cyan-400 text-black font-black text-xs uppercase tracking-widest px-6 py-3 rounded-xl transition-all hover:scale-105"
+                             >
+                                 Done Reading
+                             </button>
+                         </div>
+                     </div>
+                 </div>
+             </div>
+         )}
+      </section>
       
       {/* MINIMAL FOOTER */}
       <footer className="bg-black text-center py-20 border-t border-white/5">
@@ -327,6 +585,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
             animation: fade-in-left 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         html { scroll-behavior: smooth; }
+        
+        /* Prose style overrides for static SEO blog post rendering */
+        .prose h2 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-top: 1.75rem;
+            margin-bottom: 0.75rem;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: -0.025em;
+        }
+        .prose h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #22d3ee;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            font-family: 'Orbitron', sans-serif;
+        }
+        .prose p {
+            margin-bottom: 1.25rem;
+            color: #9ca3af;
+        }
+        .prose ul {
+            list-style-type: disc;
+            padding-left: 1.5rem;
+            margin-bottom: 1.25rem;
+            color: #9ca3af;
+        }
+        .prose li {
+            margin-bottom: 0.5rem;
+        }
+        .prose strong {
+            color: #ffffff;
+            font-weight: 700;
+        }
       `}</style>
     </div>
   );

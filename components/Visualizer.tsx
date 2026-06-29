@@ -167,29 +167,131 @@ export const Visualizer: React.FC<VisualizerProps> = ({ analyser, isPlaying }) =
 
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
+    const timeDomainArray = new Uint8Array(bufferLength);
+
     const draw = () => {
       animationFrameId.current = requestAnimationFrame(draw);
       analyser.getByteFrequencyData(dataArray);
+      analyser.getByteTimeDomainData(timeDomainArray);
 
       if (isThreeMode && rendererRef.current && sceneRef.current && cameraRef.current && meshRef.current) {
            const bass = dataArray[10]; // simplified
            if (mode === 'tunnel') {
-               meshRef.current.scale.set(1 + bass/255, 1, 1 + bass/255);
-               meshRef.current.rotation.y += 0.005 + bass/5000;
+               meshRef.current.scale.set(1 + bass/400, 1, 1 + bass/400); // reduced scale factor for subtle expansion
+               meshRef.current.rotation.y += 0.003 + bass/10000;
+           } else if (mode === 'landscape' && meshRef.current instanceof THREE.Mesh) {
+               // Soft rotation or movement
+               meshRef.current.rotation.z += 0.001;
            }
            rendererRef.current.render(sceneRef.current, cameraRef.current);
       } else if (canvas) {
           const ctx = canvas.getContext('2d');
           if (ctx) {
               ctx.clearRect(0, 0, canvas.width, canvas.height);
-              // Simple Bar implementation reuse
-              const barWidth = (canvas.width / bufferLength) * 2.5;
-              let x = 0;
-              ctx.fillStyle = colorPalettes[palette][0];
-              for(let i = 0; i < bufferLength; i++) {
-                  const barHeight = (dataArray[i] / 255) * canvas.height;
-                  ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-                  x += barWidth + 1;
+              
+              const primaryColor = colorPalettes[palette][0];
+              const secondaryColor = colorPalettes[palette][1] || colorPalettes[palette][0];
+
+              if (mode === 'bars') {
+                  // Beautiful, modern, symmetric rounded-cap visualizer
+                  const numBars = 28;
+                  const padding = 3;
+                  const totalPadding = padding * (numBars - 1);
+                  const barWidth = (canvas.width - totalPadding) / numBars;
+                  const step = Math.floor(bufferLength / numBars);
+                  
+                  const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
+                  gradient.addColorStop(0, primaryColor + '22'); // highly subtle glow tail
+                  gradient.addColorStop(0.5, secondaryColor + '88');
+                  gradient.addColorStop(1, primaryColor + 'dd'); // elegant solid peaks
+
+                  ctx.fillStyle = gradient;
+                  
+                  for (let i = 0; i < numBars; i++) {
+                      const dataIndex = Math.min(i * step, bufferLength - 1);
+                      // Apply logarithmic scaling or simple dampening for subtle motion
+                      const val = dataArray[dataIndex];
+                      const barHeight = Math.max(2, (val / 255) * canvas.height * 0.8);
+                      const x = i * (barWidth + padding);
+                      const y = canvas.height - barHeight;
+
+                      ctx.beginPath();
+                      if (ctx.roundRect) {
+                          ctx.roundRect(x, y, barWidth, barHeight, [barWidth / 2, barWidth / 2, 0, 0]);
+                      } else {
+                          ctx.rect(x, y, barWidth, barHeight);
+                      }
+                      ctx.fill();
+                  }
+              } else if (mode === 'waveform') {
+                  // Elegant, ultra-subtle glowing neon string oscilloscope
+                  ctx.beginPath();
+                  ctx.lineWidth = 1.75;
+                  
+                  const waveGradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+                  waveGradient.addColorStop(0, primaryColor + '44');
+                  waveGradient.addColorStop(0.5, secondaryColor + 'dd');
+                  waveGradient.addColorStop(1, primaryColor + '44');
+                  
+                  ctx.strokeStyle = waveGradient;
+                  ctx.shadowBlur = 4;
+                  ctx.shadowColor = secondaryColor;
+                  
+                  const sliceWidth = canvas.width / bufferLength;
+                  let x = 0;
+                  
+                  for (let i = 0; i < bufferLength; i++) {
+                      const v = timeDomainArray[i] / 128.0;
+                      const y = (v * canvas.height) / 2;
+                      
+                      if (i === 0) {
+                          ctx.moveTo(x, y);
+                      } else {
+                          ctx.lineTo(x, y);
+                      }
+                      x += sliceWidth;
+                  }
+                  
+                  ctx.stroke();
+                  ctx.shadowBlur = 0; // Reset canvas shadows
+              } else if (mode === 'orbs') {
+                  // Soft, glowing breathing aura
+                  let sum = 0;
+                  const sampleCount = Math.min(64, bufferLength);
+                  for (let i = 0; i < sampleCount; i++) {
+                      sum += dataArray[i];
+                  }
+                  const average = sum / sampleCount;
+                  
+                  // Breathe radius based on audio intensity
+                  const maxRadius = Math.min(canvas.width, canvas.height) * 0.45;
+                  const baseRadius = maxRadius * 0.35;
+                  const radius = baseRadius + (average / 255) * (maxRadius - baseRadius);
+                  
+                  const centerX = canvas.width / 2;
+                  const centerY = canvas.height / 2;
+                  
+                  // Subtly diffuse radial gradient background
+                  const glowGrad = ctx.createRadialGradient(centerX, centerY, radius * 0.2, centerX, centerY, radius * 1.8);
+                  glowGrad.addColorStop(0, primaryColor + '66');
+                  glowGrad.addColorStop(0.4, secondaryColor + '22');
+                  glowGrad.addColorStop(1, 'transparent');
+                  
+                  ctx.fillStyle = glowGrad;
+                  ctx.beginPath();
+                  ctx.arc(centerX, centerY, radius * 2, 0, Math.PI * 2);
+                  ctx.fill();
+                  
+                  // Central neon orb core
+                  const coreGrad = ctx.createRadialGradient(centerX, centerY, 1, centerX, centerY, radius);
+                  coreGrad.addColorStop(0, '#ffffff');
+                  coreGrad.addColorStop(0.3, primaryColor + 'ee');
+                  coreGrad.addColorStop(1, secondaryColor + '00');
+                  
+                  ctx.fillStyle = coreGrad;
+                  ctx.beginPath();
+                  ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                  ctx.fill();
               }
           }
       }
@@ -201,14 +303,14 @@ export const Visualizer: React.FC<VisualizerProps> = ({ analyser, isPlaying }) =
   }, [analyser, isPlaying, mode, palette]);
 
   return (
-    <div ref={containerRef} className="relative cursor-pointer w-full max-w-xs h-[60px] rounded-md overflow-hidden group" onClick={cycleMode} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
-        <canvas ref={canvasRef} className="w-full h-full" />
-        <div className={`absolute inset-0 flex items-center justify-center bg-black/50 rounded-md transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+    <div ref={containerRef} className="relative cursor-pointer w-full h-full rounded-xl overflow-hidden group bg-black/15 border border-white/5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)] backdrop-blur-md" onClick={cycleMode} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
+        <canvas ref={canvasRef} className="w-full h-full block" />
+        <div className={`absolute inset-0 flex items-center justify-center bg-black/70 rounded-xl transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
             <div className='text-center'>
-                <p className="text-xs font-semibold capitalize tracking-wider">{mode}</p>
-                <div className="flex items-center justify-center gap-2 mt-1">
-                    <button onClick={cyclePalette} className="p-1 rounded-full hover:bg-white/20" title="Palette"><PaletteIcon/></button>
-                    <button onClick={togglePiP} className="p-1 rounded-full hover:bg-white/20" title="Picture-in-Picture"><PiPIcon/></button>
+                <p className="text-[10px] font-bold capitalize tracking-widest text-white/90">{mode} view</p>
+                <div className="flex items-center justify-center gap-3 mt-1.5">
+                    <button onClick={cyclePalette} className="p-1 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors" title="Change Palette"><PaletteIcon/></button>
+                    <button onClick={togglePiP} className="p-1 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors" title="Picture-in-Picture"><PiPIcon/></button>
                 </div>
             </div>
         </div>

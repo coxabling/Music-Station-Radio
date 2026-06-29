@@ -33,6 +33,21 @@ const SortIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-
 const InfoIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>;
 const SparklesIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clipRule="evenodd"/></svg>;
 const XIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>;
+const PinIcon: React.FC<{isPinned: boolean; className?: string}> = ({ isPinned, className = 'h-6 w-6' }) => (
+    <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        className={`${className} transition-all duration-300 ${isPinned ? 'text-cyan-400 fill-current rotate-[45deg]' : 'text-white/70'}`} 
+        viewBox="0 0 24 24" 
+        fill={isPinned ? 'currentColor' : 'none'} 
+        stroke="currentColor" 
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+    >
+        <line x1="12" y1="17" x2="12" y2="22" />
+        <path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.33-2.9A2 2 0 0 1 15.79 9.86V5a1 1 0 0 0-1-1h-5.58a1 1 0 0 0-1 1v4.86a2 2 0 0 1-.44 1.24l-2.33 2.9a2 2 0 0 0-.44 1.24Z" />
+    </svg>
+);
 
 const TabButton: React.FC<{label: string; isActive: boolean; onClick: () => void}> = ({ label, isActive, onClick }) => (
     <button onClick={onClick} className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors focus:outline-none ${ isActive ? 'bg-gray-800/50 text-[var(--accent-color)] border-b-2 accent-color-border' : 'text-gray-400 hover:text-white' }`}>{label}</button>
@@ -86,6 +101,30 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
   const [activeTab, setActiveTab] = useState<'all' | 'favorites' | 'community'>('all');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>('rating');
+  
+  const [pinnedUrls, setPinnedUrls] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('pinned_stations_urls');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const handleTogglePin = (e: React.MouseEvent, streamUrl: string) => {
+    e.stopPropagation();
+    setPinnedUrls(prev => {
+      const next = prev.includes(streamUrl)
+        ? prev.filter(url => url !== streamUrl)
+        : [...prev, streamUrl];
+      try {
+        localStorage.setItem('pinned_stations_urls', JSON.stringify(next));
+      } catch (err) {
+        console.error(err);
+      }
+      return next;
+    });
+  };
   
   const [aiSearchResults, setAiSearchResults] = useState<{ urls: string[], prompt: string } | null>(null);
   const [globalSearchResults, setGlobalSearchResults] = useState<Station[] | null>(null);
@@ -278,6 +317,14 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
     }
   }, [activeTab, stations, allStations, selectedTag, sortMode, aiSearchResults, globalSearchResults]);
 
+  const pinnedStations = useMemo(() => {
+    return displayedStations.filter(s => pinnedUrls.includes(s.streamUrl));
+  }, [displayedStations, pinnedUrls]);
+
+  const unpinnedStations = useMemo(() => {
+    return displayedStations.filter(s => !pinnedUrls.includes(s.streamUrl));
+  }, [displayedStations, pinnedUrls]);
+
 
   return (
     <div className="bg-transparent rounded-lg p-4 md:p-6">
@@ -458,84 +505,178 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
         </div>
       ) : displayedStations.length > 0 ? (
         viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
-            {displayedStations.map((station, index) => {
-               const isHighGrade = station.name === "High Grade Radio";
-               const tags = station.genre.split(',').map(t => t.trim()).slice(0, 3);
-               
-               if (index === 3 && activeTab === 'all' && !aiSearchResults && !globalSearchResults && !selectedTag) {
+          <div className="flex flex-col gap-8">
+            {/* PINNED SECTION (GRID) */}
+            {pinnedStations.length > 0 && (
+              <div className="flex flex-col gap-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center p-1.5 bg-cyan-500/15 rounded-lg border border-cyan-500/30">
+                    <PinIcon isPinned={true} className="h-4 w-4 text-cyan-400 rotate-45" />
+                  </div>
+                  <h3 className="text-sm font-black text-cyan-400 uppercase tracking-widest font-orbitron">Pinned Stations</h3>
+                  <div className="flex-grow h-px bg-cyan-500/10"></div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+                  {pinnedStations.map((station, index) => {
+                    const isHighGrade = station.name === "High Grade Radio";
+                    const tags = station.genre.split(',').map(t => t.trim()).slice(0, 3);
                     return (
-                        <React.Fragment key="sponsor-fragment">
-                             <SponsorCard />
-                             <div key={station.streamUrl} className="relative group flex flex-col station-card-animate" style={{ animationDelay: `${index * 30}ms`}}>
-                                <div className="relative">
-                                    <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-xl overflow-hidden transition-all duration-300 focus:outline-none shadow-xl hover:scale-[1.03] ${ currentStation?.streamUrl === station.streamUrl ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/30' : isHighGrade ? 'ring-2 ring-yellow-500/60 shadow-yellow-500/10' : 'ring-1 ring-gray-800 hover:ring-[var(--accent-color)]/50' }`} style={{ aspectRatio: '1 / 1' }} >
-                                        <img src={station.coverArt} alt={station.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-5 flex flex-col justify-end">
-                                            <h3 className="font-bold text-lg text-white truncate mb-2">{station.name}</h3>
-                                            <div className="flex flex-wrap gap-1.5">
-                                                {tags.map(t => <TagPill key={t} tag={t} onClick={handleTagToggle} isSelected={selectedTag === t} />)}
-                                            </div>
-                                        </div>
-                                        {isHighGrade && <div className="absolute top-3 left-3 bg-yellow-500 text-black text-[10px] font-black px-2 py-0.5 rounded shadow-lg uppercase">Featured</div>}
-                                    </button>
-                                    <button onClick={() => onToggleFavorite(station)} className="absolute top-3 right-3 p-2 bg-black/40 backdrop-blur-md rounded-full transition-all opacity-0 group-hover:opacity-100 hover:scale-110 hover:bg-black/60 shadow-lg"><HeartIcon isFavorite={!!station.isFavorite} className="h-5 w-5" /></button>
+                      <div key={`pinned-${station.streamUrl}`} className="relative group flex flex-col station-card-animate" style={{ animationDelay: `${index * 30}ms`}}>
+                        <div className="relative">
+                            <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-xl overflow-hidden transition-all duration-300 focus:outline-none shadow-xl hover:scale-[1.03] ${ currentStation?.streamUrl === station.streamUrl ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/30' : isHighGrade ? 'ring-2 ring-yellow-500/60 shadow-yellow-500/10' : 'ring-1 ring-gray-800 hover:ring-[var(--accent-color)]/50' }`} style={{ aspectRatio: '1 / 1' }} >
+                                <img src={station.coverArt} alt={station.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-5 flex flex-col justify-end">
+                                    <h3 className="font-bold text-lg text-white truncate mb-2">{station.name}</h3>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {tags.map(t => <TagPill key={t} tag={t} onClick={handleTagToggle} isSelected={selectedTag === t} />)}
+                                    </div>
                                 </div>
-                                <div className="flex items-center justify-between mt-3 px-1">
-                                    <button onClick={() => onShowDetails(station)} className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 hover:text-white transition-colors" title="View details"><InfoIcon className="h-4 w-4" /> More Info</button>
-                                    <StarRating rating={station.rating || 0} readOnly={true} starClassName="h-3.5 w-3.5" />
-                                </div>
-                                {currentStation?.streamUrl === station.streamUrl && <PlayIndicator />}
-                              </div>
-                        </React.Fragment>
-                    )
-               }
-
-               return (
-              <div key={station.streamUrl} className="relative group flex flex-col station-card-animate" style={{ animationDelay: `${index * 30}ms`}}>
-                <div className="relative">
-                    <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-xl overflow-hidden transition-all duration-300 focus:outline-none shadow-xl hover:scale-[1.03] ${ currentStation?.streamUrl === station.streamUrl ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/30' : isHighGrade ? 'ring-2 ring-yellow-500/60 shadow-yellow-500/10' : 'ring-1 ring-gray-800 hover:ring-[var(--accent-color)]/50' }`} style={{ aspectRatio: '1 / 1' }} >
-                        <img src={station.coverArt} alt={station.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-5 flex flex-col justify-end">
-                            <h3 className="font-bold text-lg text-white truncate mb-2">{station.name}</h3>
-                            <div className="flex flex-wrap gap-1.5">
-                                {tags.map(t => <TagPill key={t} tag={t} onClick={handleTagToggle} isSelected={selectedTag === t} />)}
-                            </div>
+                                {isHighGrade && <div className="absolute top-3 left-3 bg-yellow-500 text-black text-[10px] font-black px-2 py-0.5 rounded shadow-lg uppercase">Featured</div>}
+                            </button>
+                            <button onClick={(e) => handleTogglePin(e, station.streamUrl)} className="absolute top-3 right-14 p-2 bg-black/50 backdrop-blur-md rounded-full transition-all hover:scale-110 hover:bg-black/75 shadow-lg text-cyan-400 border border-cyan-500/30" title="Unpin Station"><PinIcon isPinned={true} className="h-5 w-5" /></button>
+                            <button onClick={() => onToggleFavorite(station)} className="absolute top-3 right-3 p-2 bg-black/40 backdrop-blur-md rounded-full transition-all opacity-0 group-hover:opacity-100 hover:scale-110 hover:bg-black/60 shadow-lg"><HeartIcon isFavorite={!!station.isFavorite} className="h-5 w-5" /></button>
                         </div>
-                        {isHighGrade && <div className="absolute top-3 left-3 bg-yellow-500 text-black text-[10px] font-black px-2 py-0.5 rounded shadow-lg uppercase">Featured</div>}
-                    </button>
-                    <button onClick={() => onToggleFavorite(station)} className="absolute top-3 right-3 p-2 bg-black/40 backdrop-blur-md rounded-full transition-all opacity-0 group-hover:opacity-100 hover:scale-110 hover:bg-black/60 shadow-lg"><HeartIcon isFavorite={!!station.isFavorite} className="h-5 w-5" /></button>
+                        <div className="flex items-center justify-between mt-3 px-1">
+                            <button onClick={() => onShowDetails(station)} className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 hover:text-white transition-colors" title="View details"><InfoIcon className="h-4 w-4" /> More Info</button>
+                            <StarRating rating={station.rating || 0} readOnly={true} starClassName="h-3.5 w-3.5" />
+                        </div>
+                        {currentStation?.streamUrl === station.streamUrl && <PlayIndicator />}
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="flex items-center justify-between mt-3 px-1">
-                    <button onClick={() => onShowDetails(station)} className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 hover:text-white transition-colors" title="View details"><InfoIcon className="h-4 w-4" /> More Info</button>
-                    <StarRating rating={station.rating || 0} readOnly={true} starClassName="h-3.5 w-3.5" />
-                </div>
-                {currentStation?.streamUrl === station.streamUrl && <PlayIndicator />}
               </div>
-            )})}
+            )}
+
+            {/* MAIN / UNPINNED SECTION (GRID) */}
+            {pinnedStations.length > 0 && unpinnedStations.length > 0 && (
+              <div className="flex items-center gap-3 mt-4">
+                <div className="w-1.5 h-1.5 rounded-full bg-gray-600"></div>
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest font-orbitron">All Stations</h3>
+                <div className="flex-grow h-px bg-gray-800/50"></div>
+              </div>
+            )}
+
+            {unpinnedStations.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+                {unpinnedStations.map((station, index) => {
+                   const isHighGrade = station.name === "High Grade Radio";
+                   const tags = station.genre.split(',').map(t => t.trim()).slice(0, 3);
+                   const isPinned = pinnedUrls.includes(station.streamUrl);
+                   
+                   const cardContent = (
+                     <div key={station.streamUrl} className="relative group flex flex-col station-card-animate" style={{ animationDelay: `${index * 30}ms`}}>
+                       <div className="relative">
+                           <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-xl overflow-hidden transition-all duration-300 focus:outline-none shadow-xl hover:scale-[1.03] ${ currentStation?.streamUrl === station.streamUrl ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/30' : isHighGrade ? 'ring-2 ring-yellow-500/60 shadow-yellow-500/10' : 'ring-1 ring-gray-800 hover:ring-[var(--accent-color)]/50' }`} style={{ aspectRatio: '1 / 1' }} >
+                               <img src={station.coverArt} alt={station.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-5 flex flex-col justify-end">
+                                   <h3 className="font-bold text-lg text-white truncate mb-2">{station.name}</h3>
+                                   <div className="flex flex-wrap gap-1.5">
+                                       {tags.map(t => <TagPill key={t} tag={t} onClick={handleTagToggle} isSelected={selectedTag === t} />)}
+                                   </div>
+                               </div>
+                               {isHighGrade && <div className="absolute top-3 left-3 bg-yellow-500 text-black text-[10px] font-black px-2 py-0.5 rounded shadow-lg uppercase">Featured</div>}
+                           </button>
+                           <button onClick={(e) => handleTogglePin(e, station.streamUrl)} className={`absolute top-3 right-14 p-2 bg-black/45 backdrop-blur-md rounded-full transition-all hover:scale-110 hover:bg-black/60 shadow-lg border border-white/5 ${isPinned ? 'opacity-100 text-cyan-400' : 'opacity-0 group-hover:opacity-100 text-white/70'}`} title="Pin Station"><PinIcon isPinned={isPinned} className="h-5 w-5" /></button>
+                           <button onClick={() => onToggleFavorite(station)} className="absolute top-3 right-3 p-2 bg-black/40 backdrop-blur-md rounded-full transition-all opacity-0 group-hover:opacity-100 hover:scale-110 hover:bg-black/60 shadow-lg"><HeartIcon isFavorite={!!station.isFavorite} className="h-5 w-5" /></button>
+                       </div>
+                       <div className="flex items-center justify-between mt-3 px-1">
+                           <button onClick={() => onShowDetails(station)} className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 hover:text-white transition-colors" title="View details"><InfoIcon className="h-4 w-4" /> More Info</button>
+                           <StarRating rating={station.rating || 0} readOnly={true} starClassName="h-3.5 w-3.5" />
+                       </div>
+                       {currentStation?.streamUrl === station.streamUrl && <PlayIndicator />}
+                     </div>
+                   );
+
+                   if (index === 3 && activeTab === 'all' && !aiSearchResults && !globalSearchResults && !selectedTag) {
+                        return (
+                            <React.Fragment key="sponsor-fragment">
+                                 <SponsorCard />
+                                 {cardContent}
+                            </React.Fragment>
+                        )
+                   }
+
+                   return cardContent;
+                })}
+              </div>
+            )}
           </div>
         ) : (
-          <div className="space-y-4 max-w-4xl mx-auto">
-            {displayedStations.map((station, index) => (
-              <div key={station.streamUrl} className={`flex items-center p-4 rounded-xl border transition-all duration-300 station-card-animate ${currentStation?.streamUrl === station.streamUrl ? 'bg-[var(--accent-color)]/10 border-[var(--accent-color)] shadow-lg shadow-[var(--accent-color)]/10' : 'bg-gray-800/20 border-gray-800/50 hover:bg-gray-800/40 hover:border-gray-700'}`} style={{ animationDelay: `${index * 30}ms`}}>
-                <img src={station.coverArt} alt={station.name} className="w-16 h-16 rounded-lg object-cover mr-6 shadow-md" />
-                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onSelectStation(station)}>
-                    <h3 className="font-bold text-white text-lg truncate flex items-center gap-3">
-                        {station.name} 
-                        {station.name === "High Grade Radio" && <span className="text-[9px] font-black text-yellow-400 border border-yellow-500/40 px-1.5 py-0.5 rounded tracking-tighter uppercase">Featured</span>}
-                    </h3>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                        {station.genre.split(',').map(t => t.trim()).slice(0, 5).map(t => <TagPill key={t} tag={t} onClick={handleTagToggle} isSelected={selectedTag === t} />)}
-                    </div>
+          <div className="space-y-4 max-w-4xl mx-auto flex flex-col gap-4">
+            {/* PINNED LIST SECTION */}
+            {pinnedStations.length > 0 && (
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center p-1.5 bg-cyan-500/15 rounded-lg border border-cyan-500/30">
+                    <PinIcon isPinned={true} className="h-4 w-4 text-cyan-400 rotate-45" />
+                  </div>
+                  <h3 className="text-sm font-black text-cyan-400 uppercase tracking-widest font-orbitron">Pinned Stations</h3>
+                  <div className="flex-grow h-px bg-cyan-500/10"></div>
                 </div>
-                 <div className="flex items-center gap-3 ml-4">
-                    <StarRating rating={station.rating || 0} readOnly={true} starClassName="h-4 w-4 hidden sm:flex" />
-                    <div className="w-px h-8 bg-gray-700/50 hidden sm:block mx-1"></div>
-                    <button onClick={() => onShowDetails(station)} className="p-2.5 text-gray-500 hover:text-white rounded-full hover:bg-gray-700/50 transition-colors" title="View details"><InfoIcon className="h-6 w-6"/></button>
-                    <button onClick={() => onToggleFavorite(station)} className="p-2.5 text-gray-500 hover:text-pink-500 rounded-full hover:bg-gray-700/50 transition-colors"><HeartIcon isFavorite={!!station.isFavorite} className="h-6 w-6" /></button>
+                <div className="space-y-4">
+                  {pinnedStations.map((station, index) => (
+                    <div key={`pinned-${station.streamUrl}`} className={`flex items-center p-4 rounded-xl border transition-all duration-300 station-card-animate ${currentStation?.streamUrl === station.streamUrl ? 'bg-[var(--accent-color)]/10 border-[var(--accent-color)] shadow-lg shadow-[var(--accent-color)]/10' : 'bg-gray-800/20 border-gray-800/50 hover:bg-gray-800/40 hover:border-gray-700'}`} style={{ animationDelay: `${index * 30}ms`}}>
+                      <img src={station.coverArt} alt={station.name} className="w-16 h-16 rounded-lg object-cover mr-6 shadow-md" />
+                      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onSelectStation(station)}>
+                          <h3 className="font-bold text-white text-lg truncate flex items-center gap-3">
+                              {station.name} 
+                              {station.name === "High Grade Radio" && <span className="text-[9px] font-black text-yellow-400 border border-yellow-500/40 px-1.5 py-0.5 rounded tracking-tighter uppercase">Featured</span>}
+                          </h3>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                              {station.genre.split(',').map(t => t.trim()).slice(0, 5).map(t => <TagPill key={t} tag={t} onClick={handleTagToggle} isSelected={selectedTag === t} />)}
+                          </div>
+                      </div>
+                       <div className="flex items-center gap-3 ml-4">
+                          <StarRating rating={station.rating || 0} readOnly={true} starClassName="h-4 w-4 hidden sm:flex" />
+                          <div className="w-px h-8 bg-gray-700/50 hidden sm:block mx-1"></div>
+                          <button onClick={() => onShowDetails(station)} className="p-2.5 text-gray-500 hover:text-white rounded-full hover:bg-gray-700/50 transition-colors" title="View details"><InfoIcon className="h-6 w-6"/></button>
+                          <button onClick={(e) => handleTogglePin(e, station.streamUrl)} className="p-2.5 text-cyan-400 hover:text-cyan-300 rounded-full hover:bg-gray-700/50 transition-colors" title="Unpin Station"><PinIcon isPinned={true} className="h-6 w-6" /></button>
+                          <button onClick={() => onToggleFavorite(station)} className="p-2.5 text-gray-500 hover:text-pink-500 rounded-full hover:bg-gray-700/50 transition-colors"><HeartIcon isFavorite={!!station.isFavorite} className="h-6 w-6" /></button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
+            )}
+
+            {/* UNPINNED LIST SECTION */}
+            {pinnedStations.length > 0 && unpinnedStations.length > 0 && (
+              <div className="flex items-center gap-3 mt-4">
+                <div className="w-1.5 h-1.5 rounded-full bg-gray-600"></div>
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest font-orbitron">All Stations</h3>
+                <div className="flex-grow h-px bg-gray-800/50"></div>
+              </div>
+            )}
+
+            {unpinnedStations.length > 0 && (
+              <div className="space-y-4">
+                {unpinnedStations.map((station, index) => {
+                  const isPinned = pinnedUrls.includes(station.streamUrl);
+                  return (
+                    <div key={station.streamUrl} className={`flex items-center p-4 rounded-xl border transition-all duration-300 station-card-animate ${currentStation?.streamUrl === station.streamUrl ? 'bg-[var(--accent-color)]/10 border-[var(--accent-color)] shadow-lg shadow-[var(--accent-color)]/10' : 'bg-gray-800/20 border-gray-800/50 hover:bg-gray-800/40 hover:border-gray-700'}`} style={{ animationDelay: `${index * 30}ms`}}>
+                      <img src={station.coverArt} alt={station.name} className="w-16 h-16 rounded-lg object-cover mr-6 shadow-md" />
+                      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onSelectStation(station)}>
+                          <h3 className="font-bold text-white text-lg truncate flex items-center gap-3">
+                              {station.name} 
+                              {station.name === "High Grade Radio" && <span className="text-[9px] font-black text-yellow-400 border border-yellow-500/40 px-1.5 py-0.5 rounded tracking-tighter uppercase">Featured</span>}
+                          </h3>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                              {station.genre.split(',').map(t => t.trim()).slice(0, 5).map(t => <TagPill key={t} tag={t} onClick={handleTagToggle} isSelected={selectedTag === t} />)}
+                          </div>
+                      </div>
+                       <div className="flex items-center gap-3 ml-4">
+                          <StarRating rating={station.rating || 0} readOnly={true} starClassName="h-4 w-4 hidden sm:flex" />
+                          <div className="w-px h-8 bg-gray-700/50 hidden sm:block mx-1"></div>
+                          <button onClick={() => onShowDetails(station)} className="p-2.5 text-gray-500 hover:text-white rounded-full hover:bg-gray-700/50 transition-colors" title="View details"><InfoIcon className="h-6 w-6"/></button>
+                          <button onClick={(e) => handleTogglePin(e, station.streamUrl)} className={`p-2.5 rounded-full hover:bg-gray-700/50 transition-colors ${isPinned ? 'text-cyan-400' : 'text-gray-500 hover:text-white'}`} title="Pin Station"><PinIcon isPinned={isPinned} className="h-6 w-6" /></button>
+                          <button onClick={() => onToggleFavorite(station)} className="p-2.5 text-gray-500 hover:text-pink-500 rounded-full hover:bg-gray-700/50 transition-colors"><HeartIcon isFavorite={!!station.isFavorite} className="h-6 w-6" /></button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )
       ) : (

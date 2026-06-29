@@ -103,34 +103,34 @@ export const HypeOverlay: React.FC<HypeOverlayProps> = ({ isActive, isStorm, onC
         : ['#facc15', '#fb923c', '#ef4444', '#a855f7', '#06b6d4', '#10b981'];
 
     const spawnParticles = (x?: number, y?: number, customCount?: number) => {
-        const particleCount = customCount || (isStorm ? 12 : 120);
+        const particleCount = customCount || (isStorm ? 6 : 35);
         const originX = x !== undefined ? x : (isStorm ? Math.random() * canvas.width : canvas.width / 2);
         const originY = y !== undefined ? y : (isStorm ? -20 : canvas.height / 2);
 
         for (let i = 0; i < particleCount; i++) {
           const angle = Math.random() * Math.PI * 2;
           const speed = isStorm 
-            ? Math.random() * 8 + 4 
-            : (x !== undefined ? Math.random() * 12 + 3 : Math.random() * 14 + 4);
+            ? Math.random() * 4 + 1.5 
+            : (x !== undefined ? Math.random() * 5 + 1.5 : Math.random() * 6 + 2);
 
           const types: ('star' | 'note' | 'circle' | 'spark' | 'halo')[] = isStorm
-            ? ['circle', 'spark', 'halo', 'star']
-            : ['circle', 'star', 'note', 'spark'];
+            ? ['circle', 'spark', 'halo']
+            : ['circle', 'spark', 'note'];
           
           const type = types[Math.floor(Math.random() * types.length)];
 
           particlesRef.current.push({
             x: originX,
             y: originY,
-            vx: isStorm ? (Math.random() - 0.5) * 4 : Math.cos(angle) * speed,
-            vy: isStorm ? Math.random() * 10 + 4 : Math.sin(angle) * speed,
+            vx: isStorm ? (Math.random() - 0.5) * 2 : Math.cos(angle) * speed,
+            vy: isStorm ? Math.random() * 4 + 2 : Math.sin(angle) * speed,
             color: colors[Math.floor(Math.random() * colors.length)],
-            life: Math.random() * 0.4 + 0.6, // random starting life for staggered decay
-            size: Math.random() * (isStorm ? 10 : 7) + 2,
+            life: Math.random() * 0.35 + 0.55, // random starting life for staggered decay
+            size: Math.random() * (isStorm ? 4 : 3) + 1,
             type,
             angle: Math.random() * Math.PI * 2,
-            rotationSpeed: (Math.random() - 0.5) * 0.1,
-            glow: isStorm || Math.random() > 0.75
+            rotationSpeed: (Math.random() - 0.5) * 0.05,
+            glow: isStorm || Math.random() > 0.8
           });
         }
     };
@@ -143,7 +143,7 @@ export const HypeOverlay: React.FC<HypeOverlayProps> = ({ isActive, isStorm, onC
     // Process click-sourced position bursts
     clickPositions.forEach(pos => {
       // Create a nice localized explosion of particles from the button
-      spawnParticles(pos.x, pos.y, 45);
+      spawnParticles(pos.x, pos.y, 12);
       if (onRemoveClickPosition) {
         onRemoveClickPosition(pos.id);
       }
@@ -154,8 +154,8 @@ export const HypeOverlay: React.FC<HypeOverlayProps> = ({ isActive, isStorm, onC
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
       // If storm is active, generate ongoing sky drips
-      if (isStorm && Math.random() > 0.25) {
-          spawnParticles(undefined, undefined, 4);
+      if (isStorm && Math.random() > 0.4) {
+          spawnParticles(undefined, undefined, 2);
       }
 
       particlesRef.current.forEach((p, index) => {
