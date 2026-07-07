@@ -48,8 +48,68 @@ const createDefaultUserData = (): Omit<UserData, 'role'> => ({
 export const getUserData = async (username: string): Promise<UserData | null> => {
     return new Promise((resolve) => {
         setTimeout(() => {
+            seedDatabase();
             resolve(getDb(username));
         }, SIMULATED_LATENCY);
+    });
+};
+
+const seedDatabase = () => {
+    const seedUsers = [
+        { username: 'VibeMaster', points: 15420, role: 'user', songVotes: {
+            't3': { id: 't3', artist: 'Rema', title: 'Calm Down', albumArt: 'https://picsum.photos/seed/t3/200', likes: 10, dislikes: 0 },
+            't1': { id: 't1', artist: 'Wizkid', title: 'Essence', albumArt: 'https://picsum.photos/seed/t1/200', likes: 8, dislikes: 0 }
+        }},
+        { username: 'AfroBeatQueen', points: 14200, role: 'artist', songVotes: {
+            't1': { id: 't1', artist: 'Wizkid', title: 'Essence', albumArt: 'https://picsum.photos/seed/t1/200', likes: 12, dislikes: 0 },
+            't3': { id: 't3', artist: 'Rema', title: 'Calm Down', albumArt: 'https://picsum.photos/seed/t3/200', likes: 9, dislikes: 0 }
+        }},
+        { username: 'BassHead99', points: 12150, role: 'user', songVotes: {
+            't2': { id: 't2', artist: 'Burna Boy', title: 'Last Last', albumArt: 'https://picsum.photos/seed/t2/200', likes: 14, dislikes: 0 }
+        }},
+        { username: 'RadioRebel', points: 10500, role: 'owner', songVotes: {
+            't3': { id: 't3', artist: 'Rema', title: 'Calm Down', albumArt: 'https://picsum.photos/seed/t3/200', likes: 11, dislikes: 0 }
+        }},
+        { username: 'ChillWave', points: 9800, role: 'user', songVotes: {
+            't5': { id: 't5', artist: 'Bob Marley', title: 'One Love', albumArt: 'https://picsum.photos/seed/t5/200', likes: 7, dislikes: 0 }
+        }},
+        { username: 'GlobalListener', points: 8400, role: 'user', songVotes: {
+            't4': { id: 't4', artist: 'Kizz Daniel', title: 'Buga', albumArt: 'https://picsum.photos/seed/t4/200', likes: 9, dislikes: 0 }
+        }},
+        { username: 'MusicLover1', points: 7200, role: 'user', songVotes: {
+            't1': { id: 't1', artist: 'Wizkid', title: 'Essence', albumArt: 'https://picsum.photos/seed/t1/200', likes: 5, dislikes: 0 }
+        }},
+        { username: 'BeatDrop', points: 6500, role: 'artist', songVotes: {
+            't4': { id: 't4', artist: 'Kizz Daniel', title: 'Buga', albumArt: 'https://picsum.photos/seed/t4/200', likes: 3, dislikes: 0 }
+        }},
+        { username: 'SonicSurfer', points: 5900, role: 'user', songVotes: {
+            't2': { id: 't2', artist: 'Burna Boy', title: 'Last Last', albumArt: 'https://picsum.photos/seed/t2/200', likes: 4, dislikes: 0 }
+        }},
+        { username: 'AudioPhile', points: 5200, role: 'user', songVotes: {
+            't5': { id: 't5', artist: 'Bob Marley', title: 'One Love', albumArt: 'https://picsum.photos/seed/t5/200', likes: 1, dislikes: 0 }
+        }}
+    ];
+
+    seedUsers.forEach(user => {
+        const key = `user_db_${user.username}`;
+        if (!localStorage.getItem(key)) {
+            const userData: UserData = {
+                ...createDefaultUserData(),
+                role: user.role as any,
+                stats: {
+                    totalTime: 1200,
+                    stationPlays: {},
+                    genresPlayed: [],
+                    points: user.points,
+                    stationRatings: {},
+                    songHistory: [],
+                    songUserVotes: {},
+                    stationReviews: {}
+                },
+                songVotes: user.songVotes
+            };
+            localStorage.setItem(key, JSON.stringify(userData));
+        }
     });
 };
 
@@ -163,6 +223,7 @@ export const unfollowUser = async (followerUsername: string, targetUsername: str
 export const getAllUsersData = async (): Promise<{ username: string, data: UserData }[]> => {
     return new Promise((resolve) => {
         setTimeout(() => {
+            seedDatabase();
             const allUsers: { username: string, data: UserData }[] = [];
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);

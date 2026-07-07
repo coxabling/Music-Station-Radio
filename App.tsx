@@ -19,7 +19,7 @@ import { RightPanel } from './components/RightPanel';
 import { TradingPostView } from './components/TradingPostView';
 import { PredictionMarketView } from './components/PredictionMarketView';
 import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, CARDS_DB, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, BOUNTIES, ShieldCheckIcon, UploadIcon, CheckCircleIcon, XCircleIcon, MusicNoteIcon, CollectionIcon, TrophyIcon, MYSTERY_TRACK } from './constants';
-import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, CollectorCard, Lounge, UserProfile, AvatarFrame, SkinID, Bounty, Jingle, PlayerSkin, GuestbookEntry, Quest, MarketListing } from './types';
+import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, CollectorCard, Lounge, UserProfile, AvatarFrame, SkinID, Bounty, Jingle, PlayerSkin, GuestbookEntry, Quest, MarketListing, SongHistoryItem } from './types';
 import { getDominantColor } from './utils/colorExtractor';
 import { playHypeSynthSound, playOverloadSynthSound } from './utils/audioSynth';
 import { LandingPage } from './components/LandingPage';
@@ -601,6 +601,37 @@ export const App: React.FC = () => {
     if (newArt) {
       getDominantColor(newArt).then(color => setAlbumArtColor(color)).catch(() => setAlbumArtColor('#facc15'));
     } else setAlbumArtColor('#facc15');
+
+    // Save song to listening history
+    if (nowPlayingUpdate && nowPlayingUpdate.title !== "Live Stream" && nowPlayingUpdate.title !== "Station Data Unavailable" && currentStation) {
+      setStats(prev => {
+        const lastItem = prev.songHistory?.[0];
+        if (lastItem && lastItem.title === nowPlayingUpdate.title && lastItem.artist === nowPlayingUpdate.artist && lastItem.stationName === currentStation.name) {
+          return prev;
+        }
+
+        const newItem: SongHistoryItem = {
+          songId: nowPlayingUpdate.songId || `song_${Date.now()}`,
+          title: nowPlayingUpdate.title,
+          artist: nowPlayingUpdate.artist,
+          albumArt: nowPlayingUpdate.albumArt || currentStation.coverArt || '',
+          stationName: currentStation.name,
+          playedAt: new Date().toISOString()
+        };
+
+        const newHistory = [newItem, ...(prev.songHistory || [])].slice(0, 50);
+        const updatedStats = {
+          ...prev,
+          songHistory: newHistory
+        };
+
+        if (currentUser) {
+          updateUserData(currentUser.username, { stats: updatedStats });
+        }
+        return updatedStats;
+      });
+    }
+
     if (currentThemeObj?.backgroundImage) {
          setBackgrounds([currentThemeObj.backgroundImage, null]);
          return;
@@ -612,7 +643,7 @@ export const App: React.FC = () => {
         setBackgrounds(newBackgrounds); 
         setActiveBgIndex(nextIndex); 
     }
-  }, [activeBgIndex, backgrounds, currentThemeObj]);
+  }, [activeBgIndex, backgrounds, currentThemeObj, currentStation, currentUser]);
 
   const handleUnlockTheme = (theme: Theme) => {
     if (!currentUser || !theme.cost) return;

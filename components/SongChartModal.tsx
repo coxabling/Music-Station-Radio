@@ -1,11 +1,12 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import type { SongVote } from '../types';
 import { getCommunityHitsSummary } from '../services/geminiService';
+import { getAllUsersData } from '../services/apiService';
 
 interface SongChartModalProps {
   isOpen: boolean;
   onClose: () => void;
-  songVotes: Record<string, SongVote>;
+  songVotes: Record<string, SongVote>; // kept for backward compatibility if any, though we use real community votes
 }
 
 const ChartBarIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>;
@@ -13,7 +14,7 @@ const TrophyIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="
 const ThumbUpIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}><path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333V17a1 1 0 001 1h6.364a1 1 0 00.942-.671l1.757-6.327a1 1 0 00-.942-1.329H13V4.5a1.5 1.5 0 00-3 0v5.833H6z" /></svg>;
 const GeminiIcon: React.FC<{className?: string}> = ({className}) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12.012 2.25c.345 0 .68.018 1.004.053a9.75 9.75 0 0 1 8.213 8.213c.035.324.053.66.053 1.004s-.018.68-.053 1.004a9.75 9.75 0 0 1-8.213 8.213c-.324.035-.66.053-1.004.053s-.68-.018-1.004-.053a9.75 9.75 0 0 1-8.213-8.213c-.035-.324-.053-.66-.053-1.004s.018-.68.053-1.004a9.75 9.75 0 0 1 8.213-8.213c.324-.035.66.053 1.004-.053ZM8.26 8.906a.75.75 0 0 0-.53 1.28l1.47 1.47-1.47 1.47a.75.75 0 1 0 1.06 1.06l1.47-1.47 1.47 1.47a.75.75 0 1 0 1.06-1.06l-1.47-1.47 1.47-1.47a.75.75 0 1 0-1.06-1.06l-1.47 1.47-1.47-1.47a.75.75 0 0 0-.53-.22Zm6.75 3.344a.75.75 0 0 0-1.06-1.06l-1.47 1.47-1.47-1.47a.75.75 0 1 0-1.06 1.06l1.47 1.47-1.47 1.47a.75.75 0 1 0 1.06 1.06l1.47-1.47 1.47 1.47a.75.75 0 1 0 1.06-1.06l-1.47-1.47 1.47-1.47Z" />
+      <path d="M12.012 2.25c.345 0 .68.018 1.004.053a9.75 9.75 0 0 1 8.213 8.213c.035.324.053.66.053 1.004s-.018.68-.053 1.004a9.75 9.75 0 0 1-8.213 8.213c-.324.035-.66.053-1.004.053s-.68-.018-1.004-.053a9.75 9.75 0 0 1-8.213-8.213c-.035-.324-.053-.66-.053-1.004s.018-.68.053-1.004a9.75 9.75 0 0 1 8.213-8.213c.324-.035.66.053 1.004-.053ZM8.26 8.906a.75.75 0 0 0-.53 1.28l1.47 1.47-1.47 1.47a.75.75 0 1 0 1.06 1.06l1.47-1.47 1.47 1.47a.75.75 0 1 0 1.06-1.06l-1.47-1.47 1.47-1.47a.75.75 0 1 0-1.06-1.06l-1.47 1.47-1.47-1.47a.75.75 0 0 0-.53-.22Zm6.75 3.344a.75.75 0 0 0-1.06-1.06l-1.47 1.47-1.47-1.47a.75.75 0 1 0-1.06 1.06l1.47 1.47-1.47 1.47a.75.75 0 1 0 1.06 1.06l1.47-1.47 1.47 1.47a.75.75 0 1 0 1.06-1.06l-1.47-1.47-1.47-1.47Z" />
     </svg>
 );
 const RefreshIcon: React.FC<{className?: string}> = ({className}) => (
@@ -26,13 +27,15 @@ const RefreshIcon: React.FC<{className?: string}> = ({className}) => (
 export const SongChartModal: React.FC<SongChartModalProps> = ({ isOpen, onClose, songVotes }) => {
   const [summary, setSummary] = useState('');
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  const [communitySongVotes, setCommunitySongVotes] = useState<Record<string, SongVote>>({});
+  const [isVotesLoading, setIsVotesLoading] = useState(false);
   
   const rankedList = useMemo(() => {
-    return (Object.values(songVotes) as SongVote[])
+    return (Object.values(communitySongVotes) as SongVote[])
       .filter(song => song.likes > 0)
       .sort((a, b) => b.likes - a.likes)
       .slice(0, 20);
-  }, [songVotes]);
+  }, [communitySongVotes]);
 
   const handleFetchSummary = useCallback(async () => {
     if (rankedList.length === 0) {
@@ -58,6 +61,35 @@ export const SongChartModal: React.FC<SongChartModalProps> = ({ isOpen, onClose,
 
   useEffect(() => {
     if (isOpen) {
+      setIsVotesLoading(true);
+      getAllUsersData().then(users => {
+        const aggregated: Record<string, SongVote> = {};
+        
+        users.forEach(u => {
+          const votes = u.data.songVotes || {};
+          Object.keys(votes).forEach(songId => {
+            const vote = votes[songId];
+            if (!aggregated[songId]) {
+              aggregated[songId] = {
+                id: songId,
+                title: vote.title,
+                artist: vote.artist,
+                albumArt: vote.albumArt || '',
+                likes: 0,
+                dislikes: 0
+              };
+            }
+            aggregated[songId].likes += (vote.likes || 0);
+            aggregated[songId].dislikes += (vote.dislikes || 0);
+          });
+        });
+        
+        setCommunitySongVotes(aggregated);
+        setIsVotesLoading(false);
+      }).catch(err => {
+        console.error("Failed to fetch community song votes", err);
+        setIsVotesLoading(false);
+      });
       handleFetchSummary();
     } else {
       setSummary(''); // Clear summary when modal is closed
