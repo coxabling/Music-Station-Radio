@@ -67,8 +67,8 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, setToast
 
     return (
         <div className="fixed bottom-4 right-4 z-[200] w-full max-w-xs space-y-3">
-            {toasts.map(toast => (
-                <Toast key={toast.id} {...toast} onRemove={() => handleRemoveToast(toast.id)} />
+            {toasts.map((toast, index) => (
+                <Toast key={`${toast.id}-${index}`} {...toast} onRemove={() => handleRemoveToast(toast.id)} />
             ))}
             <style>{`
                 @keyframes slide-in-right {

@@ -103,7 +103,7 @@ const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStat
         if (nowPlaying && nowPlaying.songId && nowPlaying.songId !== lastAnnouncedSongIdRef.current && nowPlaying.title !== "Live Stream" && nowPlaying.title !== "Station Data Unavailable") {
             const djInfo = getAvatarInfo('DJ');
             const djMessage: ChatMessage = {
-                id: Date.now(),
+                id: Date.now() + Math.random(),
                 author: 'DJ',
                 text: `🎶 Now Playing: "${nowPlaying.title}" by ${nowPlaying.artist}`,
                 isDJ: true,
@@ -119,7 +119,7 @@ const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStat
     useEffect(() => {
         const botInfo = getAvatarInfo('RoomBot');
         setMessages([{
-            id: Date.now(),
+            id: Date.now() + Math.random(),
             author: 'RoomBot',
             text: `Welcome to the ${genre} room! Feel free to chat and discover new music.`,
             isBot: true,
@@ -137,7 +137,7 @@ const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStat
             setTimeout(() => {
                 setIsTyping(false);
                 setMessages(prev => [...prev, {
-                    id: Date.now(),
+                    id: Date.now() + Math.random(),
                     author: guestName,
                     text: genreBotMessages[Math.floor(Math.random() * genreBotMessages.length)],
                     isBot: true,
@@ -161,7 +161,7 @@ const ChatInterface: React.FC<{ genre: string; stations: Station[]; onSelectStat
         if (input.trim()) {
             const userInfo = getAvatarInfo('You');
             setMessages(prev => [...prev, {
-                id: Date.now(),
+                id: Date.now() + Math.random(),
                 author: 'You',
                 text: input.trim(),
                 initials: userInfo.initials,

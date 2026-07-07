@@ -32,7 +32,7 @@ export const LiveReactions: React.FC = () => {
   }, []);
 
   const handleReact = (emoji: Emoji) => {
-    const newReaction: Reaction = { id: Date.now(), emoji };
+    const newReaction: Reaction = { id: Date.now() + Math.random(), emoji };
     setReactions(prev => [...prev, newReaction]);
     setCounters(prev => ({...prev, [emoji]: prev[emoji] + 1}));
 

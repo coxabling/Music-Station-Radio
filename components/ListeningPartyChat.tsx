@@ -68,7 +68,7 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
         if (nowPlaying && nowPlaying.songId && nowPlaying.songId !== lastAnnouncedSongIdRef.current && nowPlaying.title !== "Live Stream" && nowPlaying.title !== "Station Data Unavailable") {
             const djInfo = getAvatarInfo('DJ');
             const djMessage: ChatMessage = {
-                id: Date.now(),
+                id: Date.now() + Math.random(),
                 author: 'DJ',
                 text: `🎶 Now Playing: "${nowPlaying.title}" by ${nowPlaying.artist}`,
                 isDJ: true,
@@ -83,7 +83,7 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
     useEffect(() => {
         const botInfo = getAvatarInfo('RadioBot');
         setMessages([{
-            id: Date.now(),
+            id: Date.now() + Math.random(),
             author: 'RadioBot',
             text: `Welcome to the Listening Party for ${station.name}!`,
             isBot: true,
@@ -96,7 +96,7 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
             const guestName = 'Guest' + Math.floor(Math.random() * 100);
             const guestInfo = getAvatarInfo(guestName);
             setMessages(prev => [...prev, {
-                id: Date.now(),
+                id: Date.now() + Math.random(),
                 author: guestName,
                 text: botMessages[Math.floor(Math.random() * botMessages.length)],
                 isBot: true,
@@ -121,7 +121,7 @@ export const ListeningPartyChat: React.FC<ListeningPartyChatProps> = ({ station,
             }
 
             setMessages(prev => [...prev, {
-                id: Date.now(),
+                id: Date.now() + Math.random(),
                 author: 'You',
                 text: input.trim(),
                 avatarColor: userInfo.color,
