@@ -20,29 +20,39 @@ const fetchNowPlaying = async (station: Station): Promise<NowPlaying> => {
   if (stationIdMatch && stationIdMatch[1]) {
     const stationId = stationIdMatch[1];
     const targetUrl = `https://music-station.live/api/nowplaying/${stationId}`;
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+    
+    // Fallback list of proxies
+    const proxies = [
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+      `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
+    ];
 
-    try {
-      const response = await fetch(proxyUrl);
-      if (!response.ok) {
-        console.error(`API error for now playing data for ${stationId}:`, response.status, await response.text());
-        return { artist: station.name, title: "Station Data Unavailable", songId: slugify(`${station.name} unavailable`) };
-      }
-      const stationData = await response.json();
-      
-      const song = stationData.now_playing?.song;
+    let lastError: any = null;
+    for (const proxyUrl of proxies) {
+      try {
+        const response = await fetch(proxyUrl);
+        if (!response.ok) {
+          console.warn(`Proxy ${proxyUrl} failed with status:`, response.status);
+          continue;
+        }
+        const stationData = await response.json();
+        
+        const song = stationData.now_playing?.song;
 
-      if (song && song.artist && song.title) {
-        const songId = slugify(`${song.artist} ${song.title}`);
-        return { artist: song.artist, title: song.title, albumArt: song.art, songId };
-      } else {
-        return { artist: station.name, title: "Live Stream", songId: fallbackId };
+        if (song && song.artist && song.title) {
+          const songId = slugify(`${song.artist} ${song.title}`);
+          return { artist: song.artist, title: song.title, albumArt: song.art, songId };
+        } else {
+          return { artist: station.name, title: "Live Stream", songId: fallbackId };
+        }
+      } catch (error) {
+        lastError = error;
+        console.warn(`Proxy ${proxyUrl} fetch error:`, error);
       }
-      
-    } catch (error) {
-      console.error(`Error fetching now playing data for ${stationId}:`, error);
-      return { artist: station.name, title: "Live Stream", songId: fallbackId };
     }
+
+    console.error(`All proxies failed to fetch now playing data for ${stationId}. Last error:`, lastError);
+    return { artist: station.name, title: "Station Data Unavailable", songId: slugify(`${station.name} unavailable`) };
   } else {
     return { artist: station.name, title: "Live Stream", songId: fallbackId };
   }

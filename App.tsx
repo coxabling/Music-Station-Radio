@@ -18,7 +18,6 @@ import { ArtistDashboardView } from './components/ArtistDashboardView';
 import { RightPanel } from './components/RightPanel';
 import { TradingPostView } from './components/TradingPostView';
 import { PredictionMarketView } from './components/PredictionMarketView';
-import { MorphView } from './components/MorphView';
 import { stations as defaultStations, THEMES, ACHIEVEMENTS, INITIAL_QUESTS, CARDS_DB, UserIcon, FireIcon, StarIcon, LockIcon, HeartIcon, BOUNTIES, ShieldCheckIcon, UploadIcon, CheckCircleIcon, XCircleIcon, MusicNoteIcon, CollectionIcon, TrophyIcon, MYSTERY_TRACK } from './constants';
 import type { Station, NowPlaying, ListeningStats, Alarm, ThemeName, SongVote, UnlockedAchievement, AchievementID, ToastData, User, Theme, ActiveView, UserData, MusicSubmission, Bet, CollectorCard, Lounge, UserProfile, AvatarFrame, SkinID, Bounty, Jingle, PlayerSkin, GuestbookEntry, Quest, MarketListing } from './types';
 import { getDominantColor } from './utils/colorExtractor';
@@ -32,11 +31,9 @@ import { BuyNowModal } from './components/BuyNowModal';
 import { DashboardView } from './components/DashboardView';
 import { CollectionModal } from './components/CollectionModal';
 import { GiftPointsModal } from './components/GiftPointsModal';
-import { HypeOverlay } from './components/HypeOverlay';
 import { LoungeModal } from './components/LoungeModal';
 import { ThemeCreatorModal } from './components/ThemeCreatorModal';
 import { WeatherOverlay } from './components/WeatherOverlay';
-import { CoinExplosionOverlay } from './components/CoinExplosionOverlay';
 import { UserProfileModal } from './components/UserProfileModal';
 import { SettingsModal } from './components/SettingsModal';
 import { RequestSongModal } from './components/RequestSongModal';
@@ -72,6 +69,13 @@ export const App: React.FC = () => {
 
   // Default to High Grade Radio on entry
   const highGradeStation = useMemo(() => defaultStations.find(s => s.name === "High Grade Radio") || defaultStations[0], []);
+  const handleInstantPlay = useCallback((station?: Station) => {
+    setHasEnteredApp(true);
+    const target = station || highGradeStation;
+    setCurrentStation(target);
+    setStationForDetail(target);
+    setIsPlaying(true);
+  }, [highGradeStation]);
   const [currentStation, setCurrentStation] = useState<Station | null>(null);
   const [stationForDetail, setStationForDetail] = useState<Station | null>(null);
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
@@ -137,7 +141,6 @@ export const App: React.FC = () => {
   const [isHypeStormActive, setIsHypeStormActive] = useState(false);
   const [stormTimeRemaining, setStormTimeRemaining] = useState(60);
   const [isHypeActive, setIsHypeActive] = useState(false);
-  const [isCoinActive, setIsCoinActive] = useState(false);
   
   const [activeSkin, setActiveSkin] = useState<SkinID>('modern');
   const [unlockedSkins, setUnlockedSkins] = useState<SkinID[]>(['modern']);
@@ -314,7 +317,6 @@ export const App: React.FC = () => {
                 const newCard: CollectorCard = { ...randomCard, id: `card_${Date.now()}`, acquiredAt: new Date().toISOString() };
                 setCollection(prev => [...prev, newCard]);
                 setToasts(t => [...t, { id: Date.now(), title: 'New Collector Card!', message: `You found a ${newCard.name}!`, icon: CollectionIcon, type: 'achievement' }]);
-                setIsCoinActive(true);
             }
         }, 1000);
     } else {
@@ -342,7 +344,6 @@ export const App: React.FC = () => {
     setMarketListings(prev => prev.filter(m => m.id !== listingId));
     
     setToasts(t => [...t, { id: Date.now(), title: 'Card Acquired!', message: `Purchased ${listing.card.name}`, icon: CollectionIcon, type: 'success' }]);
-    setIsCoinActive(true);
   }, [marketListings, stats.points, currentUser]);
 
   const handleListCard = useCallback((cardId: string, price: number) => {
@@ -375,7 +376,6 @@ export const App: React.FC = () => {
           return q;
       }));
       setToasts(t => [...t, { id: Date.now(), title: 'Reward Claimed!', message: `Earned ${quest.reward} pts`, icon: StarIcon, type: 'success' }]);
-      setIsCoinActive(true);
   }, [quests, stats]);
 
   const handlePlaceBet = useCallback((songTitle: string, artist: string, amount: number, odds: number) => {
@@ -957,8 +957,6 @@ export const App: React.FC = () => {
         return <TradingPostView onBack={handleBackToHome} listings={marketListings} onBuy={handleBuyCard} userPoints={stats.points || 0} currentUser={currentUser} />;
       case 'prediction_market':
         return <PredictionMarketView onBack={handleBackToHome} userPoints={stats.points || 0} activeBets={activeBets} onPlaceBet={handlePlaceBet} trendingSongs={Object.values(songVotes)} />;
-      case 'morph':
-        return <MorphView allStations={allStations} favoriteStationUrls={favoriteStationUrls} onBack={handleBackToHome} currentUser={currentUser} />;
       case 'seo_geo':
         if (currentUser?.role !== 'admin') {
           return (
@@ -1001,7 +999,7 @@ export const App: React.FC = () => {
   };
   
   if (!hasEnteredApp) {
-      return <LandingPage onEnter={() => setHasEnteredApp(true)} />;
+      return <LandingPage onEnter={() => setHasEnteredApp(true)} onInstantPlay={handleInstantPlay} />;
   }
 
   const isVideoBg = (url: string | undefined) => url?.endsWith('.mp4') || url?.endsWith('.webm');
@@ -1017,14 +1015,6 @@ export const App: React.FC = () => {
             '--accent-color-b': rgbComponents.b 
         } as React.CSSProperties}
     >
-      <HypeOverlay 
-        isActive={isHypeActive || isHypeStormActive} 
-        isStorm={isHypeStormActive} 
-        onComplete={() => setIsHypeActive(false)} 
-        clickPositions={clickPositions}
-        onRemoveClickPosition={(id) => setClickPositions(prev => prev.filter(p => p.id !== id))}
-      />
-      <CoinExplosionOverlay isActive={isCoinActive} onComplete={() => setIsCoinActive(false)} />
       <WeatherOverlay lat={currentStation?.location?.lat} lng={currentStation?.location?.lng} />
       <ToastContainer toasts={toasts} setToasts={setToasts} />
       
@@ -1079,7 +1069,7 @@ export const App: React.FC = () => {
                          </div>
                   </div>
              )}
-              {currentStation && activeView !== 'morph' && <RadioPlayer station={currentStation} allStations={allStations} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(!isImmersiveMode)} songVotes={songVotes} onVote={handleSongVote} onRateStation={() => {}} userRating={0} onOpenTippingModal={() => {}} onSelectStation={handleSelectStation} onToggleChat={() => setIsChatOpen(!isChatOpen)} onStartRaid={() => {}} raidStatus="idle" raidTarget={null} onHidePlayer={() => setIsPlayerVisible(false)} isVisible={isPlayerVisible} onOpenBuyNow={() => setIsBuyNowModalOpen(true)} isHeaderVisible={isHeaderVisible} onToggleHeader={handleToggleHeader} onHype={handleHype} hypeScore={hypeScore} isPlaying={isPlaying} onPlayPause={setIsPlaying} isDataSaver={isDataSaver} sleepTimerTarget={sleepTimerTarget} userSongVotes={stats.songUserVotes} activeSkin={activeSkin} globalHype={globalHype} isHypeStormActive={isHypeStormActive} hypeCombo={hypeCombo} hypeLogs={hypeLogs} /> }
+              {currentStation && <RadioPlayer station={currentStation} allStations={allStations} onNowPlayingUpdate={handleNowPlayingUpdate} onNextStation={handleNextStation} onPreviousStation={handlePreviousStation} isImmersive={isImmersiveMode} onToggleImmersive={() => setIsImmersiveMode(!isImmersiveMode)} songVotes={songVotes} onVote={handleSongVote} onRateStation={() => {}} userRating={0} onOpenTippingModal={() => {}} onSelectStation={handleSelectStation} onToggleChat={() => setIsChatOpen(!isChatOpen)} onStartRaid={() => {}} raidStatus="idle" raidTarget={null} onHidePlayer={() => setIsPlayerVisible(false)} isVisible={isPlayerVisible} onOpenBuyNow={() => setIsBuyNowModalOpen(true)} isHeaderVisible={isHeaderVisible} onToggleHeader={handleToggleHeader} onHype={handleHype} hypeScore={hypeScore} isPlaying={isPlaying} onPlayPause={setIsPlaying} isDataSaver={isDataSaver} sleepTimerTarget={sleepTimerTarget} userSongVotes={stats.songUserVotes} activeSkin={activeSkin} globalHype={globalHype} isHypeStormActive={isHypeStormActive} hypeCombo={hypeCombo} hypeLogs={hypeLogs} /> }
              {currentStation && <ListeningPartyChat station={currentStation} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} nowPlaying={isHypeStormActive ? MYSTERY_TRACK : nowPlaying} onSuperChat={handleSendSuperChat} userPoints={stats.points || 0} activeFrame={activeFrame} onUserClick={(u) => { setTargetGiftUser(u); setIsGiftModalOpen(true); }} currentUserAvatarUrl={currentUser?.profile?.customAvatarUrl} />}
         </div>
       </div>

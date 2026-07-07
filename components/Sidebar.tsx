@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ActiveView, User } from '../types';
-import { HomeIcon, ExploreIcon, CommunityIcon, StoreIcon, LeaderboardIconSidebar, ChatBubbleIcon, AdminIcon, BriefcaseIcon, MusicNoteIcon, CollectionIcon, MorphIcon, GlobeIcon } from '../constants';
+import { HomeIcon, ExploreIcon, CommunityIcon, StoreIcon, LeaderboardIconSidebar, ChatBubbleIcon, AdminIcon, BriefcaseIcon, MusicNoteIcon, CollectionIcon, GlobeIcon } from '../constants';
 
 interface SidebarProps {
     activeView: ActiveView;
@@ -133,7 +133,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             links: [
                 { id: 'store', label: 'VIP Emporium', icon: <StoreIcon className="w-5 h-5"/>, isActive: activeView === 'store', onClick: () => { setActiveView('store'); if (onCloseMobile) onCloseMobile(); }, desc: "Skins, badge frames, and custom tools" },
                 { id: 'leaderboard', label: 'Broadcaster Standings', icon: <LeaderboardIconSidebar className="w-5 h-5"/>, isActive: activeView === 'leaderboard', onClick: () => { setActiveView('leaderboard'); if (onCloseMobile) onCloseMobile(); }, desc: "Check station and user rankings" },
-                { id: 'morph', label: 'Morph Studio', icon: <MorphIcon className="w-5 h-5"/>, isActive: activeView === 'morph', onClick: () => { setActiveView('morph'); if (onCloseMobile) onCloseMobile(); }, desc: "Tweak audio with pitch & DSP filters" },
                 { id: 'prediction_market', label: 'Vibe Prediction', icon: <TrendingUpIcon className="w-5 h-5" />, isActive: activeView === 'prediction_market', onClick: () => { setActiveView('prediction_market'); if (onCloseMobile) onCloseMobile(); }, desc: "Predict music and rating shifts" },
                 { id: 'trading_post', label: 'Collector Exchange', icon: <ShopIcon className="w-5 h-5" />, isActive: activeView === 'trading_post', onClick: () => { setActiveView('trading_post'); if (onCloseMobile) onCloseMobile(); }, desc: "Trade high-fidelity dynamic vinyl cards" },
             ]
@@ -180,7 +179,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div className="w-full h-px bg-white/10 flex-shrink-0" />
                 
                 <div className="flex flex-col items-center gap-2.5 w-full flex-grow">
-                    <NavButton label="Morph" icon={<MorphIcon className="w-6 h-6"/>} isActive={activeView === 'morph'} onClick={() => setActiveView('morph')} />
                     <NavButton label="Market" icon={<TrendingUpIcon />} isActive={activeView === 'prediction_market'} onClick={() => setActiveView('prediction_market')} />
                     <NavButton label="Trade" icon={<ShopIcon />} isActive={activeView === 'trading_post'} onClick={() => setActiveView('trading_post')} />
                     {currentUser?.role === 'admin' && (

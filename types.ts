@@ -230,7 +230,7 @@ export interface FriendActivity {
     customAvatarUrl?: string;
 }
 
-export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard' | 'help' | 'contact' | 'trading_post' | 'prediction_market' | 'morph' | 'seo_geo';
+export type ActiveView = 'explore' | 'dashboard' | 'community' | 'store' | 'leaderboard' | 'genre_chat' | 'admin' | 'station_manager_dashboard' | 'artist_dashboard' | 'help' | 'contact' | 'trading_post' | 'prediction_market' | 'seo_geo';
 
 export interface Bet {
   id: string;
@@ -403,11 +403,4 @@ export interface CommunityEvent {
     timestamp: string;
     icon: React.FC<{className?: string}>;
     role?: User['role'];
-}
-
-export interface MorphState {
-  stationA: Station | null;
-  stationB: Station | null;
-  balance: number; // 0 (Station A) to 1 (Station B)
-  isMorphing: boolean;
 }

@@ -4,6 +4,7 @@ import { BLOG_POSTS, BlogPost } from '../blogPosts';
 
 interface LandingPageProps {
   onEnter: () => void;
+  onInstantPlay: (station?: typeof stations[0]) => void;
 }
 
 const HighFiIcon = ({className = "h-6 w-6"}) => (
@@ -104,8 +105,10 @@ const NavItem: React.FC<{ icon: React.ReactNode; label: string; href: string; ac
     </a>
 );
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onInstantPlay }) => {
     const backgroundStations = useMemo(() => [...stations].sort(() => 0.5 - Math.random()).slice(0, 16), []);
+    const featuredStations = useMemo(() => stations.slice(0, 3), []);
+    const trendingStations = useMemo(() => stations.slice(3, 6), []);
     const [activeSection, setActiveSection] = useState('hero');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [activePost, setActivePost] = useState<BlogPost | null>(null);
@@ -116,6 +119,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
         if (selectedCategory === 'All') return BLOG_POSTS;
         return BLOG_POSTS.filter(post => post.category === selectedCategory);
     }, [selectedCategory]);
+
+    const recommendations = useMemo(() => {
+        if (!activePost) return [];
+        const candidates = BLOG_POSTS.filter(post => post.id !== activePost.id);
+        return candidates.sort((a, b) => {
+            if (a.category === activePost.category && b.category !== activePost.category) return -1;
+            if (b.category === activePost.category && a.category !== activePost.category) return 1;
+            return 0;
+        }).slice(0, 2);
+    }, [activePost]);
 
     const handleShare = (e: React.MouseEvent, post: BlogPost) => {
         e.stopPropagation();
@@ -215,17 +228,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
                 The ultimate destination for independent broadcasting. Connect with thousands of high-fidelity streams and a global community of music lovers.
              </p>
 
-             <div className="flex flex-col sm:flex-row gap-6 w-full max-w-lg mx-auto">
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-2xl mx-auto">
+                 <button 
+                    onClick={() => onInstantPlay()}
+                    className="bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 text-black font-black text-xl py-5 rounded-2xl hover:brightness-110 transition-all hover:scale-105 hover:shadow-[0_0_50px_rgba(245,158,11,0.5)] flex items-center justify-center gap-3 group relative overflow-hidden"
+                 >
+                     <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                     <span className="relative flex h-3.5 w-3.5 items-center justify-center">
+                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-black opacity-40"></span>
+                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5 fill-current text-black" viewBox="0 0 20 20">
+                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8.006v3.988a1 1 0 001.555.832l3.197-2.005a1 1 0 000-1.664L9.555 7.168z" clipRule="evenodd" />
+                         </svg>
+                     </span>
+                     Listen Now
+                 </button>
                  <button 
                     onClick={onEnter}
-                    className="flex-1 bg-cyan-500 text-black font-black text-xl py-5 rounded-2xl hover:bg-cyan-400 transition-all hover:scale-105 hover:shadow-[0_0_50px_rgba(6,182,212,0.4)] flex items-center justify-center gap-3 group"
+                    className="bg-cyan-500 text-black font-black text-xl py-5 rounded-2xl hover:bg-cyan-400 transition-all hover:scale-105 hover:shadow-[0_0_50px_rgba(6,182,212,0.4)] flex items-center justify-center gap-3 group"
                  >
                      <ExploreIcon className="w-6 h-6 transform group-hover:rotate-12 transition-transform" />
                      Explore Network
                  </button>
                  <button 
                     onClick={onEnter}
-                    className="flex-1 bg-white/5 text-white font-bold text-xl py-5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all backdrop-blur-md flex items-center justify-center gap-3"
+                    className="bg-white/5 text-white font-bold text-xl py-5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all backdrop-blur-md flex items-center justify-center gap-3"
                  >
                      <RocketIcon className="w-6 h-6 text-gray-400" />
                      Enter Platform
@@ -249,17 +275,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
       </header>
 
       {/* NETWORK STRIP */}
-      <section id="signature" className="bg-black py-24 relative z-20 overflow-hidden border-b border-white/5">
-          <div className="container mx-auto px-4 mb-12 flex items-center justify-between">
-              <h3 className="text-xs font-black font-orbitron text-gray-500 tracking-[0.3em] uppercase">Featured Stations</h3>
-              <div className="h-[1px] flex-1 bg-white/10 ml-8"></div>
+      <section id="signature" className="bg-black py-20 relative z-20 overflow-hidden border-b border-white/5 space-y-16">
+          {/* Row 1: Featured Stations */}
+          <div>
+              <div className="container mx-auto px-4 mb-8 flex items-center justify-between">
+                  <h3 className="text-xs font-black font-orbitron text-gray-500 tracking-[0.3em] uppercase">Featured Stations</h3>
+                  <span className="text-[10px] font-mono text-cyan-400 font-black tracking-widest uppercase bg-cyan-500/10 px-2.5 py-0.5 rounded-full">Curator Selections</span>
+                  <div className="h-[1px] flex-1 bg-white/10 ml-8"></div>
+              </div>
+              <div className="flex gap-8 animate-scroll group cursor-grab active:cursor-grabbing hover:pause px-8">
+                  {[...featuredStations, ...featuredStations, ...featuredStations].map((station, index) => (
+                      <div key={`${station.streamUrl}-${index}`} className="flex-shrink-0">
+                          <FeaturedStationCard station={station} index={index} />
+                      </div>
+                  ))}
+              </div>
           </div>
-          <div className="flex gap-8 animate-scroll group cursor-grab active:cursor-grabbing hover:pause px-8">
-              {[...stations, ...stations].map((station, index) => (
-                  <div key={`${station.streamUrl}-${index}`} className="flex-shrink-0">
-                      <FeaturedStationCard station={station} index={index} />
-                  </div>
-              ))}
+
+          {/* Row 2: Trending & Newly Added */}
+          <div>
+              <div className="container mx-auto px-4 mb-8 flex items-center justify-between">
+                  <div className="h-[1px] flex-1 bg-white/10 mr-8"></div>
+                  <span className="text-[10px] font-mono text-purple-400 font-black tracking-widest uppercase bg-purple-500/10 px-2.5 py-0.5 rounded-full mr-8">Live Action</span>
+                  <h3 className="text-xs font-black font-orbitron text-gray-500 tracking-[0.3em] uppercase">Trending Streams &amp; Newly Added</h3>
+              </div>
+              <div className="flex gap-8 animate-scroll-reverse group cursor-grab active:cursor-grabbing hover:pause px-8">
+                  {[...trendingStations, ...trendingStations, ...trendingStations].map((station, index) => (
+                      <div key={`${station.streamUrl}-${index}`} className="flex-shrink-0">
+                          <FeaturedStationCard station={station} index={index} />
+                      </div>
+                  ))}
+              </div>
           </div>
       </section>
 
@@ -501,6 +547,53 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
                              dangerouslySetInnerHTML={{ __html: activePost.content }}
                          />
 
+                         {/* Creator Lead Magnet Card */}
+                         <div className="mt-12 p-8 rounded-2xl bg-gradient-to-br from-cyan-950/40 to-blue-950/40 border border-cyan-500/20 shadow-2xl relative overflow-hidden group text-left">
+                             <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform duration-700"></div>
+                             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                 <div className="max-w-xl">
+                                     <span className="text-[10px] font-black tracking-widest text-cyan-400 uppercase bg-cyan-500/10 px-2.5 py-1 rounded-md">Creator Opportunity</span>
+                                     <h4 className="text-xl font-bold font-orbitron text-white mt-3 mb-2">Claim Your Independent Station Today</h4>
+                                     <p className="text-xs text-gray-400 leading-relaxed font-medium">Ready to broadcast your audio or curations in lossless quality? Establish your presence on our Global Premium Network, receive direct tips, and connect with 50,000+ active music lovers. Try the Director role free for 30 days.</p>
+                                 </div>
+                                 <button 
+                                     onClick={() => { setActivePost(null); onEnter(); }} 
+                                     className="bg-cyan-500 hover:bg-cyan-400 text-black font-black text-xs uppercase tracking-widest px-6 py-4 rounded-xl transition-all whitespace-nowrap self-start md:self-auto hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
+                                 >
+                                     Get Started Now &rarr;
+                                 </button>
+                             </div>
+                         </div>
+
+                         {/* Smart Recommendations */}
+                         {recommendations.length > 0 && (
+                             <div className="mt-12 pt-8 border-t border-white/5 text-left">
+                                 <h4 className="text-xs font-black font-orbitron text-gray-500 tracking-[0.2em] uppercase mb-6 text-gray-400">Related Reading</h4>
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                     {recommendations.map(rec => (
+                                         <div 
+                                             key={rec.id}
+                                             onClick={() => {
+                                                 setActivePost(rec);
+                                                 const modalBody = document.querySelector('.max-h-\\[90vh\\]');
+                                                 if (modalBody) modalBody.scrollTo({ top: 0, behavior: 'smooth' });
+                                             }}
+                                             className="flex gap-4 p-4 rounded-xl bg-white/5 border border-white/5 hover:border-cyan-500/20 cursor-pointer transition-all duration-300 group"
+                                         >
+                                             <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-950">
+                                                 <img src={rec.coverImage} alt={rec.title} referrerPolicy="no-referrer" className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
+                                             </div>
+                                             <div className="flex flex-col justify-center">
+                                                 <span className="text-[9px] font-black tracking-wider text-cyan-400 uppercase mb-1">{rec.category}</span>
+                                                 <h5 className="text-sm font-bold text-white group-hover:text-cyan-400 transition-colors line-clamp-2 leading-tight mb-1">{rec.title}</h5>
+                                                 <span className="text-[10px] text-gray-500 font-medium">{rec.readTime}</span>
+                                             </div>
+                                         </div>
+                                     ))}
+                                 </div>
+                             </div>
+                         )}
+
                          <div className="mt-12 pt-8 border-t border-white/5 flex justify-between items-center">
                              <button
                                  onClick={(e) => handleShare(e, activePost)}
@@ -566,6 +659,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
         }
         .animate-scroll {
             animation: scroll 80s linear infinite;
+        }
+        @keyframes scroll-reverse {
+          from { transform: translateX(-50%); }
+          to { transform: translateX(0); }
+        }
+        .animate-scroll-reverse {
+            animation: scroll-reverse 80s linear infinite;
         }
         .hover\\:pause:hover {
             animation-play-state: paused;

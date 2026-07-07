@@ -35,8 +35,8 @@ export const RoleBadge: React.FC<RoleBadgeProps> = ({ role, className = 'h-4 w-4
     }
 
     return (
-        <div title={title} className="flex-shrink-0">
+        <span title={title} className="inline-flex flex-shrink-0 items-center justify-center">
             <Icon className={`${className} ${color}`} />
-        </div>
+        </span>
     );
 };

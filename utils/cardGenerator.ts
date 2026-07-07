@@ -1,14 +1,40 @@
 import type { NowPlaying, Station } from '../types';
 import { slugify } from './slugify';
 
-// Helper to load an image and handle CORS
-const loadImage = (src: string): Promise<HTMLImageElement> => new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.onload = () => resolve(img);
-    img.onerror = (err) => reject(err);
-    img.src = src;
-});
+// Helper to load an image with proxy fallback and handle CORS
+const loadProxiedImage = (url: string, fallbackUrl?: string): Promise<HTMLImageElement> => {
+    const proxies = [
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+        `https://corsproxy.io/?${encodeURIComponent(url)}`,
+        url
+    ];
+    if (fallbackUrl) {
+        proxies.push(
+            `https://api.allorigins.win/raw?url=${encodeURIComponent(fallbackUrl)}`,
+            `https://corsproxy.io/?${encodeURIComponent(fallbackUrl)}`,
+            fallbackUrl
+        );
+    }
+    
+    return new Promise((resolve, reject) => {
+        let currentIdx = 0;
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        
+        img.onload = () => resolve(img);
+        
+        img.onerror = () => {
+            currentIdx++;
+            if (currentIdx < proxies.length) {
+                img.src = proxies[currentIdx];
+            } else {
+                reject(new Error(`Failed to load image from any proxy for ${url}`));
+            }
+        };
+        
+        img.src = proxies[currentIdx];
+    });
+};
 
 // Helper to wrap text on the canvas
 const wrapText = (context: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) => {
@@ -48,18 +74,25 @@ export const generateSongCard = async (nowPlaying: NowPlaying, station: Station)
     await document.fonts.load('400 24px Poppins');
 
     // --- Image Loading ---
-    const albumArtUrl = `https://corsproxy.io/?${encodeURIComponent(nowPlaying.albumArt || station.coverArt)}`;
+    const rawAlbumArtUrl = nowPlaying.albumArt || station.coverArt;
     const stationUrl = `${window.location.origin}?station=${slugify(station.name)}`;
     const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(stationUrl)}&qzone=1&bgcolor=232323&color=ffffff`;
     
     let albumArtImg, qrCodeImg;
     try {
-        [albumArtImg, qrCodeImg] = await Promise.all([loadImage(albumArtUrl), loadImage(qrCodeApiUrl)]);
+        [albumArtImg, qrCodeImg] = await Promise.all([
+            loadProxiedImage(rawAlbumArtUrl, station.coverArt),
+            loadProxiedImage(qrCodeApiUrl)
+        ]);
     } catch(error) {
         console.error("Failed to load images for card generation:", error);
         // Fallback to a simple card if images fail
-        albumArtImg = await loadImage(station.coverArt);
-        qrCodeImg = await loadImage(qrCodeApiUrl);
+        try {
+            albumArtImg = await loadProxiedImage(station.coverArt);
+            qrCodeImg = await loadProxiedImage(qrCodeApiUrl);
+        } catch (fallbackError) {
+            throw new Error('Could not load card images even with fallback');
+        }
     }
     
 

@@ -328,27 +328,36 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
   }, [songVotes]);
 
   const displayedStations = useMemo(() => {
+    let rawList: Station[] = [];
     if (globalSearchResults) {
-        return globalSearchResults;
-    }
-    if (aiSearchResults) {
+        rawList = globalSearchResults;
+    } else if (aiSearchResults) {
         const urlMap = new Map(allStations.map(s => [s.streamUrl, s]));
         const aiList = aiSearchResults.urls.map(url => urlMap.get(url)).filter((s): s is Station => !!s);
         
-        if (activeTab === 'favorites') return aiList.filter(s => s.isFavorite);
-        return aiList;
+        if (activeTab === 'favorites') rawList = aiList.filter(s => s.isFavorite);
+        else rawList = aiList;
     } else {
         let list = activeTab === 'favorites' ? stations.filter(s => s.isFavorite) : stations;
         if (selectedTag) {
           list = list.filter(s => s.genre.toLowerCase().includes(selectedTag.toLowerCase()));
         }
         
-        return [...list].sort((a, b) => {
+        rawList = [...list].sort((a, b) => {
           if (sortMode === 'rating') return (b.rating || 0) - (a.rating || 0);
           if (sortMode === 'name') return a.name.localeCompare(b.name);
           return 0;
         });
     }
+
+    // Deduplicate by streamUrl to guarantee unique keys and prevent duplicates in UI
+    const seen = new Set<string>();
+    return rawList.filter(s => {
+      if (!s.streamUrl) return false;
+      if (seen.has(s.streamUrl)) return false;
+      seen.add(s.streamUrl);
+      return true;
+    });
   }, [activeTab, stations, allStations, selectedTag, sortMode, aiSearchResults, globalSearchResults]);
 
   const pinnedStations = useMemo(() => {
@@ -557,7 +566,14 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
                     return (
                       <div key={`pinned-${station.streamUrl}`} className="relative group flex flex-col station-card-animate" style={{ animationDelay: `${index * 30}ms`}}>
                         <div className="relative">
-                            <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-xl overflow-hidden transition-all duration-300 focus:outline-none shadow-xl hover:scale-[1.03] ${ currentStation?.streamUrl === station.streamUrl ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/30' : isHighGrade ? 'ring-2 ring-yellow-500/60 shadow-yellow-500/10' : 'ring-1 ring-gray-800 hover:ring-[var(--accent-color)]/50' }`} style={{ aspectRatio: '1 / 1' }} >
+                            <div 
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => onSelectStation(station)} 
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectStation(station); } }}
+                                className={`w-full text-left rounded-xl overflow-hidden transition-all duration-300 focus:outline-none cursor-pointer shadow-xl hover:scale-[1.03] ${ currentStation?.streamUrl === station.streamUrl ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/30' : isHighGrade ? 'ring-2 ring-yellow-500/60 shadow-yellow-500/10' : 'ring-1 ring-gray-800 hover:ring-[var(--accent-color)]/50' }`} 
+                                style={{ aspectRatio: '1 / 1' }} 
+                            >
                                 <img src={station.coverArt} alt={station.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-5 flex flex-col justify-end">
                                     <h3 className="font-bold text-lg text-white truncate mb-2">{station.name}</h3>
@@ -566,7 +582,7 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
                                     </div>
                                 </div>
                                 {isHighGrade && <div className="absolute top-3 left-3 bg-yellow-500 text-black text-[10px] font-black px-2 py-0.5 rounded shadow-lg uppercase">Featured</div>}
-                            </button>
+                            </div>
                             <button onClick={(e) => handleTogglePin(e, station.streamUrl)} className="absolute top-3 right-14 p-2 bg-black/50 backdrop-blur-md rounded-full transition-all hover:scale-110 hover:bg-black/75 shadow-lg text-cyan-400 border border-cyan-500/30" title="Unpin Station"><PinIcon isPinned={true} className="h-5 w-5" /></button>
                             <button 
                                 onClick={(e) => handleShareStation(e, station)} 
@@ -614,7 +630,14 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
                    const cardContent = (
                      <div key={station.streamUrl} className="relative group flex flex-col station-card-animate" style={{ animationDelay: `${index * 30}ms`}}>
                        <div className="relative">
-                           <button onClick={() => onSelectStation(station)} className={`w-full text-left rounded-xl overflow-hidden transition-all duration-300 focus:outline-none shadow-xl hover:scale-[1.03] ${ currentStation?.streamUrl === station.streamUrl ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/30' : isHighGrade ? 'ring-2 ring-yellow-500/60 shadow-yellow-500/10' : 'ring-1 ring-gray-800 hover:ring-[var(--accent-color)]/50' }`} style={{ aspectRatio: '1 / 1' }} >
+                           <div 
+                               role="button"
+                               tabIndex={0}
+                               onClick={() => onSelectStation(station)} 
+                               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectStation(station); } }}
+                               className={`w-full text-left rounded-xl overflow-hidden transition-all duration-300 focus:outline-none cursor-pointer shadow-xl hover:scale-[1.03] ${ currentStation?.streamUrl === station.streamUrl ? 'ring-4 ring-[var(--accent-color)] shadow-[var(--accent-color)]/30' : isHighGrade ? 'ring-2 ring-yellow-500/60 shadow-yellow-500/10' : 'ring-1 ring-gray-800 hover:ring-[var(--accent-color)]/50' }`} 
+                               style={{ aspectRatio: '1 / 1' }} 
+                           >
                                <img src={station.coverArt} alt={station.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-5 flex flex-col justify-end">
                                    <h3 className="font-bold text-lg text-white truncate mb-2">{station.name}</h3>
@@ -623,7 +646,7 @@ export const StationList: React.FC<StationListProps> = ({ stations, allStations,
                                    </div>
                                </div>
                                {isHighGrade && <div className="absolute top-3 left-3 bg-yellow-500 text-black text-[10px] font-black px-2 py-0.5 rounded shadow-lg uppercase">Featured</div>}
-                           </button>
+                           </div>
                            <button onClick={(e) => handleTogglePin(e, station.streamUrl)} className={`absolute top-3 right-14 p-2 bg-black/45 backdrop-blur-md rounded-full transition-all hover:scale-110 hover:bg-black/60 shadow-lg border border-white/5 ${isPinned ? 'opacity-100 text-cyan-400' : 'opacity-0 group-hover:opacity-100 text-white/70'}`} title="Pin Station"><PinIcon isPinned={isPinned} className="h-5 w-5" /></button>
                            <button 
                                onClick={(e) => handleShareStation(e, station)} 

@@ -187,7 +187,23 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // Skip non-GET requests immediately
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   const url = new URL(event.request.url);
+
+  // Skip external API calls, Gemini, Google Maps, or proxies to avoid caching or intercept errors
+  if (url.hostname.includes('googleapis.com') && !url.hostname.includes('fonts')) {
+    return;
+  }
+  if (url.hostname.includes('radio-browser.info') || 
+      url.hostname.includes('corsproxy.io') || 
+      url.hostname.includes('allorigins.win') ||
+      url.pathname.includes('/api/')) {
+    return;
+  }
 
   // 1. Radio Streams interceptor
   if (DEFAULT_STREAMS.includes(event.request.url) || url.pathname.endsWith('.mp3')) {

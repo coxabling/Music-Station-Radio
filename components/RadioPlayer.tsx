@@ -31,6 +31,12 @@ const ChatIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-
 const ShoppingCartIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" /></svg>;
 const CassetteIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="7.5" cy="12" r="2.5" /><circle cx="16.5" cy="12" r="2.5" /><path d="M10 16h4" /></svg>;
 
+const TwitterIcon: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+  </svg>
+);
+
  const FullscreenIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l1.5 1.5m11-1v4m0 0h-4m4-4l-5 5M4 16v4m0 0h4m-4-4l5-5m11 5l-5-5" />
@@ -148,6 +154,25 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
     const songInfo = await fetchNowPlaying(station);
     setNowPlaying(songInfo);
   }, [station, isHypeStormActive]);
+
+  const shareToTwitter = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    const origin = window.location.origin + window.location.pathname;
+    const params = new URLSearchParams();
+    params.set('station', station.streamUrl);
+    if (currentNowPlaying) {
+      params.set('track', currentNowPlaying.title);
+      params.set('artist', currentNowPlaying.artist);
+    }
+    const shareUrl = `${origin}?${params.toString()}`;
+    const text = currentNowPlaying && currentNowPlaying.title !== "Live Stream" && currentNowPlaying.title !== "Station Data Unavailable"
+      ? `Listening to "${currentNowPlaying.title}" by ${currentNowPlaying.artist} on ${station.name || 'Music Station Radio'}! 🎶📻 Tune in:` 
+      : `Tuning in to ${station.name || 'Music Station Radio'}! 🎶📻 Tune in:`;
+    const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
+    window.open(xUrl, '_blank', 'noopener,noreferrer');
+  };
   
   useEffect(() => { onNowPlayingUpdate(currentNowPlaying); }, [currentNowPlaying, onNowPlayingUpdate]);
   
@@ -462,6 +487,14 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
             <button onClick={() => isSong && onVote(currentNowPlaying.songId, 'like')} disabled={!isSong} className={`p-2 rounded-full transition-all duration-200 active:scale-95 ${isSong ? 'hover:bg-white/10' : 'opacity-30 cursor-not-allowed'} ${userVote === 'like' ? 'text-green-400 scale-110 shadow-lg shadow-green-400/50' : activeSkin === 'winamp' ? 'text-[#00ff00]' : 'text-gray-400 hover:text-white'}`} aria-label="Like this song"><ThumbUpIcon className="w-7 h-7" /></button>
             <button onClick={() => onOpenBuyNow()} disabled={!isSong} className={`p-3 rounded-full transition-all duration-200 active:scale-95 ${isSong ? 'hover:bg-white/10' : 'opacity-30 cursor-not-allowed'} ${activeSkin === 'winamp' ? 'text-[#00ff00]' : 'text-gray-400 hover:text-white'}`} aria-label="Buy this song"><ShoppingCartIcon className="w-7 h-7" /></button>
             <button onClick={() => isSong && onVote(currentNowPlaying.songId, 'dislike')} disabled={!isSong} className={`p-2 rounded-full transition-all duration-200 active:scale-95 ${isSong ? 'hover:bg-white/10' : 'opacity-30 cursor-not-allowed'} ${userVote === 'dislike' ? 'text-red-400 scale-110 shadow-lg shadow-red-400/50' : activeSkin === 'winamp' ? 'text-[#00ff00]' : 'text-gray-400 hover:text-white'}`} aria-label="Dislike this song"><ThumbDownIcon className="w-7 h-7" /></button>
+            <button 
+                onClick={(e) => shareToTwitter(e)} 
+                className={`p-2 rounded-full transition-all duration-200 active:scale-95 hover:bg-white/10 text-gray-400 hover:text-cyan-400 ${activeSkin === 'winamp' ? 'text-[#00ff00]' : ''}`} 
+                title="Share to Twitter"
+                aria-label="Share current track and station to Twitter"
+            >
+                <TwitterIcon className="w-7 h-7" />
+            </button>
         </div>
       </div>
       
@@ -505,7 +538,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
         </div>
         
         <div className="w-full max-w-sm mx-auto mt-4">
-            <div className={`grid grid-cols-4 md:grid-cols-8 relative gap-2 ${activeSkin === 'winamp' ? 'bg-[#202020] p-2 border border-[#808080]' : ''}`}>
+            <div className={`grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 relative gap-2 ${activeSkin === 'winamp' ? 'bg-[#202020] p-2 border border-[#808080]' : ''}`}>
                 <ControlButton icon={<InfoIcon/>} label="Info" onClick={() => setIsInfoModalOpen(true)} hasFeature={isSong}/>
                 <ControlButton icon={<EqIcon/>} label="EQ" onClick={() => setIsEqModalOpen(true)}/>
                 <ControlButton icon={<CassetteIcon className="w-6 h-6"/>} label="Vinyl" onClick={() => setIsVinylMode(!isVinylMode)} isActive={isVinylMode}/>
@@ -534,6 +567,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                      />
                  </div>
                 <ControlButton icon={<ShareIcon/>} label="Share" onClick={() => setIsShareModalOpen(true)}/>
+                <ControlButton icon={<TwitterIcon/>} label="Tweet" onClick={() => shareToTwitter()}/>
             </div>
             <div className="flex justify-center mt-2">
                <ControlButton icon={<RocketIcon className="h-5 w-5"/>} label="Raid Network" onClick={() => setIsRaidModalOpen(true)} hasFeature={raidStatus === 'idle'} className="w-full h-10 flex-row" />
@@ -593,6 +627,14 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                     <button onClick={(e) => { e.stopPropagation(); setVolume(volume > 0 ? 0 : 0.75); }} className="text-gray-400 hover:text-white" aria-label={volume > 0 ? "Mute" : "Unmute"}>{volume > 0 ? <VolumeUpIcon /> : <VolumeOffIcon />}</button>
                     <input type="range" min="0" max="1" step="0.05" value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))} className="w-24 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-[var(--accent-color)]" onClick={e => e.stopPropagation()} />
                 </div>
+                  <button 
+                      onClick={(e) => shareToTwitter(e)} 
+                      className="hidden sm:block p-1.5 rounded-full transition-all duration-200 active:scale-90 text-gray-400 hover:text-cyan-400" 
+                      title="Share to Twitter"
+                      aria-label="Share current track and station to Twitter"
+                  >
+                      <TwitterIcon className="w-5 h-5" />
+                  </button>
                 <button onClick={(e) => { e.stopPropagation(); togglePlayPause(); }} className="w-12 h-12 flex items-center justify-center text-white hover:text-[var(--accent-color)] transition-colors" aria-label={isPlaying ? 'Pause' : 'Play'}><div className="w-8 h-8">{isPlaying ? <PauseIcon/> : <PlayIcon/>}</div></button>
                 <button onClick={(e) => { e.stopPropagation(); setIsExpanded(true); }} className="text-gray-400 hover:text-white hidden md:block" aria-label="Expand player"><ChevronUpIcon /></button>
                 <button onClick={(e) => { e.stopPropagation(); onHidePlayer(); }} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-700/50" aria-label="Hide player"><ChevronDownIcon /></button>
