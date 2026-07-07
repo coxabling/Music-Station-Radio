@@ -19,6 +19,12 @@ const AIIcon = ({className = "h-6 w-6"}) => (
     </svg>
 );
 
+const CardCollectorIcon = ({className = "h-6 w-6"}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+    </svg>
+);
+
 const roles = [
     { id: 'listener', title: 'Curator', icon: <UserIcon className="w-8 h-8"/>, desc: "Discover world-class radio and shape the global charts with your votes.", color: "from-cyan-400 to-blue-600" },
     { id: 'artist', title: 'Creator', icon: <MusicNoteIcon className="w-8 h-8"/>, desc: "Submit your rhythms directly to station managers and build your audience.", color: "from-purple-500 to-pink-600" },
@@ -329,6 +335,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onInstantPlay
             align="right"
             color="purple"
             features={['Live Lyric Translation', 'Artist Contextual Intelligence', 'Vibe-Based Discovery']}
+          />
+
+          <FeatureSection 
+            id="feat-cards"
+            title="Holographic Cards"
+            description="Tune in to stations to unlock shiny virtual cards. Experience 3D parallax angles and trade them with peers in the live Trading Post terminal!"
+            icon={<CardCollectorIcon className="w-8 h-8"/>}
+            align="left"
+            color="yellow"
+            features={['Interactive 3D Metallic Shine', 'Live P2P Trading Post Terminal', 'Score & Passive Multiplier Boosts']}
           />
       </section>
 

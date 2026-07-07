@@ -88,3 +88,84 @@ export const playOverloadSynthSound = () => {
         // Fail-safe
     }
 };
+
+export const playCardSound = (rarity: string) => {
+    try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+
+        const now = ctx.currentTime;
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        osc1.connect(gainNode);
+        osc2.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        // Holographic sparkle riser sound
+        let baseFreq = 220;
+        let duration = 0.4;
+        
+        if (rarity === 'legendary') {
+            baseFreq = 330;
+            duration = 0.8;
+            osc1.type = 'triangle';
+            osc2.type = 'sine';
+        } else if (rarity === 'epic') {
+            baseFreq = 290;
+            duration = 0.6;
+            osc1.type = 'triangle';
+            osc2.type = 'sine';
+        } else {
+            baseFreq = 220;
+            duration = 0.35;
+            osc1.type = 'sine';
+            osc2.type = 'sine';
+        }
+
+        osc1.frequency.setValueAtTime(baseFreq, now);
+        osc1.frequency.exponentialRampToValueAtTime(baseFreq * 2.5, now + duration);
+
+        osc2.frequency.setValueAtTime(baseFreq * 1.5, now);
+        osc2.frequency.exponentialRampToValueAtTime(baseFreq * 3.75, now + duration);
+
+        gainNode.gain.setValueAtTime(0.12, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + duration);
+        osc2.stop(now + duration);
+    } catch (e) {
+        // Fail-safe silently
+    }
+};
+
+export const playFlipCardSound = () => {
+    try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        const now = ctx.currentTime;
+        osc.type = 'sine';
+        
+        // Quick high-to-low whoosh sound
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(150, now + 0.15);
+
+        gainNode.gain.setValueAtTime(0.08, now);
+        gainNode.gain.linearRampToValueAtTime(0.001, now + 0.15);
+
+        osc.start(now);
+        osc.stop(now + 0.15);
+    } catch (e) {
+        // Fail-safe
+    }
+};

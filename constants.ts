@@ -193,10 +193,10 @@ export const INITIAL_QUESTS: Quest[] = [
 ];
 
 export const CARDS_DB: Omit<CollectorCard, 'id' | 'acquiredAt'>[] = [
-  { name: 'Golden Vinyl', rarity: 'legendary', image: 'https://picsum.photos/seed/vinyl/100', description: 'The pinnacle of global broadcasting audio quality.' },
-  { name: 'Retro Mic', rarity: 'rare', image: 'https://picsum.photos/seed/mic/100', description: 'Vintage analog captures for timeless rhythms.' },
-  { name: 'Boombox', rarity: 'common', image: 'https://picsum.photos/seed/boombox/100', description: 'The original heartbeat of the Music Station network.' },
-  { name: 'Cyber Speaker', rarity: 'epic', image: 'https://picsum.photos/seed/speaker/100', description: 'Next-gen audio projection for the metaverse.' },
+  { name: 'Golden Vinyl', rarity: 'legendary', image: '/src/assets/images/golden_vinyl_card_1783447200754.jpg', description: 'The pinnacle of global broadcasting audio quality.' },
+  { name: 'Retro Mic', rarity: 'rare', image: '/src/assets/images/retro_mic_card_1783447212452.jpg', description: 'Vintage analog captures for timeless rhythms.' },
+  { name: 'Boombox', rarity: 'common', image: '/src/assets/images/boombox_card_1783447225859.jpg', description: 'The original heartbeat of the Music Station network.' },
+  { name: 'Cyber Speaker', rarity: 'epic', image: '/src/assets/images/cyber_speaker_card_1783447237022.jpg', description: 'Next-gen audio projection for the metaverse.' },
 ];
 
 export const PLAYER_SKINS: PlayerSkin[] = [
