@@ -183,6 +183,47 @@ export const App: React.FC = () => {
       };
   }, [accentColor]);
 
+  // On-Page SEO / GEO Optimization & Schema Injection
+  useEffect(() => {
+    document.title = "Music Station Radio | Global Premium Audio Network";
+    
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.setAttribute('name', 'description');
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute('content', 'Music Station Radio: The ultimate global network for independent broadcasting. Discover high-fidelity streams, exclusive artists, and a vibrant community.');
+
+    let schemaScript = document.getElementById('jsonld-schema');
+    if (!schemaScript) {
+      schemaScript = document.createElement('script');
+      schemaScript.setAttribute('id', 'jsonld-schema');
+      schemaScript.setAttribute('type', 'application/ld+json');
+      document.head.appendChild(schemaScript);
+    }
+    schemaScript.innerHTML = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "RadioStation",
+      "name": "Music Station Radio",
+      "url": "https://musicstationradio.com/",
+      "logo": "https://storage.googleapis.com/aistudio-hosting/public-assets/music-station-radio-social-card.png",
+      "description": "Music Station Radio: The ultimate global network for independent broadcasting. Discover high-fidelity streams, exclusive artists, and a vibrant community.",
+      "email": "namibianradio@gmail.com",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Windhoek",
+        "addressRegion": "Khomas",
+        "addressCountry": "NA"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": "-22.5609",
+        "longitude": "17.0836"
+      }
+    });
+  }, []);
+
   // Initial Data Loading
   useEffect(() => {
     const initStations = async () => {
@@ -925,7 +966,6 @@ export const App: React.FC = () => {
             case 'Space': e.preventDefault(); setIsPlaying(prev => !prev); break;
             case 'KeyF': if (currentStation) handleToggleFavorite(currentStation); break;
             case 'ArrowRight': handleNextStation(); break;
-            case 'ArrowLeft': handlePreviousStation(); break;
             case 'ArrowLeft': handlePreviousStation(); break;
             case 'Escape': setIsSettingsModalOpen(false); setStationForDetail(null); setViewingProfile(null); setIsEditModalOpen(false); break;
         }

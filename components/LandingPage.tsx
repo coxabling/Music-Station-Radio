@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { stations, TrophyIcon, MusicNoteIcon, BriefcaseIcon, UserIcon, ChatBubbleIcon, RocketIcon, StarIcon, ExploreIcon, UploadIcon, ClockIcon, DeviceIcon, HomeIcon, UserGroupIcon } from '../constants';
 import { BLOG_POSTS, BlogPost } from '../blogPosts';
 
@@ -59,14 +59,15 @@ const FeatureSection: React.FC<{
     align?: 'left' | 'right';
     features: string[];
     color: string;
-}> = ({ id, title, description, icon, align = 'left', features, color }) => (
+    demoNode?: React.ReactNode;
+}> = ({ id, title, description, icon, align = 'left', features, color, demoNode }) => (
     <div id={id} className="py-24 container mx-auto px-4">
         <div className={`flex flex-col lg:flex-row items-center gap-16 ${align === 'right' ? 'lg:flex-row-reverse' : ''}`}>
-            <div className="flex-1 space-y-8">
+            <div className="flex-1 space-y-8 text-left">
                 <div className={`inline-flex p-4 rounded-2xl bg-${color}-500/10 text-${color}-400 border border-${color}-500/20 shadow-xl shadow-${color}-900/10 animate-pulse`}>
                     {icon}
                 </div>
-                <h2 className="text-4xl md:text-6xl font-black font-orbitron leading-none tracking-tighter text-white">
+                <h2 className="text-4xl md:text-6xl font-black font-orbitron leading-none tracking-tighter text-white uppercase">
                     {title}
                 </h2>
                 <p className="text-xl text-gray-400 leading-relaxed font-medium">
@@ -81,19 +82,25 @@ const FeatureSection: React.FC<{
                     ))}
                 </ul>
             </div>
-            <div className="flex-1 w-full perspective-1000">
-                 <div className={`relative aspect-video rounded-3xl overflow-hidden border border-white/10 bg-black shadow-2xl shadow-${color}-900/20 group transform transition-transform duration-700 hover:rotate-y-6 hover:rotate-x-2`}>
-                    <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-black opacity-80"></div>
-                    <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-${color}-500/10 rounded-full blur-[100px] group-hover:scale-150 transition-transform duration-1000`}></div>
-                    <div className="relative z-10 h-full flex items-center justify-center p-12">
-                         <div className="text-center space-y-4">
-                             <div className={`text-6xl font-black text-${color}-500/10 group-hover:text-${color}-500/30 transition-all duration-700 font-orbitron select-none scale-150`}>
-                                {title.split(' ')[0]}
+            <div className="flex-1 w-full">
+                 {demoNode ? (
+                     demoNode
+                 ) : (
+                     <div className="perspective-1000">
+                          <div className={`relative aspect-video rounded-3xl overflow-hidden border border-white/10 bg-black shadow-2xl shadow-${color}-900/20 group transform transition-transform duration-700 hover:rotate-y-6 hover:rotate-x-2`}>
+                             <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-black opacity-80"></div>
+                             <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-${color}-500/10 rounded-full blur-[100px] group-hover:scale-150 transition-transform duration-1000`}></div>
+                             <div className="relative z-10 h-full flex items-center justify-center p-12">
+                                  <div className="text-center space-y-4">
+                                      <div className={`text-6xl font-black text-${color}-500/10 group-hover:text-${color}-500/30 transition-all duration-700 font-orbitron select-none scale-150`}>
+                                         {title.split(' ')[0]}
+                                      </div>
+                                      <div className="h-0.5 w-24 bg-white/10 mx-auto group-hover:w-full transition-all duration-700"></div>
+                                  </div>
                              </div>
-                             <div className="h-0.5 w-24 bg-white/10 mx-auto group-hover:w-full transition-all duration-700"></div>
-                         </div>
-                    </div>
-                 </div>
+                          </div>
+                     </div>
+                 )}
             </div>
         </div>
     </div>
@@ -120,6 +127,75 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onInstantPlay
     const [activePost, setActivePost] = useState<BlogPost | null>(null);
     const [visibleCount, setVisibleCount] = useState(3);
     const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
+
+    // Global Quick Play & Instant Stream State
+    const [quickPlayStation, setQuickPlayStation] = useState<typeof stations[0] | null>(null);
+    const [isQuickPlaying, setIsQuickPlaying] = useState(false);
+    const [quickVolume, setQuickVolume] = useState(0.8);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    // Global Search & Vibe-Based Discovery State
+    const [landingSearch, setLandingSearch] = useState('');
+    const [selectedVibe, setSelectedVibe] = useState('All');
+
+    // Interactive Showcase Demo States
+    const [isPlayingHiFiDemo, setIsPlayingHiFiDemo] = useState(false);
+    const [demoLyricLang, setDemoLyricLang] = useState<'original' | 'english'>('original');
+    const [demoGeminiStatus, setDemoGeminiStatus] = useState<'idle' | 'asking' | 'done'>('idle');
+    const [demoGeminiResponse, setDemoGeminiResponse] = useState('');
+    const [cardTilt, setCardTilt] = useState({ x: 0, y: 0 });
+
+    // Manage local quick play audio element
+    useEffect(() => {
+        if (quickPlayStation && isQuickPlaying) {
+            if (!audioRef.current) {
+                audioRef.current = new Audio(quickPlayStation.streamUrl);
+            } else if (audioRef.current.src !== quickPlayStation.streamUrl) {
+                audioRef.current.src = quickPlayStation.streamUrl;
+            }
+            audioRef.current.volume = quickVolume;
+            audioRef.current.play().catch(err => {
+                console.warn("Audio play failed on landing page (due to browser autoplay policies)", err);
+                setIsQuickPlaying(false);
+            });
+        } else {
+            if (audioRef.current) {
+                audioRef.current.pause();
+            }
+        }
+    }, [quickPlayStation, isQuickPlaying]);
+
+    // Volume syncing
+    useEffect(() => {
+        if (audioRef.current) {
+            audioRef.current.volume = quickVolume;
+        }
+    }, [quickVolume]);
+
+    // Audio cleanup
+    useEffect(() => {
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+        };
+    }, []);
+
+    const handleQuickEnter = () => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
+        setIsQuickPlaying(false);
+        onInstantPlay(quickPlayStation || stations[0]);
+    };
+
+    const triggerQuickPlay = (station?: typeof stations[0]) => {
+        const target = station || stations[0];
+        setQuickPlayStation(target);
+        setIsQuickPlaying(true);
+    };
 
     const filteredPosts = useMemo(() => {
         if (selectedCategory === 'All') return BLOG_POSTS;
@@ -234,9 +310,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onInstantPlay
                 The ultimate destination for independent broadcasting. Connect with thousands of high-fidelity streams and a global community of music lovers.
              </p>
 
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-2xl mx-auto">
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-2xl mx-auto mb-10">
                  <button 
-                    onClick={() => onInstantPlay()}
+                    onClick={() => triggerQuickPlay()}
                     className="bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 text-black font-black text-xl py-5 rounded-2xl hover:brightness-110 transition-all hover:scale-105 hover:shadow-[0_0_50px_rgba(245,158,11,0.5)] flex items-center justify-center gap-3 group relative overflow-hidden"
                  >
                      <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></span>
@@ -263,6 +339,101 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onInstantPlay
                      Enter Platform
                  </button>
              </div>
+
+             {/* GLASSMORPHIC QUICK PLAY STREAM DOCK */}
+             {quickPlayStation && (
+                 <div className="w-full max-w-2xl bg-black/60 backdrop-blur-3xl border border-white/10 rounded-3xl p-6 shadow-2xl shadow-cyan-950/20 text-left animate-fade-in-up space-y-6 relative overflow-hidden group">
+                     {/* Dynamic neon ambient glow */}
+                     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 via-cyan-500 to-purple-600 animate-pulse"></div>
+                     <div className="absolute -top-24 -left-24 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                     <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                         {/* Station details */}
+                         <div className="flex items-center gap-4">
+                             <div className="relative w-16 h-16 rounded-xl overflow-hidden shadow-lg border border-white/10 bg-gray-900">
+                                 <img src={quickPlayStation.coverArt} alt={quickPlayStation.name} className={`w-full h-full object-cover ${isQuickPlaying ? 'animate-[spin_10s_linear_infinite]' : ''}`} />
+                                 {isQuickPlaying && (
+                                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                         <span className="flex gap-0.5 items-end h-4">
+                                             <span className="w-0.5 h-2 bg-cyan-400 animate-[pulse_0.8s_ease-in-out_infinite_alternate]"></span>
+                                             <span className="w-0.5 h-4 bg-cyan-400 animate-[pulse_0.6s_ease-in-out_infinite_alternate_0.2s]"></span>
+                                             <span className="w-0.5 h-3 bg-cyan-400 animate-[pulse_0.7s_ease-in-out_infinite_alternate_0.4s]"></span>
+                                         </span>
+                                     </div>
+                                 )}
+                             </div>
+                             <div>
+                                 <div className="flex items-center gap-2">
+                                     <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md">{quickPlayStation.genre.split(',')[0]}</span>
+                                     <span className="text-[9px] font-mono text-gray-500 font-bold">192KBPS AAC</span>
+                                 </div>
+                                 <h4 className="text-xl font-bold font-orbitron text-white mt-1 leading-tight">{quickPlayStation.name}</h4>
+                                 <p className="text-xs text-gray-400 line-clamp-1 mt-0.5 font-medium">{quickPlayStation.description}</p>
+                             </div>
+                         </div>
+
+                         {/* Play & Vol controls */}
+                         <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
+                             {/* Vol slider */}
+                             <div className="flex items-center gap-2 bg-white/5 border border-white/5 px-3 py-2 rounded-xl">
+                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M12 18.75V5.25L8.75 8.5H6a2 2 0 00-2 2v3a2 2 0 002 2h2.75L12 18.75z" />
+                                 </svg>
+                                 <input 
+                                     type="range" 
+                                     min="0" 
+                                     max="1" 
+                                     step="0.05" 
+                                     value={quickVolume} 
+                                     onChange={(e) => setQuickVolume(parseFloat(e.target.value))} 
+                                     className="w-16 accent-cyan-400 h-1 bg-gray-700 rounded-lg cursor-pointer"
+                                 />
+                             </div>
+
+                             {/* Play toggle */}
+                             <button 
+                                 onClick={() => setIsQuickPlaying(!isQuickPlaying)}
+                                 className={`p-4 rounded-full transition-all hover:scale-105 flex items-center justify-center shadow-lg ${isQuickPlaying ? 'bg-purple-600 text-white shadow-purple-900/30' : 'bg-cyan-500 text-black shadow-cyan-900/30'}`}
+                             >
+                                 {isQuickPlaying ? (
+                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                     </svg>
+                                 ) : (
+                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 fill-current" viewBox="0 0 20 20">
+                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8.006v3.988a1 1 0 001.555.832l3.197-2.005a1 1 0 000-1.664L9.555 7.168z" clipRule="evenodd" />
+                                     </svg>
+                                 )}
+                             </button>
+                         </div>
+                     </div>
+
+                     {/* Handover & select grid */}
+                     <div className="flex flex-col sm:flex-row items-center justify-between border-t border-white/5 pt-4 gap-4">
+                         {/* Mini grid of stations */}
+                         <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto scrollbar-none py-1">
+                             {stations.slice(0, 4).map((st) => (
+                                 <button 
+                                     key={st.streamUrl}
+                                     onClick={() => triggerQuickPlay(st)}
+                                     className={`flex-shrink-0 text-[10px] font-black uppercase px-3 py-1.5 rounded-lg border transition-all ${quickPlayStation.streamUrl === st.streamUrl ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.15)]' : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10'}`}
+                                 >
+                                     {st.name}
+                                 </button>
+                             ))}
+                         </div>
+
+                         {/* Handover action */}
+                         <button 
+                             onClick={handleQuickEnter}
+                             className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-black text-xs uppercase tracking-widest px-5 py-3 rounded-xl transition-all hover:brightness-110 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] flex items-center justify-center gap-2 shrink-0 group"
+                         >
+                             <span>Enter Full Experience</span>
+                             <span className="transform group-hover:translate-x-1 transition-transform">&rarr;</span>
+                         </button>
+                     </div>
+                 </div>
+             )}
         </div>
 
         {/* Status Ticker */}
@@ -280,38 +451,166 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onInstantPlay
         </div>
       </header>
 
-      {/* NETWORK STRIP */}
-      <section id="signature" className="bg-black py-20 relative z-20 overflow-hidden border-b border-white/5 space-y-16">
-          {/* Row 1: Featured Stations */}
-          <div>
-              <div className="container mx-auto px-4 mb-8 flex items-center justify-between">
-                  <h3 className="text-xs font-black font-orbitron text-gray-500 tracking-[0.3em] uppercase">Featured Stations</h3>
-                  <span className="text-[10px] font-mono text-cyan-400 font-black tracking-widest uppercase bg-cyan-500/10 px-2.5 py-0.5 rounded-full">Curator Selections</span>
-                  <div className="h-[1px] flex-1 bg-white/10 ml-8"></div>
+      {/* LIVE BROADCAST HUB */}
+      <section id="signature" className="bg-black py-24 relative z-20 border-b border-white/5">
+          <div className="container mx-auto max-w-6xl px-4">
+              <div className="text-center mb-16">
+                  <h2 className="text-4xl md:text-6xl font-black font-orbitron mb-4 tracking-tighter uppercase text-white">Live Broadcast Hub</h2>
+                  <p className="text-gray-400 max-w-xl mx-auto text-sm font-medium">Explore the high-fidelity premium channels currently active on the Music Station Radio Network.</p>
               </div>
-              <div className="flex gap-8 animate-scroll group cursor-grab active:cursor-grabbing hover:pause px-8">
-                  {[...featuredStations, ...featuredStations, ...featuredStations].map((station, index) => (
-                      <div key={`${station.streamUrl}-${index}`} className="flex-shrink-0">
-                          <FeaturedStationCard station={station} index={index} />
-                      </div>
-                  ))}
-              </div>
-          </div>
 
-          {/* Row 2: Trending & Newly Added */}
-          <div>
-              <div className="container mx-auto px-4 mb-8 flex items-center justify-between">
-                  <div className="h-[1px] flex-1 bg-white/10 mr-8"></div>
-                  <span className="text-[10px] font-mono text-purple-400 font-black tracking-widest uppercase bg-purple-500/10 px-2.5 py-0.5 rounded-full mr-8">Live Action</span>
-                  <h3 className="text-xs font-black font-orbitron text-gray-500 tracking-[0.3em] uppercase">Trending Streams &amp; Newly Added</h3>
+              {/* FILTER BAR & SEARCH */}
+              <div className="flex flex-col lg:flex-row items-center justify-between gap-6 mb-12 bg-gray-950/40 border border-white/5 rounded-3xl p-6 backdrop-blur-md">
+                  {/* Vibe Filter Pills */}
+                  <div className="flex flex-wrap gap-2 w-full lg:w-auto">
+                      {['All', 'Chill ☕', 'Energetic ⚡', 'Focus 🧠', 'Party 🎉', 'Spiritual 🌟'].map((vibe) => {
+                          const vibeKey = vibe.split(' ')[0];
+                          const isActive = selectedVibe === vibeKey;
+                          return (
+                              <button
+                                  key={vibe}
+                                  onClick={() => setSelectedVibe(vibeKey)}
+                                  className={`px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border ${
+                                      isActive
+                                          ? 'bg-cyan-500 text-black border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.3)]'
+                                          : 'bg-white/5 text-gray-400 border-white/5 hover:border-white/10 hover:text-white'
+                                  }`}
+                              >
+                                  {vibe}
+                              </button>
+                          );
+                      })}
+                  </div>
+
+                  {/* Global Search Bar */}
+                  <div className="relative w-full lg:w-80">
+                      <input
+                          type="text"
+                          placeholder="Search stations, genres..."
+                          value={landingSearch}
+                          onChange={(e) => setLandingSearch(e.target.value)}
+                          className="w-full px-5 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-xs font-bold uppercase tracking-wider focus:outline-none focus:border-cyan-500 transition-all focus:ring-1 focus:ring-cyan-500 font-medium"
+                      />
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 absolute right-4 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                  </div>
               </div>
-              <div className="flex gap-8 animate-scroll-reverse group cursor-grab active:cursor-grabbing hover:pause px-8">
-                  {[...trendingStations, ...trendingStations, ...trendingStations].map((station, index) => (
-                      <div key={`${station.streamUrl}-${index}`} className="flex-shrink-0">
-                          <FeaturedStationCard station={station} index={index} />
+
+              {/* GRID OF MATCHING STATIONS */}
+              {(() => {
+                  const getStationVibes = (stName: string) => {
+                      switch(stName) {
+                          case 'High Grade Radio': return ['Energetic', 'Focus'];
+                          case 'CRW Radio': return ['Chill', 'Focus', 'Spiritual'];
+                          case 'Nam Radio': return ['Chill', 'Energetic', 'Spiritual'];
+                          case 'Pamtengo Radio': return ['Chill', 'Spiritual'];
+                          case 'Power Ace Radio': return ['Energetic', 'Party'];
+                          case 'Global Groove Radio': return ['Focus', 'Party'];
+                          default: return ['Chill'];
+                      }
+                  };
+
+                  const matchingStations = stations.filter(st => {
+                      const matchesSearch = st.name.toLowerCase().includes(landingSearch.toLowerCase()) || 
+                                            st.genre.toLowerCase().includes(landingSearch.toLowerCase()) ||
+                                            st.description.toLowerCase().includes(landingSearch.toLowerCase());
+                      const matchesVibe = selectedVibe === 'All' || getStationVibes(st.name).includes(selectedVibe);
+                      return matchesSearch && matchesVibe;
+                  });
+
+                  if (matchingStations.length === 0) {
+                      return (
+                          <div className="text-center py-20 border border-dashed border-white/5 rounded-3xl bg-gray-900/10">
+                              <p className="text-gray-500 font-medium text-sm">No live stations found matching your search parameters.</p>
+                          </div>
+                      );
+                  }
+
+                  return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                          {matchingStations.map((st, index) => {
+                              const isCurrentQuick = quickPlayStation?.streamUrl === st.streamUrl;
+                              return (
+                                  <div 
+                                      key={st.streamUrl}
+                                      className={`group relative p-6 bg-gray-900/30 backdrop-blur-xl border rounded-3xl transition-all duration-300 hover:scale-[1.02] flex flex-col justify-between ${isCurrentQuick && isQuickPlaying ? 'border-cyan-500/50 shadow-[0_0_30px_rgba(6,182,212,0.1)]' : 'border-white/5 hover:border-white/10'}`}
+                                  >
+                                      {/* Station Art & Overlay */}
+                                      <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-gray-950 mb-4 border border-white/5">
+                                          <img src={st.coverArt} alt={st.name} className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105" />
+                                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                                          
+                                          {/* Interactive hover overlay */}
+                                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                              <button 
+                                                  onClick={() => {
+                                                      setQuickPlayStation(st);
+                                                      setIsQuickPlaying(isCurrentQuick ? !isQuickPlaying : true);
+                                                  }}
+                                                  className="p-4 bg-cyan-500 hover:bg-cyan-400 text-black rounded-full shadow-lg transform scale-90 group-hover:scale-100 transition-all hover:scale-105"
+                                              >
+                                                  {isCurrentQuick && isQuickPlaying ? (
+                                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                                                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                      </svg>
+                                                  ) : (
+                                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 fill-current" viewBox="0 0 20 20">
+                                                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8.006v3.988a1 1 0 001.555.832l3.197-2.005a1 1 0 000-1.664L9.555 7.168z" clipRule="evenodd" />
+                                                      </svg>
+                                                  )}
+                                              </button>
+                                          </div>
+
+                                          {/* Listener badge */}
+                                          <span className="absolute top-4 left-4 bg-black/60 backdrop-blur-md border border-white/10 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-md flex items-center gap-1.5 tracking-wider">
+                                              <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                                              {120 + index * 42} Listening
+                                          </span>
+                                      </div>
+
+                                      {/* Info */}
+                                      <div>
+                                          <div className="flex items-center gap-2 mb-2">
+                                              <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md">{st.genre.split(',')[0]}</span>
+                                              <span className="text-[9px] font-mono text-gray-500 font-bold">192KBPS AAC</span>
+                                          </div>
+                                          <h4 className="text-xl font-bold font-orbitron text-white leading-tight group-hover:text-cyan-400 transition-colors">{st.name}</h4>
+                                          <p className="text-xs text-gray-400 mt-2 line-clamp-2 leading-relaxed font-medium">{st.description}</p>
+                                      </div>
+
+                                      {/* Action buttons */}
+                                      <div className="flex gap-3 mt-6 border-t border-white/5 pt-4">
+                                          <button 
+                                              onClick={() => {
+                                                  setQuickPlayStation(st);
+                                                  setIsQuickPlaying(isCurrentQuick ? !isQuickPlaying : true);
+                                              }}
+                                              className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${isCurrentQuick && isQuickPlaying ? 'bg-purple-600 text-white border-purple-600' : 'bg-white/5 text-cyan-400 border-white/5 hover:bg-cyan-500/10'}`}
+                                          >
+                                              {isCurrentQuick && isQuickPlaying ? 'Pause Stream' : 'Instant Stream'}
+                                          </button>
+                                          <button 
+                                              onClick={() => {
+                                                  if (audioRef.current) {
+                                                      audioRef.current.pause();
+                                                      audioRef.current = null;
+                                                  }
+                                                  setIsQuickPlaying(false);
+                                                  onInstantPlay(st);
+                                              }}
+                                              className="px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] font-black"
+                                              title="Enter Immersive Mode"
+                                          >
+                                              Enter App &rarr;
+                                          </button>
+                                      </div>
+                                  </div>
+                              );
+                          })}
                       </div>
-                  ))}
-              </div>
+                  );
+              })()}
           </div>
       </section>
 
@@ -325,6 +624,67 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onInstantPlay
             align="left"
             color="cyan"
             features={[' Lossless Audio Support', 'Interactive 3D Visualizer', 'Picture-in-Picture Mode']}
+            demoNode={
+                <div className="w-full max-w-lg mx-auto bg-gray-950 border border-cyan-500/20 rounded-3xl p-6 shadow-2xl shadow-cyan-900/10 text-left relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-bl-full pointer-events-none"></div>
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-12 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-xl flex items-center justify-center font-black font-orbitron text-lg shadow-inner">
+                            HiFi
+                        </div>
+                        <div>
+                            <h4 className="text-white font-bold font-orbitron tracking-tight text-lg">Interactive 3D Visualizer</h4>
+                            <p className="text-gray-500 text-xs font-medium">Click play to test-drive our WebGL frequency visualizer</p>
+                        </div>
+                    </div>
+
+                    {/* Animated visualizer bars */}
+                    <div className="bg-black/80 border border-white/5 rounded-2xl p-6 aspect-video flex flex-col justify-between relative overflow-hidden">
+                        <div className="absolute top-4 left-4 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                            <span className="text-[10px] font-mono font-bold tracking-widest text-cyan-400">SPECTRUM_ANALYSIS_OK</span>
+                        </div>
+
+                        {/* Frequency lines */}
+                        <div className="flex items-end justify-center gap-1.5 h-32 mt-4">
+                            {[24, 45, 68, 35, 82, 53, 90, 71, 58, 32, 60, 48, 85, 95, 62, 38, 50, 28].map((val, i) => (
+                                <div 
+                                    key={i} 
+                                    style={{
+                                        height: isPlayingHiFiDemo ? `${val}%` : '6px',
+                                        transition: 'height 0.15s ease-in-out',
+                                        animationDelay: `${i * 0.05}s`
+                                    }}
+                                    className={`w-1.5 rounded-full bg-gradient-to-t from-cyan-600 via-cyan-400 to-white shadow-[0_0_8px_rgba(6,182,212,0.4)] ${isPlayingHiFiDemo ? 'animate-[pulse_0.7s_ease-in-out_infinite_alternate]' : ''}`}
+                                />
+                            ))}
+                        </div>
+
+                        <div className="flex items-center justify-between border-t border-white/5 pt-4">
+                            <span className="text-[9px] font-mono text-gray-500 font-bold uppercase tracking-wider">Codec: Lossless FLAC 1411kbps</span>
+                            <button 
+                                onClick={() => setIsPlayingHiFiDemo(!isPlayingHiFiDemo)}
+                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 border ${isPlayingHiFiDemo ? 'bg-cyan-500 text-black border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'bg-white/5 text-cyan-400 border-cyan-500/20 hover:bg-cyan-500/10'}`}
+                            >
+                                {isPlayingHiFiDemo ? (
+                                    <>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                        </svg>
+                                        <span>Pause Demo</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 fill-current" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8.006v3.988a1 1 0 001.555.832l3.197-2.005a1 1 0 000-1.664L9.555 7.168z" clipRule="evenodd" />
+                                        </svg>
+                                        <span>Animate spectrum</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
           />
           
           <FeatureSection 
@@ -335,6 +695,95 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onInstantPlay
             align="right"
             color="purple"
             features={['Live Lyric Translation', 'Artist Contextual Intelligence', 'Vibe-Based Discovery']}
+            demoNode={
+                <div className="w-full max-w-lg mx-auto bg-gray-950 border border-purple-500/20 rounded-3xl p-6 shadow-2xl shadow-purple-900/10 text-left relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-bl-full pointer-events-none"></div>
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-12 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-xl flex items-center justify-center font-black font-orbitron text-lg shadow-inner">
+                            AI
+                        </div>
+                        <div>
+                            <h4 className="text-white font-bold font-orbitron tracking-tight text-lg">Live Translation & Curation</h4>
+                            <p className="text-gray-500 text-xs font-medium">Experience real-time stream translation and contextual analysis</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        {/* Lyric Display Glass Card */}
+                        <div className="bg-black/80 border border-white/5 rounded-2xl p-5 relative">
+                            <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-4">
+                                <span className="text-[10px] font-mono font-bold tracking-widest text-purple-400 uppercase">Live Translating Feed</span>
+                                <div className="flex bg-white/5 p-1 rounded-lg border border-white/5">
+                                    <button 
+                                        onClick={() => setDemoLyricLang('original')}
+                                        className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider transition-all ${demoLyricLang === 'original' ? 'bg-purple-600 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                                    >
+                                        Original
+                                    </button>
+                                    <button 
+                                        onClick={() => setDemoLyricLang('english')}
+                                        className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider transition-all ${demoLyricLang === 'english' ? 'bg-purple-600 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                                    >
+                                        English
+                                    </button>
+                                </div>
+                            </div>
+
+                            <p className="font-orbitron font-bold text-white text-sm tracking-tight leading-relaxed transition-all">
+                                {demoLyricLang === 'original' ? '♪ Emancipate yourselves from mental slavery ♪' : '♪ Free yourselves from the chains of mental slavery ♪'}
+                            </p>
+                            <p className="font-orbitron text-gray-500 text-xs mt-1 leading-relaxed transition-all">
+                                {demoLyricLang === 'original' ? '♪ None but ourselves can free our minds ♪' : '♪ Only we ourselves are capable of freeing our minds ♪'}
+                            </p>
+                        </div>
+
+                        {/* Ask Gemini Context box */}
+                        <div className="bg-black/40 border border-white/5 rounded-2xl p-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="text-[9px] font-mono text-gray-500 font-bold uppercase tracking-wider">Ask Gemini contextual intelligence</span>
+                                <button 
+                                    onClick={() => {
+                                        if (demoGeminiStatus === 'idle') {
+                                            setDemoGeminiStatus('asking');
+                                            setTimeout(() => {
+                                                setDemoGeminiStatus('done');
+                                                setDemoGeminiResponse("This legendary lyric comes from 'Redemption Song' by Bob Marley (1980). It was inspired by a 1937 speech given by Pan-Africanist Marcus Garvey in Nova Scotia, urging spiritual independence.");
+                                            }, 1500);
+                                        } else {
+                                            setDemoGeminiStatus('idle');
+                                            setDemoGeminiResponse('');
+                                        }
+                                    }}
+                                    className="px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
+                                >
+                                    {demoGeminiStatus === 'idle' ? 'Analyze Track' : 'Reset AI'}
+                                </button>
+                            </div>
+
+                            {demoGeminiStatus === 'asking' && (
+                                <div className="flex items-center gap-2 py-2">
+                                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce"></span>
+                                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                                    <span className="text-[10px] font-mono text-gray-500 font-bold uppercase tracking-wider ml-1">Gemini is analyzing...</span>
+                                </div>
+                            )}
+
+                            {demoGeminiStatus === 'done' && (
+                                <p className="text-xs text-gray-300 leading-relaxed font-medium animate-fade-in-up">
+                                    {demoGeminiResponse}
+                                </p>
+                            )}
+
+                            {demoGeminiStatus === 'idle' && (
+                                <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                                    Click analyze above to query Gemini about the active track's deep cultural and historical origins.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            }
           />
 
           <FeatureSection 
@@ -345,6 +794,57 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onInstantPlay
             align="left"
             color="yellow"
             features={['Interactive 3D Metallic Shine', 'Live P2P Trading Post Terminal', 'Score & Passive Multiplier Boosts']}
+            demoNode={
+                <div className="w-full max-w-lg mx-auto bg-transparent perspective-1000">
+                    <div 
+                        onMouseMove={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const x = (e.clientX - rect.left) / rect.width - 0.5; // -0.5 to 0.5
+                            const y = (e.clientY - rect.top) / rect.height - 0.5; // -0.5 to 0.5
+                            setCardTilt({ x: x * 30, y: -y * 30 });
+                        }}
+                        onMouseLeave={() => setCardTilt({ x: 0, y: 0 })}
+                        style={{
+                            transform: `rotateY(${cardTilt.x}deg) rotateX(${cardTilt.y}deg)`,
+                            transformStyle: 'preserve-3d',
+                            transition: cardTilt.x === 0 ? 'transform 0.5s ease-out' : 'none'
+                        }}
+                        className="relative w-72 aspect-[3/4.2] mx-auto bg-gradient-to-br from-gray-900 to-black border border-yellow-500/30 rounded-3xl p-6 shadow-2xl shadow-yellow-900/10 flex flex-col justify-between overflow-hidden cursor-pointer group"
+                    >
+                        {/* Metallic shining hologram overlay */}
+                        <div 
+                            style={{
+                                background: `radial-gradient(circle at ${50 + cardTilt.x * 2}% ${50 - cardTilt.y * 2}%, rgba(250, 204, 21, 0.15) 0%, transparent 60%)`,
+                                mixBlendMode: 'color-dodge'
+                            }}
+                            className="absolute inset-0 pointer-events-none transition-opacity duration-300 rounded-3xl"
+                        />
+
+                        {/* Top card metadata */}
+                        <div className="flex items-center justify-between" style={{ transform: 'translateZ(20px)' }}>
+                            <span className="text-[10px] font-black text-yellow-400 bg-yellow-500/10 px-2.5 py-1 border border-yellow-500/20 rounded-md tracking-wider uppercase">LEGENDARY STATION</span>
+                            <span className="text-[10px] font-mono text-gray-500 font-bold">#001</span>
+                        </div>
+
+                        {/* Centered beautiful high-fi visualizer art */}
+                        <div className="relative flex-1 my-5 bg-gradient-to-b from-gray-950 to-gray-900 border border-white/5 rounded-2xl overflow-hidden flex items-center justify-center p-4 shadow-inner" style={{ transform: 'translateZ(30px)' }}>
+                            <div className="absolute inset-0 bg-cover bg-center opacity-20 filter grayscale blur-sm" style={{ backgroundImage: `url(https://images.unsplash.com/photo-1484876065684-b683cf17d276?w=600&auto=format&fit=crop&q=60)` }} />
+                            <div className="relative w-28 h-28 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-full flex items-center justify-center text-black font-black text-4xl shadow-2xl shadow-yellow-900/30 font-orbitron tracking-tighter hover:scale-105 transition-transform">
+                                HGR
+                            </div>
+                        </div>
+
+                        {/* Card footer details */}
+                        <div style={{ transform: 'translateZ(15px)' }} className="text-left">
+                            <h4 className="text-lg font-black font-orbitron text-white leading-tight uppercase">High Grade Radio</h4>
+                            <div className="flex items-center justify-between mt-2 text-[9px] font-mono text-gray-500 font-bold">
+                                <span>Rarity: 0.12% Drop</span>
+                                <span className="text-yellow-400 uppercase tracking-widest font-black">Score Boost: +2.5x</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
           />
       </section>
 
@@ -562,6 +1062,57 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onInstantPlay
                              className="text-gray-300 text-sm md:text-base leading-relaxed space-y-6 font-medium prose prose-invert max-w-none"
                              dangerouslySetInnerHTML={{ __html: activePost.content }}
                          />
+
+                         {/* Dynamic Station Cross-Promotion Widget */}
+                         {(() => {
+                             let recommendedStationsForArticle: typeof stations = [];
+                             if (activePost.category === 'AI Tech' || activePost.category === 'Audio Tech') {
+                                 recommendedStationsForArticle = stations.filter(s => s.name === 'High Grade Radio' || s.name === 'Global Groove Radio');
+                             } else if (activePost.category === 'Broadcasting' || activePost.category === 'Culture') {
+                                 recommendedStationsForArticle = stations.filter(s => s.name === 'Nam Radio' || s.name === 'Power Ace Radio');
+                             } else {
+                                 recommendedStationsForArticle = stations.filter(s => s.name === 'CRW Radio' || s.name === 'Pamtengo Radio');
+                             }
+
+                             if (recommendedStationsForArticle.length === 0) {
+                                 recommendedStationsForArticle = stations.slice(0, 2);
+                             }
+
+                             return (
+                                 <div className="mt-12 p-6 rounded-2xl bg-gray-900/60 border border-white/5 text-left">
+                                     <span className="text-[10px] font-mono font-black tracking-widest text-cyan-400 uppercase bg-cyan-500/10 px-2.5 py-1 rounded-md">Live Station Spotlight</span>
+                                     <h4 className="text-lg font-bold font-orbitron text-white mt-3 mb-1">Experience lossless-quality broadcast audio live</h4>
+                                     <p className="text-xs text-gray-400 mb-6 font-medium">Enjoy premium high-fidelity audio, 3D visualizers, and interactive live reactions on our partner stations:</p>
+                                     
+                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                         {recommendedStationsForArticle.map(st => (
+                                             <div key={st.streamUrl} className="flex items-center justify-between p-3.5 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/30 transition-all group">
+                                                 <div className="flex items-center gap-3">
+                                                     <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 bg-gray-950">
+                                                         <img src={st.coverArt} alt={st.name} className="w-full h-full object-cover" />
+                                                     </div>
+                                                     <div>
+                                                         <h5 className="text-xs font-bold text-white group-hover:text-cyan-400 transition-colors leading-tight">{st.name}</h5>
+                                                         <span className="text-[9px] font-mono text-gray-500 uppercase tracking-wider font-bold">{st.genre.split(',')[0]}</span>
+                                                     </div>
+                                                 </div>
+                                                 <button 
+                                                     onClick={() => {
+                                                         setActivePost(null);
+                                                         setQuickPlayStation(st);
+                                                         setIsQuickPlaying(true);
+                                                         window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                     }}
+                                                     className="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-black font-black text-[10px] uppercase tracking-wider rounded-lg transition-all hover:shadow-[0_0_10px_rgba(6,182,212,0.3)]"
+                                                 >
+                                                     Stream &rarr;
+                                                 </button>
+                                             </div>
+                                         ))}
+                                     </div>
+                                 </div>
+                             );
+                         })()}
 
                          {/* Creator Lead Magnet Card */}
                          <div className="mt-12 p-8 rounded-2xl bg-gradient-to-br from-cyan-950/40 to-blue-950/40 border border-cyan-500/20 shadow-2xl relative overflow-hidden group text-left">
