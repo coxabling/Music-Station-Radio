@@ -2,6 +2,7 @@ import React from 'react';
 import type { User } from '../types';
 import { StarIcon, UserIcon, FireIcon } from '../constants';
 import { RoleBadge } from './RoleBadge';
+import { BrandLogo } from './BrandLogo';
 
 interface HeaderProps {
     currentUser: User | null;
@@ -15,7 +16,6 @@ interface HeaderProps {
     onToggleMobileMenu?: () => void;
 }
 
-const MusicIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-8 sm:w-8 accent-color-text shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" /></svg>;
 const LogoutIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>;
 
 export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, points, onGoToHome, isVisible, customAvatarUrl, isHypeStormActive, stormRemaining, onToggleMobileMenu }) => {
@@ -72,13 +72,10 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, points, o
 
         <button 
           onClick={onGoToHome} 
-          className="flex-1 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded-lg cursor-pointer min-w-0"
+          className="flex-1 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00A8FF]/50 rounded-lg cursor-pointer min-w-0"
           aria-label="Go to home dashboard"
         >
-          <MusicIcon />
-          <h1 className="ml-2 sm:ml-3 text-sm sm:text-base md:text-lg lg:text-xl font-bold font-orbitron tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-color)] to-purple-500 uppercase truncate">
-            Music Station
-          </h1>
+          <BrandLogo variant="horizontal" size="md" animated={true} />
         </button>
 
         <div className="flex-1 flex items-center justify-end gap-1.5 sm:gap-4 text-gray-400 shrink-0">

@@ -146,7 +146,7 @@ export const SeoGeoDashboard: React.FC<SeoGeoDashboardProps> = ({ onBack, curren
   "@type": "RadioStation",
   "name": "Music Station Radio",
   "url": "https://musicstationradio.com/",
-  "logo": "https://storage.googleapis.com/aistudio-hosting/public-assets/music-station-radio-social-card.png",
+  "logo": "/music-station-radio-social-card.png",
   "description": "${metaDesc.substring(0, 150)}...",
   "email": "namibianradio@gmail.com",
   "address": {

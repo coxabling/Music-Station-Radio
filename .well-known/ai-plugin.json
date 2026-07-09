@@ -12,7 +12,7 @@
     "url": "https://musicstationradio.com/openapi.json",
     "is_user_authenticated": false
   },
-  "logo_url": "https://storage.googleapis.com/aistudio-hosting/public-assets/music-station-radio-social-card.png",
+  "logo_url": "https://musicstationradio.com/music-station-radio-social-card.png",
   "contact_email": "namibianradio@gmail.com",
   "legal_info_url": "https://musicstationradio.com/terms"
 }

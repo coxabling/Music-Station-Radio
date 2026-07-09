@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioPlayer } from './components/RadioPlayer';
+import { BrandLogo } from './components/BrandLogo';
 import { StationList } from './components/StationList';
 import { Header } from './components/Header';
 import { SubmitStationModal } from './components/SubmitStationModal';
@@ -60,6 +61,36 @@ const hexToRgb = (hex: string) => {
 };
 
 export const App: React.FC = () => {
+  const [showPreloader, setShowPreloader] = useState(true);
+  const [preloaderText, setPreloaderText] = useState("CONNECTING TO BROADCAST NETWORK...");
+
+  useEffect(() => {
+    const loadingTexts = [
+      "ESTABLISHING SECURE AUDIO COGNIZANCE...",
+      "SYNCHRONIZING GLOBAL FM CHANNELS...",
+      "TUNING INDEPENDENT RADIO TRANSMITTERS...",
+      "DOWNLINKING SATELLITE BROADCAST BEAM...",
+      "OPTIMIZING HIGH-FIDELITY FLAC CODEC...",
+      "DEPLOYING GEOLOCATION SEOSHIELD...",
+      "VIBE CHECK COMPLETE. CONNECTING..."
+    ];
+    let textIndex = 0;
+    const textInterval = setInterval(() => {
+      textIndex = (textIndex + 1) % loadingTexts.length;
+      setPreloaderText(loadingTexts[textIndex]);
+    }, 450);
+
+    const timer = setTimeout(() => {
+      setShowPreloader(false);
+      clearInterval(textInterval);
+    }, 2500);
+
+    return () => {
+      clearInterval(textInterval);
+      clearTimeout(timer);
+    };
+  }, []);
+
   const [hasEnteredApp, setHasEnteredApp] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -207,7 +238,7 @@ export const App: React.FC = () => {
       "@type": "RadioStation",
       "name": "Music Station Radio",
       "url": "https://musicstationradio.com/",
-      "logo": "https://storage.googleapis.com/aistudio-hosting/public-assets/music-station-radio-social-card.png",
+      "logo": "/music-station-radio-social-card.png",
       "description": "Music Station Radio: The ultimate global network for independent broadcasting. Discover high-fidelity streams, exclusive artists, and a vibrant community.",
       "email": "namibianradio@gmail.com",
       "address": {
@@ -1069,6 +1100,67 @@ export const App: React.FC = () => {
     }
   };
   
+  if (showPreloader) {
+      return (
+         <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center select-none overflow-hidden">
+             {/* Dynamic futuristic particle grid background */}
+             <div className="absolute inset-0 opacity-20 pointer-events-none" id="preloader-bg-grid" style={{ backgroundImage: 'radial-gradient(circle, #00A8FF 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
+             
+             {/* Center branding */}
+             <div className="relative flex flex-col items-center max-w-sm px-6 text-center z-10">
+                 {/* Glowing circle backdrop */}
+                 <div className="absolute -inset-10 bg-gradient-to-tr from-[#00A8FF]/10 to-[#005BFF]/10 rounded-full blur-3xl opacity-50 animate-pulse"></div>
+                 
+                 <div className="mb-8 transform hover:scale-105 transition-transform duration-500">
+                     <BrandLogo variant="square" size="xl" animated={true} />
+                 </div>
+                 
+                 {/* Progress bar container */}
+                 <div className="w-64 h-1.5 bg-white/5 border border-white/10 rounded-full overflow-hidden relative mb-4">
+                     <div className="h-full bg-gradient-to-r from-[#00A8FF] to-[#005BFF] rounded-full" style={{ animation: 'preloaderProgress 2.5s cubic-bezier(0.1, 0.8, 0.2, 1) forwards' }}></div>
+                 </div>
+
+                 {/* System message */}
+                 <p className="text-[9px] font-mono tracking-[0.25em] text-cyan-400 font-bold uppercase animate-pulse min-h-[1.5rem]" id="preloader-text">
+                     {preloaderText}
+                 </p>
+                 
+                 <span className="text-[8px] font-mono text-gray-600 uppercase tracking-widest mt-1.5">
+                     Music Station Radio v4.2.0-HQ
+                 </span>
+             </div>
+
+             {/* Waveform accent at the bottom */}
+             <div className="absolute bottom-0 inset-x-0 h-16 flex items-end justify-center gap-[2px] opacity-25">
+                 {Array.from({ length: 40 }).map((_, i) => (
+                     <div 
+                         key={i} 
+                         className="w-1 bg-[#00A8FF] rounded-t-sm"
+                         style={{ 
+                             height: `${Math.random() * 80 + 20}%`, 
+                             animation: `preloaderWave 1.2s ease-in-out infinite alternate ${i * 0.04}s` 
+                         }}
+                     />
+                 ))}
+             </div>
+
+             <style>{`
+                 @keyframes preloaderProgress {
+                     0% { width: 0%; }
+                     10% { width: 15%; }
+                     35% { width: 45%; }
+                     65% { width: 78%; }
+                     100% { width: 100%; }
+                 }
+                 @keyframes preloaderWave {
+                     0% { transform: scaleY(0.1); }
+                     100% { transform: scaleY(1); }
+                 }
+             `}</style>
+         </div>
+      );
+  }
+
   if (!hasEnteredApp) {
       return <LandingPage onEnter={() => setHasEnteredApp(true)} onInstantPlay={handleInstantPlay} />;
   }

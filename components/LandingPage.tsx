@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { stations, TrophyIcon, MusicNoteIcon, BriefcaseIcon, UserIcon, ChatBubbleIcon, RocketIcon, StarIcon, ExploreIcon, UploadIcon, ClockIcon, DeviceIcon, HomeIcon, UserGroupIcon } from '../constants';
 import { BLOG_POSTS, BlogPost } from '../blogPosts';
+import { BrandLogo } from './BrandLogo';
 
 interface LandingPageProps {
   onEnter: () => void;
@@ -1199,9 +1200,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onInstantPlay
       {/* MINIMAL FOOTER */}
       <footer className="bg-black text-center py-20 border-t border-white/5">
         <div className="container mx-auto px-4">
-            <div className="flex flex-col items-center justify-center gap-6 mb-12">
-               <div className="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center text-black font-black text-2xl shadow-2xl shadow-cyan-900/20 font-orbitron">M</div>
-               <span className="font-orbitron font-bold text-2xl tracking-[0.5em] text-white">MUSIC STATION RADIO</span>
+            <div className="flex flex-col items-center justify-center mb-12">
+               <BrandLogo variant="horizontal" size="lg" animated={true} />
             </div>
             <p className="text-[10px] text-gray-800 font-bold tracking-widest uppercase mb-4">
                 Global Independent Broadcasting Platform

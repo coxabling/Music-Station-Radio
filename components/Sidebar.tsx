@@ -1,6 +1,7 @@
 import React from 'react';
 import type { ActiveView, User } from '../types';
 import { HomeIcon, ExploreIcon, CommunityIcon, StoreIcon, LeaderboardIconSidebar, ChatBubbleIcon, AdminIcon, BriefcaseIcon, MusicNoteIcon, CollectionIcon, GlobeIcon } from '../constants';
+import { BrandLogo } from './BrandLogo';
 
 interface SidebarProps {
     activeView: ActiveView;
@@ -210,14 +211,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         
                         {/* Drawer Header */}
                         <div className="p-4 border-b border-white/10 flex justify-between items-center bg-gray-900/40">
-                            <div className="flex items-center gap-2.5">
-                                <div className="p-1.5 bg-cyan-500/10 rounded-lg text-cyan-400">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" />
-                                    </svg>
-                                </div>
-                                <span className="font-orbitron font-bold text-sm tracking-wider uppercase text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">Music Station</span>
-                            </div>
+                            <BrandLogo variant="horizontal" size="sm" animated={true} />
                             <button 
                                 onClick={onCloseMobile}
                                 className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"

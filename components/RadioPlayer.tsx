@@ -16,6 +16,14 @@ const SongInfoModal = React.lazy(() => import('./SongInfoModal'));
 // --- Icon Components ---
 const PlayIcon = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full"><path d="M8 5v14l11-7z"></path></svg>;
 const PauseIcon = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>;
+const LoadingSpinner = () => (
+  <div className="w-full h-full flex items-center justify-center animate-spin">
+    <svg className="w-full h-full text-[#00A8FF]" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+  </div>
+);
 const ChevronUpIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>;
 const ChevronDownIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>;
 const BackwardIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="currentColor" viewBox="0 0 20 20"><path d="M8.445 14.832A1 1 0 0010 14.006V5.994a1 1 0 00-1.555-.832L2.445 9.168a1 1 0 000 1.664l6 4.001zM17.445 9.168a1 1 0 000 1.664l6 4.001A1 1 0 0025 14.006V5.994a1 1 0 00-1.555-.832l-6 4.001z" transform="scale(0.8) translate(-2, 0)" /></svg>;
@@ -118,6 +126,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
   const { station, allStations, onNowPlayingUpdate, onNextStation, onPreviousStation, isImmersive, onToggleImmersive, songVotes, onVote, onRateStation, userRating, onOpenTippingModal, onSelectStation, userSongVotes, onToggleChat, onStartRaid, raidStatus, raidTarget, onHidePlayer, isVisible, onOpenBuyNow, isHeaderVisible, onToggleHeader, onHype, hypeScore, isPlaying, onPlayPause, isDataSaver, sleepTimerTarget, activeSkin, globalHype = 0, isHypeStormActive, hypeCombo = 0, hypeLogs = [] } = props;
 
   const [volume, setVolume] = useState(0.75);
+  const [isBuffering, setIsBuffering] = useState(false);
   const [fadeFactor, setFadeFactor] = useState(1); 
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
@@ -367,6 +376,17 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
     const secureUrl = station.streamUrl.replace(/^http:\/\//i, 'https://');
     audioEl.src = secureUrl;
     audioEl.crossOrigin = "anonymous";
+    
+    const handleWaiting = () => setIsBuffering(true);
+    const handlePlaying = () => setIsBuffering(false);
+    const handleCanPlay = () => setIsBuffering(false);
+    const handleLoadStart = () => setIsBuffering(true);
+    
+    audioEl.addEventListener('waiting', handleWaiting);
+    audioEl.addEventListener('playing', handlePlaying);
+    audioEl.addEventListener('canplay', handleCanPlay);
+    audioEl.addEventListener('loadstart', handleLoadStart);
+    
     const playPromise = audioEl.play();
     if(playPromise !== undefined) {
       playPromise.then(() => onPlayPause(true)).catch(error => {
@@ -375,7 +395,13 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
     }
     getSong();
     const songFetchInterval = setInterval(getSong, 15000);
-    return () => clearInterval(songFetchInterval);
+    return () => {
+      clearInterval(songFetchInterval);
+      audioEl.removeEventListener('waiting', handleWaiting);
+      audioEl.removeEventListener('playing', handlePlaying);
+      audioEl.removeEventListener('canplay', handleCanPlay);
+      audioEl.removeEventListener('loadstart', handleLoadStart);
+    };
   }, [station, getSong]);
   
   const togglePlayPause = useCallback(async () => {
@@ -385,9 +411,18 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
     if (isPlaying) {
       audioEl.pause();
       onPlayPause(false);
+      setIsBuffering(false);
     } else {
+      setIsBuffering(true);
       const playPromise = audioEl.play();
-      if (playPromise !== undefined) playPromise.then(() => onPlayPause(true)).catch(e => onPlayPause(false));
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => onPlayPause(true))
+          .catch(e => {
+            onPlayPause(false);
+            setIsBuffering(false);
+          });
+      }
     }
   }, [isPlaying]);
   
@@ -533,7 +568,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
         
         <div className={`flex items-center justify-center gap-8 ${activeSkin === 'winamp' ? 'text-[#00ff00]' : activeSkin === 'wooden' ? 'text-[#4a3728]' : 'text-white'}`}>
           <button onClick={onPreviousStation} className={`${activeSkin === 'boombox' ? 'bg-gray-300 text-black w-12 h-12 rounded-full border-b-4 border-gray-500 active:border-b-0 active:translate-y-1' : ''} hover:scale-110 transition-transform`}><BackwardIcon /></button>
-          <button onClick={togglePlayPause} className={`w-20 h-20 rounded-full flex items-center justify-center transition-transform ${activeSkin === 'modern' ? 'bg-white/10 text-[var(--accent-color)] ring-2 ring-white/20 hover:scale-105' : activeSkin === 'winamp' ? 'border-2 border-[#00ff00] text-[#00ff00]' : activeSkin === 'boombox' ? 'bg-red-600 border-b-8 border-red-800 active:border-b-0 active:translate-y-2 shadow-lg' : 'bg-[#d4a017] text-[#3b2417] shadow-xl border-4 border-[#8b5a2b]'}`}><div className="w-10 h-10">{isPlaying ? <PauseIcon/> : <PlayIcon/>}</div></button>
+          <button onClick={togglePlayPause} className={`w-20 h-20 rounded-full flex items-center justify-center transition-transform ${activeSkin === 'modern' ? 'bg-white/10 text-[var(--accent-color)] ring-2 ring-white/20 hover:scale-105' : activeSkin === 'winamp' ? 'border-2 border-[#00ff00] text-[#00ff00]' : activeSkin === 'boombox' ? 'bg-red-600 border-b-8 border-red-800 active:border-b-0 active:translate-y-2 shadow-lg' : 'bg-[#d4a017] text-[#3b2417] shadow-xl border-4 border-[#8b5a2b]'}`}><div className="w-10 h-10">{isBuffering ? <LoadingSpinner /> : (isPlaying ? <PauseIcon/> : <PlayIcon/>)}</div></button>
           <button onClick={onNextStation} className={`${activeSkin === 'boombox' ? 'bg-gray-300 text-black w-12 h-12 rounded-full border-b-4 border-gray-500 active:border-b-0 active:translate-y-1' : ''} hover:scale-110 transition-transform`}><ForwardIcon /></button>
         </div>
         
@@ -635,7 +670,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = (props) => {
                   >
                       <TwitterIcon className="w-5 h-5" />
                   </button>
-                <button onClick={(e) => { e.stopPropagation(); togglePlayPause(); }} className="w-12 h-12 flex items-center justify-center text-white hover:text-[var(--accent-color)] transition-colors" aria-label={isPlaying ? 'Pause' : 'Play'}><div className="w-8 h-8">{isPlaying ? <PauseIcon/> : <PlayIcon/>}</div></button>
+                <button onClick={(e) => { e.stopPropagation(); togglePlayPause(); }} className="w-12 h-12 flex items-center justify-center text-white hover:text-[var(--accent-color)] transition-colors" aria-label={isPlaying ? 'Pause' : 'Play'}><div className="w-8 h-8">{isBuffering ? <LoadingSpinner /> : (isPlaying ? <PauseIcon/> : <PlayIcon/>)}</div></button>
                 <button onClick={(e) => { e.stopPropagation(); setIsExpanded(true); }} className="text-gray-400 hover:text-white hidden md:block" aria-label="Expand player"><ChevronUpIcon /></button>
                 <button onClick={(e) => { e.stopPropagation(); onHidePlayer(); }} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-700/50" aria-label="Hide player"><ChevronDownIcon /></button>
             </div>
