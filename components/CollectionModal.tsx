@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { CollectorCard } from '../types';
 import { playCardSound, playFlipCardSound } from '../utils/audioSynth';
+import { TradingCardArt } from './TradingCardArt';
+import { CardCaption } from './CardCaption';
 import { Sparkles, ShoppingBag, Eye, RefreshCw, X, Shield, Award } from 'lucide-react';
 
 interface CollectionModalProps {
@@ -385,30 +387,22 @@ const CollectibleCardItem: React.FC<CollectibleCardItemProps> = ({ card, index, 
         </div>
 
         {/* Floating Core Illustration Graphic */}
-        <div className="flex-grow flex flex-col items-center justify-center my-2 relative">
+        <div className="flex-grow flex flex-col items-center justify-center my-2 relative w-full aspect-square">
           <div className="absolute w-24 h-24 rounded-full bg-white/5 filter blur-xl animate-pulse pointer-events-none"></div>
-          <img 
-            src={card.image} 
-            alt={card.name} 
-            className="w-24 h-24 object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)] transform group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-500 relative z-10" 
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/vinyl/200';
-            }}
-          />
+          <div className="w-28 h-28 flex items-center justify-center transform group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-500 relative z-10">
+            <TradingCardArt card={card} />
+          </div>
         </div>
 
         {/* Metadata Banner */}
-        <div className="mt-auto bg-black/75 backdrop-blur-md p-2.5 rounded-xl border border-gray-800/80 text-center relative overflow-hidden">
-          <p className="font-bold text-white text-xs tracking-wide leading-none">{card.name}</p>
-          <p className="text-[9px] text-gray-400 mt-1 leading-tight line-clamp-1">{card.description}</p>
-          
+        <CardCaption card={card}>
           <button 
             onClick={(e) => { e.stopPropagation(); onSellClick(); }}
             className="mt-2 w-full py-1 bg-gradient-to-r from-cyan-600/80 to-blue-600/80 hover:from-cyan-500 hover:to-blue-500 text-white text-[9px] font-black uppercase tracking-widest rounded-lg transition-all duration-300 opacity-0 group-hover:opacity-100 transform translate-y-1 group-hover:translate-y-0"
           >
             Sell Card
           </button>
-        </div>
+        </CardCaption>
       </div>
     </motion.div>
   );
@@ -485,12 +479,22 @@ const DetailedInspectCardItem: React.FC<DetailedInspectCardItemProps> = ({ card,
 
         {/* Center Logo Icon */}
         <div className="flex-grow flex flex-col items-center justify-center text-center z-10 py-4">
-          <div className="relative w-24 h-24 rounded-full bg-black/60 border border-gray-800 flex items-center justify-center shadow-inner">
-            <div className="absolute inset-0 rounded-full border border-dashed border-cyan-500/20 animate-spin" style={{ animationDuration: '20s' }}></div>
-            <Award className="w-12 h-12 text-gray-600" />
+          <div className="relative w-28 h-28 rounded-full bg-black/80 border border-gray-800 flex items-center justify-center shadow-inner overflow-hidden p-1.5 group">
+            <div className="absolute inset-0 rounded-full border border-dashed border-cyan-500/30 animate-spin" style={{ animationDuration: '25s' }}></div>
+            <div className="absolute inset-2 rounded-full border border-cyan-500/10"></div>
+            <img 
+              src="/src/assets/images/msr_logo_square_1783624736018.jpg" 
+              alt="Music Station Radio Logo" 
+              className="w-20 h-20 object-cover rounded-full z-10 relative shadow-lg contrast-[1.1] brightness-[1.05]"
+              onError={(e) => {
+                // If image fails to load, gracefully hide it to show standard icon
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+            <Award className="absolute w-10 h-10 text-gray-600 z-0 pointer-events-none" />
           </div>
-          <p className="text-[11px] font-mono font-bold uppercase text-gray-400 tracking-widest mt-4">Music Station Network</p>
-          <p className="text-[9px] text-gray-600 font-mono mt-1">EST. 2026 DIGITAL COLLECTIBLE</p>
+          <p className="text-[11px] font-mono font-bold uppercase text-gray-300 tracking-widest mt-4">Music Station Network</p>
+          <p className="text-[9px] text-cyan-400/80 font-mono mt-1 font-semibold tracking-wider">EST. 2026 DIGITAL COLLECTIBLE</p>
         </div>
 
         {/* Bottom Technical data */}
@@ -531,29 +535,15 @@ const DetailedInspectCardItem: React.FC<DetailedInspectCardItemProps> = ({ card,
       </div>
 
       {/* Main Illustration Area with depth layer shadow */}
-      <div className="flex-grow flex items-center justify-center my-4 relative">
+      <div className="flex-grow flex items-center justify-center my-4 relative w-full aspect-square">
         <div className="absolute w-44 h-44 rounded-full bg-cyan-500/5 filter blur-3xl pointer-events-none"></div>
-        <img 
-          src={card.image} 
-          alt={card.name} 
-          className="w-44 h-44 object-contain drop-shadow-[0_15px_25px_rgba(0,0,0,0.9)] relative z-10 transform hover:scale-105 duration-300"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/vinyl/200';
-          }}
-        />
+        <div className="w-48 h-48 flex items-center justify-center relative z-10 transform hover:scale-105 duration-300">
+          <TradingCardArt card={card} isDetailed={true} />
+        </div>
       </div>
 
       {/* Identity card info block */}
-      <div className="bg-black/85 border border-gray-800/90 rounded-2xl p-4 text-center backdrop-blur-md relative z-10">
-        <h3 className="text-lg font-bold text-white tracking-wide font-orbitron">{card.name}</h3>
-        <p className="text-xs text-gray-400 mt-1 leading-relaxed line-clamp-2">{card.description}</p>
-        
-        {/* Shimmer hologram badge indicator */}
-        <div className="mt-3 flex items-center justify-center gap-1.5 text-[9px] font-mono text-cyan-400 bg-cyan-500/10 py-1 px-2.5 rounded-lg border border-cyan-500/20 max-w-max mx-auto">
-          <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></div>
-          SECURE HOLOGRAM VERIFIED
-        </div>
-      </div>
+      <CardCaption card={card} isDetailed={true} />
 
       <style>{`
         @keyframes shimmer-slow {

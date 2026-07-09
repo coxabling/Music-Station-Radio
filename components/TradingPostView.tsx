@@ -4,6 +4,8 @@ import type { MarketListing, User } from '../types';
 import { StarIcon, CollectionIcon } from '../constants';
 import { Sparkles, Eye, ShieldCheck, ShoppingCart } from 'lucide-react';
 import { playCardSound } from '../utils/audioSynth';
+import { TradingCardArt } from './TradingCardArt';
+import { CardCaption } from './CardCaption';
 
 interface TradingPostViewProps {
   onBack: () => void;
@@ -368,18 +370,12 @@ const TradingPostListingCard: React.FC<TradingPostListingCardProps> = ({ listing
         {/* Holographic central image area */}
         <div className="aspect-square bg-black/50 rounded-2xl mb-4 flex items-center justify-center relative overflow-hidden group border border-gray-900">
             <div className="absolute inset-0 bg-radial-lens opacity-20 pointer-events-none"></div>
-            <img 
-              src={listing.card.image} 
-              alt={listing.card.name} 
-              className="w-24 h-24 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.8)] transform group-hover:scale-110 transition-transform duration-500 z-10" 
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/vinyl/200';
-              }}
-            />
+            <div className="w-28 h-28 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500 z-10">
+                <TradingCardArt card={listing.card} />
+            </div>
         </div>
         
-        <h3 className="text-lg font-bold text-white mb-1 font-orbitron">{listing.card.name}</h3>
-        <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed flex-grow">{listing.card.description}</p>
+        <CardCaption card={listing.card} />
       </div>
       
       {/* Card Footer controls */}

@@ -193,10 +193,29 @@ export const INITIAL_QUESTS: Quest[] = [
 ];
 
 export const CARDS_DB: Omit<CollectorCard, 'id' | 'acquiredAt'>[] = [
-  { name: 'Golden Vinyl', rarity: 'legendary', image: '/src/assets/images/golden_vinyl_card_1783447200754.jpg', description: 'The pinnacle of global broadcasting audio quality.' },
-  { name: 'Retro Mic', rarity: 'rare', image: '/src/assets/images/retro_mic_card_1783447212452.jpg', description: 'Vintage analog captures for timeless rhythms.' },
-  { name: 'Boombox', rarity: 'common', image: '/src/assets/images/boombox_card_1783447225859.jpg', description: 'The original heartbeat of the Music Station network.' },
-  { name: 'Cyber Speaker', rarity: 'epic', image: '/src/assets/images/cyber_speaker_card_1783447237022.jpg', description: 'Next-gen audio projection for the metaverse.' },
+  // --- Music Theme ---
+  { name: 'Golden Vinyl', rarity: 'legendary', image: '/src/assets/images/golden_vinyl_card_1783447200754.jpg', description: 'The absolute pinnacle of audio fidelity, pressing global independent tracks on pure gold grooves.' },
+  { name: 'Holographic Synth', rarity: 'epic', image: '/src/assets/images/cyber_speaker_card_1783447237022.jpg', description: 'A futuristic virtual synthesizer generating glowing audio waveforms for the immersive global metaverse.' },
+  { name: 'Bass Cannon Speakers', rarity: 'rare', image: '/src/assets/images/cyber_speaker_card_1783447237022.jpg', description: 'Heavy low-frequency sound systems built to carry deep dub and dancehall rhythms.' },
+  { name: 'Studio Headset', rarity: 'common', image: '/src/assets/images/boombox_card_1783447225859.jpg', description: 'Professional, flat-response monitor headphones delivering crystalline sound quality to studio directors.' },
+
+  // --- Radio Theme ---
+  { name: 'Live Studio Microphone', rarity: 'legendary', image: '/src/assets/images/retro_mic_card_1783447212452.jpg', description: 'Elite vocal condenser capsule capturing premium vocal depth for high-grade live transmissions.' },
+  { name: 'Retro Mic', rarity: 'rare', image: '/src/assets/images/retro_mic_card_1783447212452.jpg', description: 'Vintage analog broadcast microphone capturing warm, nostalgic frequency rhythms.' },
+  { name: 'Windhoek Broadcast Tower', rarity: 'epic', image: '/src/assets/images/retro_mic_card_1783447212452.jpg', description: 'Grand telecommunications lattice array beaming high-fidelity signals across the Kalahari dunes and beyond.' },
+  { name: 'On-Air Indicator', rarity: 'common', image: '/src/assets/images/boombox_card_1783447225859.jpg', description: 'A glowing red neon beacon alerting studio personnel that a live broadcast stream is active.' },
+
+  // --- Achievement Theme ---
+  { name: 'Prestige Vibe Master Crown', rarity: 'legendary', image: '/src/assets/images/golden_vinyl_card_1783447200754.jpg', description: 'The crown of pure energetic light, awarded to listeners who command massive global points and support streams.' },
+  { name: 'Pioneer Broadcaster Medal', rarity: 'epic', image: '/src/assets/images/golden_vinyl_card_1783447200754.jpg', description: 'Exquisite gold medallion and premium ribbon celebrating the founders of community radio streams.' },
+  { name: 'Community Star Trophy', rarity: 'rare', image: '/src/assets/images/golden_vinyl_card_1783447200754.jpg', description: 'A sparkling award celebrating listeners who initiate hype storms and tip raids.' },
+  { name: 'Hype Storm Crystal', rarity: 'common', image: '/src/assets/images/cyber_speaker_card_1783447237022.jpg', description: 'A glowing crystal talisman marking active participation in synchronized listener storms.' },
+
+  // --- Cultural & Regional Theme ---
+  { name: 'Namibian Sunset Savannah', rarity: 'legendary', image: '/src/assets/images/golden_vinyl_card_1783447200754.jpg', description: 'Flat-top acacia silhouette against a massive blazing ochre sand dune sunset. Authentic cultural rhythms.' },
+  { name: 'Okavango Echo Drums', rarity: 'epic', image: '/src/assets/images/boombox_card_1783447225859.jpg', description: 'Traditional hand-carved hollow drums vibrating with the heartbeat acoustics of the river delta.' },
+  { name: 'Pamtengo Heritage Shell', rarity: 'rare', image: '/src/assets/images/cyber_speaker_card_1783447237022.jpg', description: 'A decorated conch spiral carrying the rich regional heritage of Malawian community broadcast circles.' },
+  { name: 'Savannah Rhythm Shaker', rarity: 'common', image: '/src/assets/images/boombox_card_1783447225859.jpg', description: 'A classic dried gourd shaker used to maintain energetic tempo pacing in traditional dance beats.' },
 ];
 
 export const PLAYER_SKINS: PlayerSkin[] = [
